@@ -10,19 +10,21 @@ interface ConversationListProps {
   currentConversationId: string | null;
   onSelectConversation: (conversationId: string) => void;
   onNewChat: () => void;
+  refreshTrigger?: number; // Add trigger to refresh from parent
 }
 
 export function ConversationList({
   currentConversationId,
   onSelectConversation,
   onNewChat,
+  refreshTrigger,
 }: ConversationListProps) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     loadConversations();
-  }, []);
+  }, [refreshTrigger]); // Only refresh when parent triggers it
 
   const loadConversations = async () => {
     setIsLoading(true);
@@ -81,10 +83,10 @@ export function ConversationList({
         ) : (
           <div className="p-2 space-y-1">
             {conversations.map((conversation) => (
-              <button
+              <div
                 key={conversation.id}
                 onClick={() => onSelectConversation(conversation.id)}
-                className={`w-full text-left p-3 rounded-lg transition-colors group ${
+                className={`w-full text-left p-3 rounded-lg transition-colors group cursor-pointer ${
                   currentConversationId === conversation.id
                     ? 'bg-blue-50 border border-blue-200'
                     : 'hover:bg-gray-50 border border-transparent'
@@ -109,7 +111,7 @@ export function ConversationList({
                     <Trash2 className="w-4 h-4 text-red-500" />
                   </Button>
                 </div>
-              </button>
+              </div>
             ))}
           </div>
         )}

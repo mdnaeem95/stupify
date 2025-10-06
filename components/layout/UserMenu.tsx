@@ -64,7 +64,7 @@ export function UserMenu() {
         onClick={handleSignOut}
         variant="outline"
         disabled={isLoggingOut}
-        className="flex items-center gap-2"
+        className="flex items-center gap-2 text-black"
       >
         {isLoggingOut ? (
           <>

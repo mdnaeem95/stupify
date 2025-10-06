@@ -9,13 +9,21 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Send, Loader2, Sparkles, Plus } from 'lucide-react';
 import { SimplicityLevel } from '@/lib/prompts';
-import { createConversation, generateConversationTitle, saveMessage, updateConversationTitle } from '@/lib/conversations';
+import { UserMenu } from '@/components/layout/UserMenu';
+import { 
+  createConversation, 
+  saveMessage, 
+  loadConversation,
+  generateConversationTitle,
+  updateConversationTitle 
+} from '@/lib/conversations';
 
 export function ChatInterface() {
   const [simplicityLevel, setSimplicityLevel] = useState<SimplicityLevel>('normal');
   const [input, setInput] = useState('');
   const [conversationId, setConversationId] = useState<string | null>(null);
-  const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingConversation, setIsLoadingConversation] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isFirstMessageRef = useRef(true);
 
@@ -28,14 +36,14 @@ export function ChatInterface() {
       },
     }),
     onFinish: async ({ message }) => {
-      // Save the assistant message to the database
+      // Save assistant message to database
       if (conversationId && message.role === 'assistant') {
         const content = message.parts
-          ?.filter((part) => part.type === 'text')
-          .map((part) => part.text)
+          ?.filter(part => part.type === 'text')
+          .map(part => part.text)
           .join('') || '';
-
-          await saveMessage(conversationId, 'assistant', content, simplicityLevel);
+        
+        await saveMessage(conversationId, 'assistant', content, simplicityLevel);
       }
     },
   });
@@ -46,6 +54,68 @@ export function ChatInterface() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Listen for layout triggers (new chat / load conversation)
+  useEffect(() => {
+    const handleLayoutChanges = () => {
+      const container = document.querySelector('[data-conversation-id]');
+      if (!container) return;
+
+      // Handle new chat trigger
+      const newChatTrigger = container.getAttribute('data-new-chat-trigger');
+      if (newChatTrigger && newChatTrigger !== '0') {
+        handleNewChat();
+      }
+
+      // Handle load conversation trigger
+      const loadTrigger = container.getAttribute('data-load-conversation-trigger');
+      if (loadTrigger && loadTrigger !== 'null') {
+        try {
+          const { id } = JSON.parse(loadTrigger);
+          if (id && id !== conversationId) {
+            handleLoadConversation(id);
+          }
+        } catch (e) {
+          console.error('Error parsing load trigger:', e);
+        }
+      }
+    };
+
+    // Run immediately and set up observer
+    handleLayoutChanges();
+    
+    const observer = new MutationObserver(handleLayoutChanges);
+    const container = document.querySelector('[data-conversation-id]');
+    if (container) {
+      observer.observe(container, { attributes: true });
+    }
+
+    return () => observer.disconnect();
+  }, [conversationId]);
+
+  // Load a specific conversation
+  const handleLoadConversation = async (convId: string) => {
+    setIsLoadingConversation(true);
+    try {
+      const savedMessages = await loadConversation(convId);
+      
+      // Convert saved messages to UIMessage format
+      const uiMessages = savedMessages.map((msg) => ({
+        id: msg.id,
+        role: msg.role,
+        parts: [{ type: 'text' as const, text: msg.content }],
+        createdAt: new Date(msg.created_at),
+      }));
+
+      setMessages(uiMessages);
+      setConversationId(convId);
+      isFirstMessageRef.current = false;
+    } catch (error) {
+      console.error('Error loading conversation:', error);
+    } finally {
+      setIsLoadingConversation(false);
+    }
+  };
 
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
@@ -62,10 +132,15 @@ export function ChatInterface() {
       if (newConvId) {
         setConversationId(newConvId);
         
+        // Trigger sidebar refresh
+        window.dispatchEvent(new Event('refreshSidebar'));
+        
         // Update title with first message after a short delay
         setTimeout(async () => {
           const title = generateConversationTitle(messageText);
           await updateConversationTitle(newConvId, title);
+          // Refresh sidebar again after title update
+          window.dispatchEvent(new Event('refreshSidebar'));
         }, 1000);
       }
       setIsSaving(false);
@@ -99,31 +174,34 @@ export function ChatInterface() {
       {/* Header */}
       <div className="bg-white border-b shadow-sm">
         <div className="max-w-4xl mx-auto px-4 py-4">
-            <div className="flex justify-between items-center mb-4">
-                <div className="flex items-center gap-3">
-                    <div className="bg-gradient-to-r from-purple-500 to-blue-500 p-2 rounded-lg">
-                    <Sparkles className="w-6 h-6 text-white" />
-                    </div>
-                    <div>
-                    <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                        Stupify
-                    </h1>
-                    <p className="text-sm text-gray-600">Finally, an AI that speaks human</p>
-                    </div>
-                </div>
-
-                {/* New Chat Button */}
-                {messages.length > 0 && (
-                    <Button
-                        onClick={handleNewChat}
-                        variant="outline"
-                        className='flex items-center gap-2 text-black'
-                    >
-                        <Plus className="w-4 h-4" />
-                        New Chat
-                    </Button>
-                )}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="bg-gradient-to-r from-purple-500 to-blue-500 p-2 rounded-lg">
+                <Sparkles className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                  Stupify
+                </h1>
+                <p className="text-sm text-gray-600">Finally, an AI that speaks human</p>
+              </div>
             </div>
+            
+            {/* Right side - New Chat + User Menu */}
+            <div className="flex items-center gap-2">
+              {messages.length > 0 && (
+                <Button
+                  onClick={handleNewChat}
+                  variant="outline"
+                  className="flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span className="hidden sm:inline">New Chat</span>
+                </Button>
+              )}
+              <UserMenu />
+            </div>
+          </div>
         </div>
         
         {/* Simplicity Selector */}
@@ -133,11 +211,18 @@ export function ChatInterface() {
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-4xl mx-auto px-4 py-6">
-          {messages.length === 0 ? (
+          {isLoadingConversation ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <Loader2 className="w-12 h-12 text-purple-500 mx-auto mb-4 animate-spin" />
+                <p className="text-gray-600">Loading conversation...</p>
+              </div>
+            </div>
+          ) : messages.length === 0 ? (
             <div className="text-center py-12">
               <div className="bg-white rounded-2xl shadow-sm p-8 max-w-2xl mx-auto">
                 <Sparkles className="w-12 h-12 text-purple-500 mx-auto mb-4" />
-                <h2 className="text-2xl font-bold mb-2 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">Welcome to Stupify!</h2>
+                <h2 className="text-2xl font-bold mb-2">Welcome to Stupify!</h2>
                 <p className="text-gray-600 mb-6">
                   Ask me anything and I&apos;ll explain it in a way that actually makes sense.
                 </p>
@@ -204,15 +289,15 @@ export function ChatInterface() {
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask me anything..."
               className="flex-1 h-12 text-base border-2 border-gray-300 focus:border-blue-500 text-black"
-              disabled={isLoading || isSaving}
+              disabled={isLoading || isSaving || isLoadingConversation}
             />
             <Button 
               type="submit" 
               size="lg"
-              disabled={isLoading || !input.trim() || isSaving}
+              disabled={isLoading || !input.trim() || isSaving || isLoadingConversation}
               className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-md"
             >
-              {isLoading ? (
+              {isLoading || isSaving ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
               ) : (
                 <Send className="w-5 h-5" />
