@@ -55,49 +55,48 @@ export function ChatInterface() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Listen for layout triggers (new chat / load conversation)
+  // ✅ FIXED: Listen for events from layout
   useEffect(() => {
-    const handleLayoutChanges = () => {
-      const container = document.querySelector('[data-conversation-id]');
-      if (!container) return;
+    console.log('🎧 ChatInterface: Setting up event listeners')
 
-      // Handle new chat trigger
-      const newChatTrigger = container.getAttribute('data-new-chat-trigger');
-      if (newChatTrigger && newChatTrigger !== '0') {
-        handleNewChat();
-      }
-
-      // Handle load conversation trigger
-      const loadTrigger = container.getAttribute('data-load-conversation-trigger');
-      if (loadTrigger && loadTrigger !== 'null') {
-        try {
-          const { id } = JSON.parse(loadTrigger);
-          if (id && id !== conversationId) {
-            handleLoadConversation(id);
-          }
-        } catch (e) {
-          console.error('Error parsing load trigger:', e);
-        }
-      }
-    };
-
-    // Run immediately and set up observer
-    handleLayoutChanges();
-    
-    const observer = new MutationObserver(handleLayoutChanges);
-    const container = document.querySelector('[data-conversation-id]');
-    if (container) {
-      observer.observe(container, { attributes: true });
+    // Handle NEW CHAT event
+    const handleNewChatEvent = () => {
+      console.log('🆕 ChatInterface: New chat event received')
+      handleNewChat()
     }
 
-    return () => observer.disconnect();
-  }, [conversationId]);
+    // Handle LOAD CONVERSATION event
+    const handleLoadConversationEvent = (event: Event) => {
+      const customEvent = event as CustomEvent<{ conversationId: string }>
+      const conversationId = customEvent.detail?.conversationId
+      
+      console.log('📂 ChatInterface: Load conversation event received', { conversationId })
+      
+      if (conversationId) {
+        handleLoadConversation(conversationId)
+      }
+    }
+
+    // Add event listeners
+    window.addEventListener('newChat', handleNewChatEvent)
+    window.addEventListener('loadConversation', handleLoadConversationEvent as EventListener)
+
+    // Cleanup
+    return () => {
+      console.log('🧹 ChatInterface: Cleaning up event listeners')
+      window.removeEventListener('newChat', handleNewChatEvent)
+      window.removeEventListener('loadConversation', handleLoadConversationEvent as EventListener)
+    }
+  }, [conversationId]) // Re-setup when conversationId changes
 
   // Load a specific conversation
   const handleLoadConversation = async (convId: string) => {
+    console.log('📂 ChatInterface: Loading conversation', { convId })
     setIsLoadingConversation(true);
+    
     try {
       const savedMessages = await loadConversation(convId);
+      console.log('✅ ChatInterface: Conversation loaded', { messageCount: savedMessages.length })
       
       // Convert saved messages to UIMessage format
       const uiMessages = savedMessages.map((msg) => ({
@@ -111,7 +110,7 @@ export function ChatInterface() {
       setConversationId(convId);
       isFirstMessageRef.current = false;
     } catch (error) {
-      console.error('Error loading conversation:', error);
+      console.error('❌ ChatInterface: Error loading conversation:', error);
     } finally {
       setIsLoadingConversation(false);
     }
@@ -124,12 +123,19 @@ export function ChatInterface() {
     if (!input.trim() || isLoading) return;
 
     const messageText = input.trim();
+    console.log('📤 ChatInterface: Submitting message', { 
+      hasConversation: !!conversationId,
+      messageLength: messageText.length 
+    })
 
     // Create conversation on first message
     if (!conversationId) {
+      console.log('🆕 ChatInterface: Creating new conversation for first message')
       setIsSaving(true);
       const newConvId = await createConversation('New Chat');
+      
       if (newConvId) {
+        console.log('✅ ChatInterface: New conversation created', { newConvId })
         setConversationId(newConvId);
         
         // Trigger sidebar refresh
@@ -138,6 +144,7 @@ export function ChatInterface() {
         // Update title with first message after a short delay
         setTimeout(async () => {
           const title = generateConversationTitle(messageText);
+          console.log('📝 ChatInterface: Updating conversation title', { title })
           await updateConversationTitle(newConvId, title);
           // Refresh sidebar again after title update
           window.dispatchEvent(new Event('refreshSidebar'));
@@ -163,6 +170,7 @@ export function ChatInterface() {
 
   // Start a new chat
   const handleNewChat = () => {
+    console.log('🆕 ChatInterface: Starting new chat')
     setMessages([]);
     setConversationId(null);
     setInput('');
@@ -226,51 +234,42 @@ export function ChatInterface() {
                 <p className="text-gray-600 mb-6">
                   Ask me anything and I&apos;ll explain it in a way that actually makes sense.
                 </p>
-                <div className="grid gap-3 text-left">
-                  <div className="bg-purple-100 border border-purple-300 p-4 rounded-lg">
-                    <p className="font-medium text-purple-900">🧠 5 years old mode</p>
-                    <p className="text-sm text-purple-800">Super simple words, fun analogies</p>
-                  </div>
-                  <div className="bg-blue-100 border border-blue-300 p-4 rounded-lg">
-                    <p className="font-medium text-blue-900">🤔 Normal person mode</p>
-                    <p className="text-sm text-blue-800">Clear explanations, no jargon</p>
-                  </div>
-                  <div className="bg-green-100 border border-green-300 p-4 rounded-lg">
-                    <p className="font-medium text-green-900">💼 Advanced mode</p>
-                    <p className="text-sm text-green-800">More depth, still crystal clear</p>
-                  </div>
+                <div className="text-left space-y-2">
+                  <p className="text-sm text-gray-500 font-medium">Try asking:</p>
+                  <ul className="text-sm text-gray-600 space-y-1">
+                    <li>• `&quot;`What is quantum computing?`&quot;`</li>
+                    <li>• &quot;How do vaccines work?&quot;</li>
+                    <li>• &quot;Explain blockchain to me&quot;</li>
+                  </ul>
                 </div>
               </div>
             </div>
           ) : (
             <>
-            {messages
-            .filter(message => message.role !== 'system')
-            .map((message) => {
-                const content = message.parts
-                ?.filter(part => part.type === 'text')
-                .map(part => part.text)
-                .join('') || '';
-                
-                return (
-                <MessageBubble
-                    key={message.id}
-                    role={message.role as 'user' | 'assistant'}
-                    content={content}
-                />
-                );
-            })}
+              {messages
+                .filter(message => message.role !== 'system')
+                .map((message) => {
+                  const content = message.parts
+                    ?.filter(part => part.type === 'text')
+                    .map(part => part.text)
+                    .join('') || '';
+                  
+                  return (
+                    <MessageBubble
+                      key={message.id}
+                      role={message.role as 'user' | 'assistant'}
+                      content={content}
+                    />
+                  );
+                })}
               {isLoading && (
-                <div className="flex gap-3 mb-4">
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center">
-                    <Loader2 className="w-5 h-5 text-white animate-spin" />
-                  </div>
-                  <div className="flex-1 max-w-[80%] px-4 py-3 rounded-2xl bg-white border border-gray-200 rounded-tl-none shadow-sm">
-                    <div className="flex gap-1">
-                      <span className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                      <span className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                      <span className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                    </div>
+                <div className="flex items-center gap-2 text-gray-500 mb-4">
+                  <Sparkles className="w-5 h-5 text-purple-500 animate-pulse" />
+                  <span className="text-sm">Stupify is thinking</span>
+                  <div className="flex gap-1">
+                    <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" />
+                    <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                   </div>
                 </div>
               )}

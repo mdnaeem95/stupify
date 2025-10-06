@@ -1,3 +1,4 @@
+/* eslint-disable  @typescript-eslint/no-explicit-any */
 import { createClient } from '@/lib/supabase/client';
 import { SimplicityLevel } from './prompts';
 
@@ -18,12 +19,38 @@ export interface Conversation {
   updated_at: string;
 }
 
+// 🎯 LOGGING HELPER
+const log = {
+  info: (fn: string, msg: string, data?: any) => {
+    console.log(`📝 [${fn}] ${msg}`, data || '')
+  },
+  error: (fn: string, msg: string, error: any) => {
+    console.error(`❌ [${fn}] ${msg}`, error)
+  },
+  success: (fn: string, msg: string, data?: any) => {
+    console.log(`✅ [${fn}] ${msg}`, data || '')
+  }
+}
+
 // Create a new conversation
 export async function createConversation(title: string = 'New Chat'): Promise<string | null> {
+  log.info('createConversation', 'Creating new conversation', { title })
+  
   const supabase = createClient();
   
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  
+  if (authError) {
+    log.error('createConversation', 'Auth error', authError)
+    return null
+  }
+  
+  if (!user) {
+    log.error('createConversation', 'No authenticated user', null)
+    return null
+  }
+
+  log.info('createConversation', 'User authenticated', { userId: user.id })
 
   const { data, error } = await supabase
     .from('conversations')
@@ -35,11 +62,12 @@ export async function createConversation(title: string = 'New Chat'): Promise<st
     .single();
 
   if (error) {
-    console.error('Error creating conversation:', error);
-    return null;
+    log.error('createConversation', 'Database error', error)
+    return null
   }
 
-  return data.id;
+  log.success('createConversation', 'Conversation created', { conversationId: data.id })
+  return data.id
 }
 
 // Save a message to a conversation
@@ -49,6 +77,13 @@ export async function saveMessage(
   content: string,
   simplicityLevel?: SimplicityLevel
 ): Promise<boolean> {
+  log.info('saveMessage', 'Saving message', { 
+    conversationId, 
+    role, 
+    contentLength: content.length,
+    simplicityLevel 
+  })
+  
   const supabase = createClient();
 
   const { error } = await supabase
@@ -61,21 +96,29 @@ export async function saveMessage(
     });
 
   if (error) {
-    console.error('Error saving message:', error);
-    return false;
+    log.error('saveMessage', 'Failed to save message', error)
+    return false
   }
 
+  log.success('saveMessage', 'Message saved')
+
   // Update conversation's updated_at timestamp
-  await supabase
+  const { error: updateError } = await supabase
     .from('conversations')
     .update({ updated_at: new Date().toISOString() })
     .eq('id', conversationId);
 
-  return true;
+  if (updateError) {
+    log.error('saveMessage', 'Failed to update conversation timestamp', updateError)
+  }
+
+  return true
 }
 
 // Load messages for a conversation
 export async function loadConversation(conversationId: string): Promise<SavedMessage[]> {
+  log.info('loadConversation', 'Loading conversation', { conversationId })
+  
   const supabase = createClient();
 
   const { data, error } = await supabase
@@ -85,19 +128,33 @@ export async function loadConversation(conversationId: string): Promise<SavedMes
     .order('created_at', { ascending: true });
 
   if (error) {
-    console.error('Error loading conversation:', error);
-    return [];
+    log.error('loadConversation', 'Failed to load messages', error)
+    return []
   }
 
-  return data || [];
+  log.success('loadConversation', 'Messages loaded', { count: data?.length || 0 })
+  return data || []
 }
 
 // Get all conversations for the current user
 export async function getUserConversations(): Promise<Conversation[]> {
+  log.info('getUserConversations', 'Fetching user conversations')
+  
   const supabase = createClient();
   
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return [];
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  
+  if (authError) {
+    log.error('getUserConversations', 'Auth error', authError)
+    return []
+  }
+  
+  if (!user) {
+    log.error('getUserConversations', 'No authenticated user', null)
+    return []
+  }
+
+  log.info('getUserConversations', 'User authenticated', { userId: user.id })
 
   const { data, error } = await supabase
     .from('conversations')
@@ -106,11 +163,12 @@ export async function getUserConversations(): Promise<Conversation[]> {
     .order('updated_at', { ascending: false });
 
   if (error) {
-    console.error('Error loading conversations:', error);
-    return [];
+    log.error('getUserConversations', 'Database error', error)
+    return []
   }
 
-  return data || [];
+  log.success('getUserConversations', 'Conversations loaded', { count: data?.length || 0 })
+  return data || []
 }
 
 // Update conversation title
@@ -118,6 +176,8 @@ export async function updateConversationTitle(
   conversationId: string,
   title: string
 ): Promise<boolean> {
+  log.info('updateConversationTitle', 'Updating title', { conversationId, title })
+  
   const supabase = createClient();
 
   const { error } = await supabase
@@ -126,15 +186,18 @@ export async function updateConversationTitle(
     .eq('id', conversationId);
 
   if (error) {
-    console.error('Error updating conversation title:', error);
-    return false;
+    log.error('updateConversationTitle', 'Failed to update title', error)
+    return false
   }
 
-  return true;
+  log.success('updateConversationTitle', 'Title updated')
+  return true
 }
 
 // Delete a conversation
 export async function deleteConversation(conversationId: string): Promise<boolean> {
+  log.info('deleteConversation', 'Deleting conversation', { conversationId })
+  
   const supabase = createClient();
 
   const { error } = await supabase
@@ -143,11 +206,12 @@ export async function deleteConversation(conversationId: string): Promise<boolea
     .eq('id', conversationId);
 
   if (error) {
-    console.error('Error deleting conversation:', error);
-    return false;
+    log.error('deleteConversation', 'Failed to delete conversation', error)
+    return false
   }
 
-  return true;
+  log.success('deleteConversation', 'Conversation deleted')
+  return true
 }
 
 // Generate a title from the first user message
@@ -166,5 +230,7 @@ export function generateConversationTitle(firstMessage: string): string {
     title = title.slice(0, 47) + '...';
   }
   
-  return title || 'New Chat';
+  const result = title || 'New Chat'
+  log.info('generateConversationTitle', 'Generated title', { result })
+  return result
 }

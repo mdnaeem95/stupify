@@ -12,45 +12,68 @@ export default function ChatLayout({
 }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
-  const [, setTriggerNewChat] = useState(0);
-  const [, setTriggerLoadConversation] = useState<{id: string; timestamp: number} | null>(null);
   const [refreshSidebar, setRefreshSidebar] = useState(0);
 
   const handleSelectConversation = (conversationId: string) => {
+    console.log('📂 Layout: Selecting conversation', { conversationId })
     setCurrentConversationId(conversationId);
-    setTriggerLoadConversation({ id: conversationId, timestamp: Date.now() });
     setIsSidebarOpen(false);
     
     // Dispatch event to ChatInterface
+    console.log('📡 Layout: Dispatching loadConversation event')
     window.dispatchEvent(new CustomEvent('loadConversation', { 
       detail: { conversationId } 
     }));
   };
 
   const handleNewChat = () => {
+    console.log('🆕 Layout: New chat clicked')
+    console.log('🆕 Layout: Current conversation ID:', currentConversationId)
+    
     setCurrentConversationId(null);
-    setTriggerNewChat(Date.now());
     setIsSidebarOpen(false);
     
     // Dispatch event to ChatInterface
-    window.dispatchEvent(new Event('newChat'));
+    console.log('📡 Layout: Dispatching newChat event')
+    const event = new Event('newChat')
+    window.dispatchEvent(event);
+    console.log('✅ Layout: newChat event dispatched')
   };
 
   // Expose refresh function to chat interface
   useEffect(() => {
+    console.log('🔧 Layout: Setting up refreshSidebar listener')
+    
     const handleRefreshSidebar = () => {
+      console.log('🔄 Layout: Refresh sidebar triggered')
       setRefreshSidebar(Date.now());
     };
 
     window.addEventListener('refreshSidebar', handleRefreshSidebar);
-    return () => window.removeEventListener('refreshSidebar', handleRefreshSidebar);
+    
+    return () => {
+      console.log('🧹 Layout: Cleaning up refreshSidebar listener')
+      window.removeEventListener('refreshSidebar', handleRefreshSidebar);
+    }
   }, []);
+
+  console.log('🎨 Layout: Rendering', { 
+    isSidebarOpen, 
+    currentConversationId,
+    refreshSidebar 
+  })
 
   return (
     <div className="flex h-screen overflow-hidden">
       {/* Mobile Menu Button */}
       <Button
-        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+        onClick={() => {
+          console.log('📱 Layout: Mobile menu toggled', { 
+            from: isSidebarOpen, 
+            to: !isSidebarOpen 
+          })
+          setIsSidebarOpen(!isSidebarOpen)
+        }}
         className="md:hidden fixed top-4 left-4 z-50 bg-white border-2 border-gray-300 hover:bg-gray-50 text-gray-700"
         size="icon"
       >
@@ -79,7 +102,10 @@ export default function ChatLayout({
       {isSidebarOpen && (
         <div
           className="md:hidden fixed inset-0 bg-black/50 z-30"
-          onClick={() => setIsSidebarOpen(false)}
+          onClick={() => {
+            console.log('📱 Layout: Mobile overlay clicked - closing sidebar')
+            setIsSidebarOpen(false)
+          }}
         />
       )}
 
