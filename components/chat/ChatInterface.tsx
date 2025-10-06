@@ -48,7 +48,7 @@ export function ChatInterface() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gradient-to-b from-purple-50 to-blue-50">
+    <div className="flex flex-col h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b shadow-sm">
         <div className="max-w-4xl mx-auto px-4 py-4">
@@ -76,22 +76,22 @@ export function ChatInterface() {
             <div className="text-center py-12">
               <div className="bg-white rounded-2xl shadow-sm p-8 max-w-2xl mx-auto">
                 <Sparkles className="w-12 h-12 text-purple-500 mx-auto mb-4" />
-                <h2 className="text-2xl font-bold mb-2">Welcome to Stupify!</h2>
+                <h2 className="text-2xl font-bold mb-2 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">Welcome to Stupify!</h2>
                 <p className="text-gray-600 mb-6">
-                  Ask me anything and I`&apos;`ll explain it in a way that actually makes sense.
+                  Ask me anything and I&apos;ll explain it in a way that actually makes sense.
                 </p>
                 <div className="grid gap-3 text-left">
-                  <div className="bg-purple-50 p-4 rounded-lg">
+                  <div className="bg-purple-100 border border-purple-300 p-4 rounded-lg">
                     <p className="font-medium text-purple-900">🧠 5 years old mode</p>
-                    <p className="text-sm text-purple-700">Super simple words, fun analogies</p>
+                    <p className="text-sm text-purple-800">Super simple words, fun analogies</p>
                   </div>
-                  <div className="bg-blue-50 p-4 rounded-lg">
+                  <div className="bg-blue-100 border border-blue-300 p-4 rounded-lg">
                     <p className="font-medium text-blue-900">🤔 Normal person mode</p>
-                    <p className="text-sm text-blue-700">Clear explanations, no jargon</p>
+                    <p className="text-sm text-blue-800">Clear explanations, no jargon</p>
                   </div>
-                  <div className="bg-green-50 p-4 rounded-lg">
+                  <div className="bg-green-100 border border-green-300 p-4 rounded-lg">
                     <p className="font-medium text-green-900">💼 Advanced mode</p>
-                    <p className="text-sm text-green-700">More depth, still crystal clear</p>
+                    <p className="text-sm text-green-800">More depth, still crystal clear</p>
                   </div>
                 </div>
               </div>
@@ -116,14 +116,14 @@ export function ChatInterface() {
             })}
               {isLoading && (
                 <div className="flex gap-3 mb-4">
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center">
+                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center">
                     <Loader2 className="w-5 h-5 text-white animate-spin" />
                   </div>
-                  <div className="flex-1 max-w-[80%] px-4 py-3 rounded-2xl bg-gray-100 rounded-tl-none">
+                  <div className="flex-1 max-w-[80%] px-4 py-3 rounded-2xl bg-white border border-gray-200 rounded-tl-none shadow-sm">
                     <div className="flex gap-1">
-                      <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                      <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                      <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                      <span className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <span className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <span className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                     </div>
                   </div>
                 </div>
@@ -142,14 +142,14 @@ export function ChatInterface() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask me anything..."
-              className="flex-1 h-12 text-base"
+              className="flex-1 h-12 text-base border-2 border-gray-300 focus:border-blue-500 text-black"
               disabled={isLoading}
             />
             <Button 
               type="submit" 
               size="lg"
               disabled={isLoading || !input.trim()}
-              className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
+              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-md"
             >
               {isLoading ? (
                 <Loader2 className="w-5 h-5 animate-spin" />

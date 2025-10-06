@@ -14,19 +14,22 @@ const levels = [
     value: '5yo' as SimplicityLevel,
     label: "I'm 5 years old",
     icon: Brain,
-    color: 'bg-purple-500 hover:bg-purple-600',
+    selectedColor: 'bg-purple-500 hover:bg-purple-600 text-white border-purple-500',
+    unselectedColor: 'bg-white hover:bg-white text-purple-700 hover:text-purple-900 border-purple-200 hover:border-purple-400',
   },
   {
     value: 'normal' as SimplicityLevel,
     label: "I'm a normal person",
     icon: User,
-    color: 'bg-blue-500 hover:bg-blue-600',
+    selectedColor: 'bg-blue-500 hover:bg-blue-600 text-white border-blue-500',
+    unselectedColor: 'bg-white hover:bg-white text-blue-700 hover:text-blue-900 border-blue-200 hover:border-blue-400',
   },
   {
     value: 'advanced' as SimplicityLevel,
     label: "I know some stuff",
     icon: Briefcase,
-    color: 'bg-green-500 hover:bg-green-600',
+    selectedColor: 'bg-green-500 hover:bg-green-600 text-white border-green-500',
+    unselectedColor: 'bg-white hover:bg-white text-green-700 hover:text-green-900 border-green-200 hover:border-green-400',
   },
 ];
 
@@ -42,10 +45,10 @@ export function SimplifySelector({ selected, onSelect }: SimplifySelectorProps) 
             key={level.value}
             variant="outline"
             onClick={() => onSelect(level.value)}
-            className={`flex-1 h-auto py-3 px-4 transition-all ${
+            className={`flex-1 h-auto py-3 px-4 transition-all border-2 ${
               isSelected 
-                ? `${level.color} text-white border-transparent shadow-lg scale-105` 
-                : 'hover:border-gray-400'
+                ? `${level.selectedColor} shadow-lg scale-105` 
+                : level.unselectedColor
             }`}
           >
             <div className="flex items-center gap-2">

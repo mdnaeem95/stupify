@@ -1,5 +1,5 @@
 import { openai } from '@ai-sdk/openai';
-import { streamText } from 'ai';
+import { streamText, convertToModelMessages } from 'ai';
 import { getSystemPrompt, type SimplicityLevel } from '@/lib/prompts';
 
 // Allow streaming responses up to 30 seconds
@@ -15,17 +15,19 @@ export async function POST(req: Request) {
     // Get the appropriate system prompt
     const systemPrompt = getSystemPrompt(level);
 
-    // Use the new AI SDK streamText
+    // Convert UIMessages to ModelMessages for streamText
+    const modelMessages = convertToModelMessages(messages);
+
+    // Use the new AI SDK v5 streamText
     const result = await streamText({
       model: openai('gpt-4o-mini'),
-      messages: [
-        { role: 'system', content: systemPrompt },
-        ...messages
-      ],
+      system: systemPrompt,
+      messages: modelMessages,
       temperature: 0.7,
     });
 
-    return result.toTextStreamResponse();
+    // Return as AI Stream Response
+    return result.toUIMessageStreamResponse();
 
   } catch (error) {
     console.error('Chat API Error:', error);
