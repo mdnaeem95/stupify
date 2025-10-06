@@ -7,22 +7,37 @@ import { SimplifySelector } from './SimplifySelector';
 import { MessageBubble } from './MessageBubble';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Send, Loader2, Sparkles } from 'lucide-react';
+import { Send, Loader2, Sparkles, Plus } from 'lucide-react';
 import { SimplicityLevel } from '@/lib/prompts';
+import { createConversation, generateConversationTitle, saveMessage, updateConversationTitle } from '@/lib/conversations';
 
 export function ChatInterface() {
   const [simplicityLevel, setSimplicityLevel] = useState<SimplicityLevel>('normal');
   const [input, setInput] = useState('');
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const isFirstMessageRef = useRef(true);
 
   // AI SDK v5 useChat with transport
-  const { messages, sendMessage, status } = useChat({
+  const { messages, sendMessage, status, setMessages } = useChat({
     transport: new DefaultChatTransport({
       api: '/api/chat',
       body: {
         simplicityLevel,
       },
     }),
+    onFinish: async ({ message }) => {
+      // Save the assistant message to the database
+      if (conversationId && message.role === 'assistant') {
+        const content = message.parts
+          ?.filter((part) => part.type === 'text')
+          .map((part) => part.text)
+          .join('') || '';
+
+          await saveMessage(conversationId, 'assistant', content, simplicityLevel);
+      }
+    },
   });
 
   const isLoading = status === 'streaming';
@@ -33,18 +48,50 @@ export function ChatInterface() {
   }, [messages]);
 
   // Handle form submission
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!input.trim() || isLoading) return;
 
-    // AI SDK v5: Use sendMessage with text property
+    const messageText = input.trim();
+
+    // Create conversation on first message
+    if (!conversationId) {
+      setIsSaving(true);
+      const newConvId = await createConversation('New Chat');
+      if (newConvId) {
+        setConversationId(newConvId);
+        
+        // Update title with first message after a short delay
+        setTimeout(async () => {
+          const title = generateConversationTitle(messageText);
+          await updateConversationTitle(newConvId, title);
+        }, 1000);
+      }
+      setIsSaving(false);
+    }
+
+    // Send message to AI
     sendMessage({
-      text: input.trim(),
+      text: messageText,
     });
+
+    // Save user message to database
+    if (conversationId) {
+      await saveMessage(conversationId, 'user', messageText, simplicityLevel);
+    }
 
     // Clear input
     setInput('');
+    isFirstMessageRef.current = false;
+  };
+
+  // Start a new chat
+  const handleNewChat = () => {
+    setMessages([]);
+    setConversationId(null);
+    setInput('');
+    isFirstMessageRef.current = true;
   };
 
   return (
@@ -52,17 +99,31 @@ export function ChatInterface() {
       {/* Header */}
       <div className="bg-white border-b shadow-sm">
         <div className="max-w-4xl mx-auto px-4 py-4">
-          <div className="flex items-center gap-3">
-            <div className="bg-gradient-to-r from-purple-500 to-blue-500 p-2 rounded-lg">
-              <Sparkles className="w-6 h-6 text-white" />
+            <div className="flex justify-between items-center mb-4">
+                <div className="flex items-center gap-3">
+                    <div className="bg-gradient-to-r from-purple-500 to-blue-500 p-2 rounded-lg">
+                    <Sparkles className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                    <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                        Stupify
+                    </h1>
+                    <p className="text-sm text-gray-600">Finally, an AI that speaks human</p>
+                    </div>
+                </div>
+
+                {/* New Chat Button */}
+                {messages.length > 0 && (
+                    <Button
+                        onClick={handleNewChat}
+                        variant="outline"
+                        className='flex items-center gap-2 text-black'
+                    >
+                        <Plus className="w-4 h-4" />
+                        New Chat
+                    </Button>
+                )}
             </div>
-            <div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                Stupify
-              </h1>
-              <p className="text-sm text-gray-600">Finally, an AI that speaks human</p>
-            </div>
-          </div>
         </div>
         
         {/* Simplicity Selector */}
@@ -143,12 +204,12 @@ export function ChatInterface() {
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask me anything..."
               className="flex-1 h-12 text-base border-2 border-gray-300 focus:border-blue-500 text-black"
-              disabled={isLoading}
+              disabled={isLoading || isSaving}
             />
             <Button 
               type="submit" 
               size="lg"
-              disabled={isLoading || !input.trim()}
+              disabled={isLoading || !input.trim() || isSaving}
               className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-md"
             >
               {isLoading ? (
@@ -159,7 +220,7 @@ export function ChatInterface() {
             </Button>
           </form>
           <p className="text-xs text-gray-500 mt-2 text-center">
-            Stupify can make mistakes. Always verify important information.
+            {conversationId ? '✓ Conversation saved' : 'Conversations are saved automatically'}
           </p>
         </div>
       </div>
