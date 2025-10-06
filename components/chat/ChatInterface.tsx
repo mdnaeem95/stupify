@@ -234,13 +234,19 @@ export function ChatInterface() {
                 <p className="text-gray-600 mb-6">
                   Ask me anything and I&apos;ll explain it in a way that actually makes sense.
                 </p>
-                <div className="text-left space-y-2">
-                  <p className="text-sm text-gray-500 font-medium">Try asking:</p>
-                  <ul className="text-sm text-gray-600 space-y-1">
-                    <li>• `&quot;`What is quantum computing?`&quot;`</li>
-                    <li>• &quot;How do vaccines work?&quot;</li>
-                    <li>• &quot;Explain blockchain to me&quot;</li>
-                  </ul>
+                <div className="grid gap-3 text-left">
+                  <div className="bg-purple-100 border border-purple-300 p-4 rounded-lg">
+                    <p className="font-medium text-purple-900">🧠 5 years old mode</p>
+                    <p className="text-sm text-purple-800">Super simple words, fun analogies</p>
+                  </div>
+                  <div className="bg-blue-100 border border-blue-300 p-4 rounded-lg">
+                    <p className="font-medium text-blue-900">🤔 Normal person mode</p>
+                    <p className="text-sm text-blue-800">Clear explanations, no jargon</p>
+                  </div>
+                  <div className="bg-green-100 border border-green-300 p-4 rounded-lg">
+                    <p className="font-medium text-green-900">💼 Advanced mode</p>
+                    <p className="text-sm text-green-800">More depth, still crystal clear</p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -263,13 +269,16 @@ export function ChatInterface() {
                   );
                 })}
               {isLoading && (
-                <div className="flex items-center gap-2 text-gray-500 mb-4">
-                  <Sparkles className="w-5 h-5 text-purple-500 animate-pulse" />
-                  <span className="text-sm">Stupify is thinking</span>
-                  <div className="flex gap-1">
-                    <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" />
-                    <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                <div className="flex gap-3 mb-4">
+                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center">
+                    <Loader2 className="w-5 h-5 text-white animate-spin" />
+                  </div>
+                  <div className="flex-1 max-w-[80%] px-4 py-3 rounded-2xl bg-white border border-gray-200 rounded-tl-none shadow-sm">
+                    <div className="flex gap-1">
+                      <span className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <span className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <span className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                    </div>
                   </div>
                 </div>
               )}
