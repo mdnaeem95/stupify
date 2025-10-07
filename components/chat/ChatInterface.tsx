@@ -5,6 +5,8 @@ import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
 import { SimplifySelector } from './SimplifySelector';
 import { MessageBubble } from './MessageBubble';
+import { UsageBadge } from '@/components/usage/UsageBadge';
+import { Paywall } from '@/components/usage/Paywall';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Send, Loader2, Sparkles, Plus } from 'lucide-react';
@@ -17,6 +19,7 @@ import {
   generateConversationTitle,
   updateConversationTitle 
 } from '@/lib/conversations';
+import { getUserUsage, incrementUsage, type UsageData } from '@/lib/usage';
 
 export function ChatInterface() {
   const [simplicityLevel, setSimplicityLevel] = useState<SimplicityLevel>('normal');
@@ -24,8 +27,11 @@ export function ChatInterface() {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoadingConversation, setIsLoadingConversation] = useState(false);
+  const [usage, setUsage] = useState<UsageData | null>(null);
+  const [showPaywall, setShowPaywall] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isFirstMessageRef = useRef(true);
+  const conversationIdRef = useRef<string | null>(null); // ✅ Ref always has current value
 
   // AI SDK v5 useChat with transport
   const { messages, sendMessage, status, setMessages } = useChat({
@@ -36,24 +42,118 @@ export function ChatInterface() {
       },
     }),
     onFinish: async ({ message }) => {
+      console.log('🤖 ChatInterface: AI response finished', {
+        role: message.role,
+        hasConversationId: !!conversationIdRef.current  // ✅ Use ref!
+      })
+      
       // Save assistant message to database
-      if (conversationId && message.role === 'assistant') {
+      // ✅ Use conversationIdRef.current - always has latest value!
+      if (conversationIdRef.current && message.role === 'assistant') {
         const content = message.parts
           ?.filter(part => part.type === 'text')
           .map(part => part.text)
           .join('') || '';
         
-        await saveMessage(conversationId, 'assistant', content, simplicityLevel);
+        console.log('💾 ChatInterface: Saving assistant message', {
+          conversationId: conversationIdRef.current,
+          contentLength: content.length,
+          simplicityLevel
+        })
+        
+        const saved = await saveMessage(conversationIdRef.current, 'assistant', content, simplicityLevel);
+        
+        if (saved) {
+          console.log('✅ ChatInterface: Assistant message saved successfully')
+        } else {
+          console.error('❌ ChatInterface: Failed to save assistant message!')
+        }
+      } else {
+        console.warn('⚠️ ChatInterface: Cannot save assistant message', {
+          hasConversationId: !!conversationIdRef.current,
+          role: message.role
+        })
       }
     },
   });
 
   const isLoading = status === 'streaming';
 
+  // ✅ Helper function to update both state and ref
+  const updateConversationId = (newId: string | null) => {
+    console.log('🔄 ChatInterface: Updating conversation ID', { 
+      from: conversationId, 
+      to: newId 
+    })
+    setConversationId(newId);
+    conversationIdRef.current = newId;  // Keep ref in sync!
+  };
+
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Load usage on mount
+  useEffect(() => {
+    loadUsage();
+  }, []);
+
+  // Helper to load usage
+  const loadUsage = async () => {
+    console.log('📊 ChatInterface: Loading usage data')
+    const usageData = await getUserUsage();
+    console.log('📊 ChatInterface: Usage loaded', usageData)
+    setUsage(usageData);
+  };
+
+  // Load a specific conversation
+  const handleLoadConversation = async (convId: string) => {
+    console.log('📂 ChatInterface: handleLoadConversation called', { 
+      convId, 
+      currentConversationId: conversationId 
+    })
+    
+    // Skip if already loading this conversation
+    if (convId === conversationId) {
+      console.log('⏭️ ChatInterface: Already on this conversation, skipping')
+      return
+    }
+    
+    setIsLoadingConversation(true);
+    
+    try {
+      console.log('🔍 ChatInterface: Fetching messages from database...')
+      const savedMessages = await loadConversation(convId);
+      console.log('✅ ChatInterface: Messages fetched', { 
+        messageCount: savedMessages.length,
+        messages: savedMessages 
+      })
+      
+      // Convert saved messages to UIMessage format
+      const uiMessages = savedMessages.map((msg) => ({
+        id: msg.id,
+        role: msg.role,
+        parts: [{ type: 'text' as const, text: msg.content }],
+        createdAt: new Date(msg.created_at),
+      }));
+
+      console.log('🔄 ChatInterface: Setting messages and conversation ID', {
+        messageCount: uiMessages.length,
+        newConversationId: convId
+      })
+      
+      setMessages(uiMessages);
+      updateConversationId(convId);  // ✅ Use helper
+      isFirstMessageRef.current = false;
+      
+      console.log('✅ ChatInterface: Conversation loaded successfully')
+    } catch (error) {
+      console.error('❌ ChatInterface: Error loading conversation:', error);
+    } finally {
+      setIsLoadingConversation(false);
+    }
+  };
 
   // ✅ FIXED: Listen for events from layout
   useEffect(() => {
@@ -68,18 +168,28 @@ export function ChatInterface() {
     // Handle LOAD CONVERSATION event
     const handleLoadConversationEvent = (event: Event) => {
       const customEvent = event as CustomEvent<{ conversationId: string }>
-      const conversationId = customEvent.detail?.conversationId
+      const convId = customEvent.detail?.conversationId
       
-      console.log('📂 ChatInterface: Load conversation event received', { conversationId })
+      console.log('📂 ChatInterface: Load conversation event received', { 
+        conversationId: convId,
+        eventType: event.type,
+        hasDetail: !!customEvent.detail 
+      })
       
-      if (conversationId) {
-        handleLoadConversation(conversationId)
+      if (convId) {
+        console.log('✅ ChatInterface: Valid conversation ID, calling handleLoadConversation')
+        handleLoadConversation(convId)
+      } else {
+        console.error('❌ ChatInterface: No conversation ID in event', customEvent)
       }
     }
 
     // Add event listeners
+    console.log('🔌 ChatInterface: Adding event listeners to window')
     window.addEventListener('newChat', handleNewChatEvent)
     window.addEventListener('loadConversation', handleLoadConversationEvent as EventListener)
+    
+    console.log('✅ ChatInterface: Event listeners added')
 
     // Cleanup
     return () => {
@@ -87,34 +197,7 @@ export function ChatInterface() {
       window.removeEventListener('newChat', handleNewChatEvent)
       window.removeEventListener('loadConversation', handleLoadConversationEvent as EventListener)
     }
-  }, [conversationId]) // Re-setup when conversationId changes
-
-  // Load a specific conversation
-  const handleLoadConversation = async (convId: string) => {
-    console.log('📂 ChatInterface: Loading conversation', { convId })
-    setIsLoadingConversation(true);
-    
-    try {
-      const savedMessages = await loadConversation(convId);
-      console.log('✅ ChatInterface: Conversation loaded', { messageCount: savedMessages.length })
-      
-      // Convert saved messages to UIMessage format
-      const uiMessages = savedMessages.map((msg) => ({
-        id: msg.id,
-        role: msg.role,
-        parts: [{ type: 'text' as const, text: msg.content }],
-        createdAt: new Date(msg.created_at),
-      }));
-
-      setMessages(uiMessages);
-      setConversationId(convId);
-      isFirstMessageRef.current = false;
-    } catch (error) {
-      console.error('❌ ChatInterface: Error loading conversation:', error);
-    } finally {
-      setIsLoadingConversation(false);
-    }
-  };
+  }, []) // Empty array - only set up once!
 
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
@@ -122,11 +205,29 @@ export function ChatInterface() {
     
     if (!input.trim() || isLoading) return;
 
+    // ✅ CHECK USAGE LIMIT BEFORE SENDING
+    console.log('📊 ChatInterface: Checking usage limits')
+    const currentUsage = await getUserUsage();
+    
+    if (!currentUsage.canAsk) {
+      console.warn('⚠️ ChatInterface: Usage limit reached, showing paywall')
+      setShowPaywall(true);
+      return; // Stop here - don't send message
+    }
+    
+    console.log('✅ ChatInterface: Usage check passed', {
+      remaining: currentUsage.remaining,
+      canAsk: currentUsage.canAsk
+    })
+
     const messageText = input.trim();
     console.log('📤 ChatInterface: Submitting message', { 
       hasConversation: !!conversationId,
+      conversationId,
       messageLength: messageText.length 
     })
+
+    let activeConvId = conversationId;
 
     // Create conversation on first message
     if (!conversationId) {
@@ -136,7 +237,8 @@ export function ChatInterface() {
       
       if (newConvId) {
         console.log('✅ ChatInterface: New conversation created', { newConvId })
-        setConversationId(newConvId);
+        updateConversationId(newConvId);  // ✅ Use helper - updates both state and ref!
+        activeConvId = newConvId; // ✅ IMPORTANT: Use this for saving below
         
         // Trigger sidebar refresh
         window.dispatchEvent(new Event('refreshSidebar'));
@@ -149,19 +251,48 @@ export function ChatInterface() {
           // Refresh sidebar again after title update
           window.dispatchEvent(new Event('refreshSidebar'));
         }, 1000);
+      } else {
+        console.error('❌ ChatInterface: Failed to create conversation!')
+        setIsSaving(false);
+        return; // Don't continue if conversation creation failed
       }
       setIsSaving(false);
     }
 
+    // Save user message to database FIRST (before sending to AI)
+    console.log('💾 ChatInterface: Saving user message to database', {
+      conversationId: activeConvId,
+      messageLength: messageText.length,
+      simplicityLevel
+    })
+    
+    if (activeConvId) {
+      const saved = await saveMessage(activeConvId, 'user', messageText, simplicityLevel);
+      if (saved) {
+        console.log('✅ ChatInterface: User message saved successfully')
+      } else {
+        console.error('❌ ChatInterface: Failed to save user message!')
+      }
+    } else {
+      console.error('❌ ChatInterface: No conversation ID available for saving!')
+    }
+
+    // ✅ INCREMENT USAGE COUNT
+    console.log('📊 ChatInterface: Incrementing usage count')
+    const incremented = await incrementUsage();
+    if (incremented) {
+      console.log('✅ ChatInterface: Usage incremented')
+      // Reload usage to update UI
+      loadUsage();
+    } else {
+      console.error('❌ ChatInterface: Failed to increment usage')
+    }
+
     // Send message to AI
+    console.log('🤖 ChatInterface: Sending message to AI...')
     sendMessage({
       text: messageText,
     });
-
-    // Save user message to database
-    if (conversationId) {
-      await saveMessage(conversationId, 'user', messageText, simplicityLevel);
-    }
 
     // Clear input
     setInput('');
@@ -172,13 +303,18 @@ export function ChatInterface() {
   const handleNewChat = () => {
     console.log('🆕 ChatInterface: Starting new chat')
     setMessages([]);
-    setConversationId(null);
+    updateConversationId(null);  // ✅ Use helper
     setInput('');
     isFirstMessageRef.current = true;
   };
 
   return (
     <div className="flex flex-col h-screen bg-gray-50">
+      {/* Paywall Modal */}
+      {showPaywall && usage && (
+        <Paywall limit={usage.limit} />
+      )}
+
       {/* Header */}
       <div className="bg-white border-b shadow-sm">
         <div className="max-w-4xl mx-auto px-4 py-4">
@@ -195,8 +331,17 @@ export function ChatInterface() {
               </div>
             </div>
             
-            {/* Right side - New Chat + User Menu */}
-            <div className="flex items-center gap-2">
+            {/* Right side - Usage + New Chat + User Menu */}
+            <div className="flex items-center gap-3">
+              {/* Usage Badge */}
+              {usage && (
+                <UsageBadge 
+                  remaining={usage.remaining} 
+                  limit={usage.limit} 
+                  isPremium={usage.isPremium}
+                />
+              )}
+              
               {messages.length > 0 && (
                 <Button
                   onClick={handleNewChat}
