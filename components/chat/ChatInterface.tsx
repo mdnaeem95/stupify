@@ -5,12 +5,10 @@ import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
 import { SimplifySelector } from './SimplifySelector';
 import { MessageBubble } from './MessageBubble';
-import { UsageBadge } from '@/components/usage/UsageBadge';
 import { Paywall } from '@/components/usage/Paywall';
 import { Button } from '@/components/ui/button';
-import { Send, Loader2, Sparkles, Plus } from 'lucide-react';
+import { Send, Loader2, Sparkles } from 'lucide-react';
 import { SimplicityLevel } from '@/lib/prompts';
-import { UserMenu } from '@/components/layout/UserMenu';
 import { 
   createConversation, 
   saveMessage, 
@@ -310,52 +308,25 @@ export function ChatInterface() {
         <Paywall limit={usage.limit} />
       )}
 
-      {/* Header - POLISHED */}
-      <div className="bg-white border-b border-gray-200">
+      {/* Header - SIMPLIFIED */}
+      <div className="bg-white border-b border-gray-100">
         <div className="max-w-5xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            {/* Logo & Title - POLISHED */}
+            {/* Logo & Title */}
             <div className="flex items-center gap-3">
-              <div className="bg-gradient-to-br from-purple-500 to-blue-500 p-2 rounded-xl shadow-sm">
+              <div className="bg-gradient-to-br from-purple-500 to-blue-500 p-2 rounded-xl">
                 <Sparkles className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                <h1 className="text-xl font-bold text-gray-900">
                   Stupify
                 </h1>
-                <p className="text-xs text-gray-600">Finally, an AI that speaks human</p>
+                <p className="text-xs text-gray-500">Finally, an AI that speaks human</p>
               </div>
             </div>
             
-            {/* Right side - Usage + Mode + New Chat + User Menu */}
-            <div className="flex items-center gap-3">
-              {/* Usage Badge - KEEP AS IS */}
-              {usage && (
-                <UsageBadge 
-                  remaining={usage.remaining} 
-                  limit={usage.limit} 
-                  isPremium={usage.isPremium}
-                />
-              )}
-
-              {/* Mode Selector - POLISHED */}
-              <SimplifySelector selected={simplicityLevel} onSelect={setSimplicityLevel} />
-
-              {/* New Chat Button - POLISHED */}
-              {messages.length > 0 && (
-                <Button
-                  onClick={handleNewChat}
-                  variant="outline"
-                  className="flex items-center gap-2 border-gray-300 hover:bg-gray-50"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span className="hidden sm:inline">New Chat</span>
-                </Button>
-              )}
-
-              {/* User Menu - KEEP AS IS */}
-              <UserMenu />
-            </div>
+            {/* Mode Selector Only */}
+            <SimplifySelector selected={simplicityLevel} onSelect={setSimplicityLevel} />
           </div>
         </div>
       </div>
