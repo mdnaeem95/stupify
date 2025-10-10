@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Check, Crown, Sparkles, Zap, Shield, X } from 'lucide-react';
 import Link from 'next/link';
+import { Mascot } from '@/components/mascot/Mascot';
 
 export default function PricingPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -43,7 +44,17 @@ export default function PricingPage() {
       </div>
 
       {/* Hero Section */}
-      <div className="max-w-4xl mx-auto px-4 py-16 text-center">
+      <div className="max-w-4xl mx-auto px-4 py-16 text-center relative">
+        {/* Blinky on the side - desktop only */}
+        <div className="hidden lg:block absolute -left-20 top-1/2 -translate-y-1/2">
+          <Mascot expression="excited" size={120} />
+        </div>
+
+        {/* Mobile Blinky - centered above text */}
+        <div className="lg:hidden flex justify-center mb-6">
+          <Mascot expression="excited" size={100} />
+        </div>
+
         <div className="inline-flex items-center gap-2 bg-purple-100 px-4 py-2 rounded-full mb-6">
           <Crown className="w-5 h-5 text-purple-600" />
           <span className="text-purple-900 font-semibold">Simple, Transparent Pricing</span>
@@ -111,7 +122,7 @@ export default function PricingPage() {
               <Button 
                 variant="outline" 
                 size="lg" 
-                className="w-full text-lg h-14 border-2 border-gray-300 hover:bg-gray-50"
+                className="w-full text-lg h-14 border-2 border-gray-300 hover:bg-gray-50 hover:text-gray-800 text-gray-900 font-semibold"
               >
                 Get Started Free
               </Button>
@@ -187,7 +198,17 @@ export default function PricingPage() {
 
         {/* Money Back Guarantee */}
         <div className="mt-12 text-center">
-          <div className="inline-flex items-center gap-3 bg-green-50 border-2 border-green-200 px-6 py-4 rounded-2xl">
+          {/* Mobile Blinky - centered above */}
+          <div className="sm:hidden flex justify-center mb-4">
+            <Mascot expression="happy" size={60} />
+          </div>
+          
+          <div className="inline-flex items-center gap-3 bg-green-50 border-2 border-green-200 px-6 py-4 rounded-2xl relative">
+            {/* Desktop Blinky on top right */}
+            <div className="absolute -top-8 -right-8 hidden sm:block">
+              <Mascot expression="happy" size={70} />
+            </div>
+            
             <Shield className="w-8 h-8 text-green-600" />
             <div className="text-left">
               <div className="font-bold text-green-900">30-Day Money Back Guarantee</div>
@@ -249,8 +270,23 @@ export default function PricingPage() {
       </div>
 
       {/* Final CTA */}
-      <div className="bg-gradient-to-r from-purple-600 to-blue-600 py-20">
-        <div className="max-w-4xl mx-auto px-4 text-center text-white">
+      <div className="bg-gradient-to-r from-purple-600 to-blue-600 py-20 relative overflow-hidden">
+        {/* Blinky waving - positioned left (desktop) */}
+        <div className="absolute left-8 top-1/2 -translate-y-1/2 hidden lg:block">
+          <Mascot expression="waving" size={140} />
+        </div>
+        
+        {/* Blinky waving - positioned right (desktop) */}
+        <div className="absolute right-8 top-1/2 -translate-y-1/2 hidden lg:block">
+          <Mascot expression="excited" size={140} />
+        </div>
+
+        {/* Mobile Blinky - centered above text */}
+        <div className="lg:hidden flex justify-center mb-8">
+          <Mascot expression="waving" size={100} />
+        </div>
+
+        <div className="max-w-4xl mx-auto px-4 text-center text-white relative z-10">
           <h2 className="text-4xl sm:text-5xl font-bold mb-6">
             Ready to learn without limits?
           </h2>
