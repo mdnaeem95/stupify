@@ -517,7 +517,7 @@ export function ChatInterface() {
                 placeholder="Ask me anything..."
                 rows={1}
                 disabled={isLoading || isSaving || isLoadingConversation}
-                className="w-full resize-none rounded-xl border-2 border-gray-200 px-4 py-3 text-gray-900 placeholder-gray-500 focus:border-purple-500 focus:outline-none disabled:bg-gray-50 disabled:cursor-not-allowed transition-all scrollbar-hide"
+                className="w-full overflow-hidden resize-none rounded-xl border-2 border-gray-200 px-4 py-3 text-gray-900 placeholder-gray-500 focus:border-purple-500 focus:outline-none disabled:bg-gray-50 disabled:cursor-not-allowed transition-all scrollbar-hide"
                 style={{ minHeight: '48px', maxHeight: '200px' }}
               />
             </div>
