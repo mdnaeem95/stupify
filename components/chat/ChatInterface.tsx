@@ -309,7 +309,7 @@ export function ChatInterface() {
       )}
 
       {/* Header - SIMPLIFIED */}
-      <div className="bg-white border-b">
+      <div className="bg-white">
         <div className="max-w-5xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             {/* Logo & Title */}
@@ -500,7 +500,7 @@ export function ChatInterface() {
       </div>
 
       {/* Input Area - POLISHED */}
-      <div className="bg-white border-t border-gray-200 shadow-lg">
+      <div className="bg-white border-gray-200 shadow-lg">
         <div className="max-w-4xl mx-auto px-6 py-4">
           <form onSubmit={handleSubmit} className="flex gap-3 items-end">
             <div className="flex-1 relative">
