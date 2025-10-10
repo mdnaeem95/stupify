@@ -309,7 +309,7 @@ export function ChatInterface() {
       )}
 
       {/* Header - SIMPLIFIED */}
-      <div className="bg-white border-b border-gray-100">
+      <div className="bg-white">
         <div className="max-w-5xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             {/* Logo & Title */}
@@ -452,7 +452,7 @@ export function ChatInterface() {
       </div>
 
       {/* Input Area - POLISHED */}
-      <div className="bg-white border-t border-gray-200 px-6 py-4 shadow-lg">
+      <div className="bg-white border-gray-200 px-6 py-4 shadow-lg">
         <div className="max-w-4xl mx-auto">
           <form onSubmit={handleSubmit} className="flex gap-3 items-end">
             <div className="flex-1 relative">
@@ -469,14 +469,14 @@ export function ChatInterface() {
                 placeholder="Ask me anything..."
                 rows={1}
                 disabled={isLoading || isSaving || isLoadingConversation}
-                className="w-full resize-none rounded-xl border-2 border-gray-300 px-4 py-3 text-gray-900 placeholder-gray-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-20 disabled:bg-gray-50 disabled:cursor-not-allowed transition-all"
+                className="w-full overflow-hidden resize-none rounded-xl border-2 border-gray-300 px-4 py-3 text-gray-900 placeholder-gray-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-20 disabled:bg-gray-50 disabled:cursor-not-allowed transition-all"
                 style={{ minHeight: '48px', maxHeight: '200px' }}
               />
             </div>
             <Button 
               type="submit" 
               disabled={isLoading || !input.trim() || isSaving || isLoadingConversation}
-              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-xl px-4 py-3 shadow-sm hover:shadow-md transition-all h-12 flex-shrink-0"
+              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-xl px-4 py-3 shadow-sm hover:shadow-md transition-all h-12 flex-shrink-0 mb-1"
             >
               {isLoading || isSaving ? (
                 <Loader2 className="w-5 h-5 animate-spin" />

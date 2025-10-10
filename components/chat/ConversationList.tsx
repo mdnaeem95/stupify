@@ -87,8 +87,8 @@ export function ConversationList({
   if (isLoading) {
     console.log('⏳ ConversationList: Showing loading state')
     return (
-      <div className="flex flex-col h-full bg-white border-r border-gray-200/60">
-        <div className="p-3 border-b border-gray-100 bg-white">
+      <div className="flex flex-col h-full bg-white border-gray-200/60">
+        <div className="p-3 bg-white">
           <div className="h-4 w-24 bg-gray-200 rounded animate-pulse mb-3"></div>
           <div className="h-10 bg-gray-200 rounded-lg animate-pulse"></div>
         </div>
@@ -104,7 +104,7 @@ export function ConversationList({
   if (error) {
     console.error('⚠️ ConversationList: Showing error state', { error })
     return (
-      <div className="flex flex-col h-full bg-white border-r border-gray-200/60">
+      <div className="flex flex-col h-full bg-white">
         <div className="p-4">
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 shadow-sm">
             <div className="flex items-start gap-3 text-red-800 mb-3">
@@ -132,9 +132,9 @@ export function ConversationList({
   })
 
   return (
-    <div className="flex flex-col h-full bg-white border-r border-gray-200/60">
+    <div className="flex flex-col h-full bg-white">
       {/* Header */}
-      <div className="p-3 border-b border-gray-100 bg-white sticky top-0 z-10">
+      <div className="p-3 bg-white sticky top-0 z-10">
         <div className="flex items-center gap-2 mb-3 px-1">
           <Sparkles className="w-4 h-4 text-purple-600" />
           <h2 className="text-sm font-semibold text-gray-700">
@@ -219,7 +219,7 @@ export function ConversationList({
       </div>
 
       {/* Footer - User Menu & Usage */}
-      <div className="border-t border-gray-100 p-3 bg-white">
+      <div className="p-3 bg-white">
         <div className="space-y-3">
           {/* Usage Badge */}
           {usage && (
