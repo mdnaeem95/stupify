@@ -1,0 +1,12 @@
+# robots.txt for Stupify
+
+# Allow all bots to crawl everything
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://stupify-brown.vercel.app/sitemap.xml
+
+# Optional: Block specific paths if needed in the future
+# Disallow: /api/
+# Disallow: /admin/
