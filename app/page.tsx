@@ -1,8 +1,26 @@
+"use client";
+
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Sparkles, Brain, Heart, Zap, ArrowRight } from 'lucide-react';
+import { Sparkles, Brain, Heart, Zap, ArrowRight, Loader2 } from 'lucide-react';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function Home() {
+  const router = useRouter();
+  const [isLoginLoading, setIsLoginLoading] = useState(false);
+  const [isSignupLoading, setIsSignupLoading] = useState(false);
+
+  const handleLogin = () => {
+    setIsLoginLoading(true);
+    router.push('/login');
+  };
+
+  const handleSignup = () => {
+    setIsSignupLoading(true);
+    router.push('/signup');
+  };
+
   return (
     <div className="min-h-screen bg-white">
       {/* Navigation */}
@@ -18,9 +36,29 @@ export default function Home() {
             <div className="hidden md:flex gap-6 items-center">
               <a href="#features" className="text-gray-600 hover:text-gray-900 transition">Features</a>
               <a href="/pricing" className="text-gray-600 hover:text-gray-900 transition">Pricing</a>
-              <Button variant="ghost" className="text-gray-700">Login</Button>
-              <Button className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white">
-                Sign Up
+              <Button variant="ghost" className="text-gray-700 hover:cursor-pointer" onClick={handleLogin} disabled={isLoginLoading || isSignupLoading}>
+                {isLoginLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Loading...
+                  </>
+                ) : (
+                  'Login'
+                )}
+              </Button>
+              <Button 
+                className="hover:cursor-pointer bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
+                onClick={handleSignup}
+                disabled={isSignupLoading || isLoginLoading}
+              >
+                {isSignupLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Loading...
+                  </>
+                ) : (
+                  'Sign Up'
+                )}
               </Button>
             </div>
           </div>
@@ -54,7 +92,7 @@ export default function Home() {
               <Link href="/chat">
                 <Button 
                   size="lg" 
-                  className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white text-lg px-8 py-6 h-auto group shadow-2xl hover:shadow-purple-500/50 transition-all hover:scale-105"
+                  className=" hover:cursor-pointer bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white text-lg px-8 py-6 h-auto group shadow-2xl hover:shadow-purple-500/50 transition-all hover:scale-105"
                 >
                   Start Asking Questions
                   <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -316,7 +354,7 @@ export default function Home() {
               <Button 
                 size="lg" 
                 variant="secondary" 
-                className="text-lg px-10 py-6 h-auto bg-white text-purple-600 hover:bg-gray-50 shadow-xl font-bold hover:scale-105 transition-transform"
+                className="hover:cursor-pointer text-lg px-10 py-6 h-auto bg-white text-purple-600 hover:bg-gray-50 shadow-xl font-bold hover:scale-105 transition-transform"
               >
                 Start Learning Now - It&apos;s Free!
               </Button>
@@ -328,9 +366,10 @@ export default function Home() {
       {/* Footer */}
       <footer className="border-t border-gray-100 mt-20 py-12">
         <div className="max-w-6xl mx-auto px-4">
-          <div className="grid md:grid-cols-4 gap-8 mb-8">
-            <div>
-              <div className="flex items-center gap-2 mb-4">
+          {/* Changed to grid-cols-3 and added justify-items-center to center the columns */}
+          <div className="grid md:grid-cols-3 gap-8 mb-8 justify-items-center md:justify-items-start max-w-3xl mx-auto">
+            <div className="text-center md:text-left">
+              <div className="flex items-center gap-2 mb-4 justify-center md:justify-start">
                 <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
                   <Sparkles className="w-4 h-4 text-white" />
                 </div>
@@ -341,29 +380,19 @@ export default function Home() {
               </p>
             </div>
             
-            <div>
+            <div className="text-center md:text-left">
               <h3 className="font-semibold text-gray-900 mb-3">Product</h3>
               <ul className="space-y-2 text-sm text-gray-600">
                 <li><a href="#features" className="hover:text-gray-900 transition">Features</a></li>
                 <li><a href="/pricing" className="hover:text-gray-900 transition">Pricing</a></li>
-                <li><a href="#faq" className="hover:text-gray-900 transition">FAQ</a></li>
               </ul>
             </div>
-            
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-3">Company</h3>
-              <ul className="space-y-2 text-sm text-gray-600">
-                <li><a href="#about" className="hover:text-gray-900 transition">About</a></li>
-                <li><a href="#blog" className="hover:text-gray-900 transition">Blog</a></li>
-                <li><a href="#contact" className="hover:text-gray-900 transition">Contact</a></li>
-              </ul>
-            </div>
-            
-            <div>
+          
+            <div className="text-center md:text-left">
               <h3 className="font-semibold text-gray-900 mb-3">Legal</h3>
               <ul className="space-y-2 text-sm text-gray-600">
-                <li><a href="#privacy" className="hover:text-gray-900 transition">Privacy</a></li>
-                <li><a href="#terms" className="hover:text-gray-900 transition">Terms</a></li>
+                <li><a href="/privacy" className="hover:text-gray-900 transition">Privacy</a></li>
+                <li><a href="/terms" className="hover:text-gray-900 transition">Terms</a></li>
               </ul>
             </div>
           </div>
