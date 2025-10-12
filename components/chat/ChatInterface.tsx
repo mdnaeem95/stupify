@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Send, Loader2, Sparkles } from 'lucide-react';
 import { SimplicityLevel } from '@/lib/prompts';
 import { createConversation, saveMessage, loadConversation, generateConversationTitle, updateConversationTitle } from '@/lib/conversations';
-import { extractTopics, getPersonalizedGreeting, getPersonalizedAnalogyPrompt, suggestLevelAdjustment, type UserProfile } from '@/lib/user-profiler';
+import { extractTopics, getPersonalizedGreeting, suggestLevelAdjustment, type UserProfile } from '@/lib/user-profiler';
 import { getUserUsage, incrementUsage, type UsageData } from '@/lib/usage';
 import { FollowUpQuestion } from '@/lib/question-predictor';
 import { AdaptiveFollowUp } from './AdaptiveFollowUp';
@@ -28,8 +28,8 @@ export function ChatInterface() {
   const [followUpQuestions, setFollowUpQuestions] = useState<FollowUpQuestion[]>([]);
   const [loadingFollowUp, setLoadingFollowUp] = useState(false);
   const [usage, setUsage] = useState<UsageData | null>(null);
-  const [lastAIResponse, setLastAIResponse] = useState<string>('');
-  const [isRetrying, setIsRetrying] = useState(false);
+  const [, setLastAIResponse] = useState<string>('');
+  const [, setIsRetrying] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [questionsThisSession, setQuestionsThisSession] = useState(0);
   const [showLevelSuggestion, setShowLevelSuggestion] = useState(false);
@@ -699,7 +699,7 @@ export function ChatInterface() {
           <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 flex items-center justify-between">
             <div className="flex-1">
               <p className="text-sm font-medium text-purple-900">
-                💡 You're doing great! Want to try {suggestedLevel === 'advanced' ? 'more detailed' : 'simpler'} explanations?
+                💡 You&apos;re doing great! Want to try {suggestedLevel === 'advanced' ? 'more detailed' : 'simpler'} explanations?
               </p>
             </div>
             <div className="flex gap-2">
