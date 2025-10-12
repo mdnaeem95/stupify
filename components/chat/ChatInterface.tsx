@@ -10,31 +10,29 @@ import { Paywall } from '@/components/usage/Paywall';
 import { Button } from '@/components/ui/button';
 import { Send, Loader2, Sparkles } from 'lucide-react';
 import { SimplicityLevel } from '@/lib/prompts';
-import { 
-  createConversation, 
-  saveMessage, 
-  loadConversation,
-  generateConversationTitle,
-  updateConversationTitle 
-} from '@/lib/conversations';
+import { createConversation, saveMessage, loadConversation, generateConversationTitle, updateConversationTitle } from '@/lib/conversations';
 import { getUserUsage, incrementUsage, type UsageData } from '@/lib/usage';
 import { FollowUpQuestion } from '@/lib/question-predictor';
 import { AdaptiveFollowUp } from './AdaptiveFollowUp';
+import { detectConfusion, getRetryInstructions } from '@/lib/confusion-detector';
 
 export function ChatInterface() {
-  const [simplicityLevel, setSimplicityLevel] = useState<SimplicityLevel>('normal');
   const [input, setInput] = useState('');
-  const [conversationId, setConversationId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [simplicityLevel, setSimplicityLevel] = useState<SimplicityLevel>('normal');
+  const [conversationId, setConversationId] = useState<string | null>(null);
   const [isLoadingConversation, setIsLoadingConversation] = useState(false);
-  const [usage, setUsage] = useState<UsageData | null>(null);
   const [showPaywall, setShowPaywall] = useState(false);
+  const [followUpQuestions, setFollowUpQuestions] = useState<FollowUpQuestion[]>([]);
+  const [loadingFollowUp, setLoadingFollowUp] = useState(false);
+  const [usage, setUsage] = useState<UsageData | null>(null);
+  const [lastAIResponse, setLastAIResponse] = useState<string>('');
+  const [isRetrying, setIsRetrying] = useState(false);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isFirstMessageRef = useRef(true);
   const conversationIdRef = useRef<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const [followUpQuestions, setFollowUpQuestions] = useState<FollowUpQuestion[]>([]);
-  const [loadingFollowUp, setLoadingFollowUp] = useState(false);
   const lastUserQuestionRef = useRef<string>('');
 
   // Function to generate follow-up questions
@@ -101,6 +99,7 @@ export function ChatInterface() {
     onFinish: async ({ message }) => {
       if (conversationIdRef.current && message.role === 'assistant') {
         const content = extractMessageText(message);
+        setLastAIResponse(content);
         
         const saved = await saveMessage(
           conversationIdRef.current, 
@@ -271,6 +270,40 @@ export function ChatInterface() {
 
     lastUserQuestionRef.current = input.trim();
 
+    // 🚨 DETECT CONFUSION
+    const confusionSignal = detectConfusion(
+      input.trim(), 
+      lastUserQuestionRef.current
+    );
+
+    if (confusionSignal.isConfused && confusionSignal.confidence > 0.7) {
+      console.log('😕 Confusion detected, auto-retrying');
+      
+      // Get instructions
+      const { newLevel, instructions } = getRetryInstructions(
+        confusionSignal,
+        simplicityLevel
+      );
+      
+      // Switch level if needed
+      if (newLevel !== simplicityLevel) {
+        setSimplicityLevel(newLevel);
+      }
+      
+      // Prepend retry context to their message
+      const messageWithContext = `[User is confused about previous answer. ${instructions}]\n\nUser says: "${input.trim()}"`;
+      
+      setIsRetrying(true);
+      setInput('');
+      lastUserQuestionRef.current = messageWithContext;
+      
+      // Send message (useChat will handle it)
+      // Your existing code here...
+    } else {
+      setIsRetrying(false);
+      // Your existing normal flow
+    }
+
     // CHECK USAGE LIMIT BEFORE SENDING
     const currentUsage = await getUserUsage();
     
@@ -337,6 +370,30 @@ export function ChatInterface() {
     updateConversationId(null);
     setInput('');
     isFirstMessageRef.current = true;
+  };
+
+  const handleAnalogyRating = async (messageId: string, rating: 'up' | 'down') => {
+    try {
+      const response = await fetch('/api/analogies/rate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messageId,
+          rating,
+          conversationId: conversationIdRef.current,
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to save rating');
+      
+      console.log(`✅ Analogy rated: ${rating}`);
+      
+      // Optional: Track analytics
+      // trackEvent('analogy_rated', { rating, messageId });
+      
+    } catch (error) {
+      console.error('Failed to save analogy rating:', error);
+    }
   };
 
   return (
@@ -514,6 +571,8 @@ export function ChatInterface() {
                       key={message.id}
                       role={message.role as 'user' | 'assistant'}
                       content={content}
+                      messageId={message.id}
+                      onRate={message.role === 'assistant' ? handleAnalogyRating : undefined} 
                     />
                   );
                 })}

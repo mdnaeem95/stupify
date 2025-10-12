@@ -2,13 +2,16 @@
 
 import { cn } from '@/lib/utils';
 import { Bot, User } from 'lucide-react';
+import { AnalogyRating } from './AnalogyRatings';
 
 interface MessageBubbleProps {
   role: 'user' | 'assistant';
   content: string;
+  messageId?: string;
+  onRate?: (messageId: string, rating: 'up' | 'down') => void;
 }
 
-export function MessageBubble({ role, content }: MessageBubbleProps) {
+export function MessageBubble({ role, content, messageId, onRate }: MessageBubbleProps) {
   const isUser = role === 'user';
 
   return (
@@ -39,6 +42,13 @@ export function MessageBubble({ role, content }: MessageBubbleProps) {
           {content}
         </div>
       </div>
+
+      {role === 'assistant' && messageId && onRate && (
+        <AnalogyRating
+          messageId={messageId}
+          onRate={onRate}
+        />
+      )}
     </div>
   );
 }
