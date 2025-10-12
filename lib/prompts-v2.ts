@@ -410,6 +410,7 @@ export interface PromptEvaluation {
 export function evaluatePromptStructure(text: string, level: SimplicityLevel): PromptEvaluation {
   const feedback: string[] = [];
   let score = 0;
+  console.log(level)
 
   // Check for hook (surprising/intriguing opening)
   const hasHook = text.split('\n\n')[0].length < 200; // First paragraph is concise
