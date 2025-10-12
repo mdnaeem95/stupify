@@ -1,6 +1,6 @@
 import { openai } from '@ai-sdk/openai';
 import { streamText, convertToModelMessages } from 'ai';
-import { getSystemPrompt, type SimplicityLevel } from '@/lib/prompts';
+import { getSystemPromptV2, SimplicityLevel } from '@/lib/prompts-v2';
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
@@ -13,7 +13,7 @@ export async function POST(req: Request) {
     const level = (simplicityLevel || 'normal') as SimplicityLevel;
     
     // Get the appropriate system prompt
-    const systemPrompt = getSystemPrompt(level);
+    const systemPrompt = getSystemPromptV2(level);
 
     // Convert UIMessages to ModelMessages for streamText
     const modelMessages = convertToModelMessages(messages);

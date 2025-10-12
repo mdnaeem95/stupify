@@ -17,6 +17,8 @@ import {
   updateConversationTitle 
 } from '@/lib/conversations';
 import { getUserUsage, incrementUsage, type UsageData } from '@/lib/usage';
+import { FollowUpQuestion } from '@/lib/question-predictor';
+import { AdaptiveFollowUp } from './AdaptiveFollowUp';
 
 export function ChatInterface() {
   const [simplicityLevel, setSimplicityLevel] = useState<SimplicityLevel>('normal');
@@ -30,6 +32,62 @@ export function ChatInterface() {
   const isFirstMessageRef = useRef(true);
   const conversationIdRef = useRef<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [followUpQuestions, setFollowUpQuestions] = useState<FollowUpQuestion[]>([]);
+  const [loadingFollowUp, setLoadingFollowUp] = useState(false);
+  const lastUserQuestionRef = useRef<string>('');
+
+  // Function to generate follow-up questions
+  async function generateFollowUpQuestions(userQuestion: string, aiResponse: string) {
+    console.log('🔍 Generating follow-ups:', { userQuestion, aiResponse: aiResponse.slice(0, 100) });
+    
+    try {
+      setLoadingFollowUp(true);
+      
+      const response = await fetch('/api/follow-up', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userQuestion,
+          aiResponse,
+          simplicityLevel,
+          usePattern: false
+        })
+      });
+
+      console.log('📡 Follow-up API response:', response.status, response.ok);
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Follow-up questions received:', data.questions);
+        setFollowUpQuestions(data.questions);
+      } else {
+        console.error('❌ Follow-up API failed:', await response.text());
+      }
+    } catch (error) {
+      console.error('❌ Failed to generate follow-up questions:', error);
+      setFollowUpQuestions([]);
+    } finally {
+      setLoadingFollowUp(false);
+    }
+  }
+
+  // Function to handle follow-up question click
+  function handleFollowUpClick(question: string) {
+    setFollowUpQuestions([]); // Clear current questions
+    setInput(question); // Set input to the question
+    // Automatically submit or let user review
+    handleSubmit(new Event('submit') as any); // Auto-submit
+    // OR: Let them click send
+    // setInput(question); // Just populate input
+  }
+
+  // Helper function to extract text from AI SDK v5 messages
+  const extractMessageText = (message: any): string => {
+    return message?.parts
+      ?.filter((part: any) => part.type === 'text')
+      .map((part: any) => part.text)
+      .join('') || '';
+  };
 
   // AI SDK v5 useChat with transport
   const { messages, sendMessage, status, setMessages } = useChat({
@@ -40,35 +98,42 @@ export function ChatInterface() {
       },
     }),
     onFinish: async ({ message }) => {
-      console.log('🤖 ChatInterface: AI response finished', {
-        role: message.role,
-        hasConversationId: !!conversationIdRef.current
-      })
-      
       if (conversationIdRef.current && message.role === 'assistant') {
-        const content = message.parts
-          ?.filter(part => part.type === 'text')
-          .map(part => part.text)
-          .join('') || '';
+        const content = extractMessageText(message);
         
-        console.log('💾 ChatInterface: Saving assistant message', {
-          conversationId: conversationIdRef.current,
-          contentLength: content.length,
+        const saved = await saveMessage(
+          conversationIdRef.current, 
+          'assistant', 
+          content, 
           simplicityLevel
-        })
-        
-        const saved = await saveMessage(conversationIdRef.current, 'assistant', content, simplicityLevel);
+        );
         
         if (saved) {
-          console.log('✅ ChatInterface: Assistant message saved successfully')
+          console.log('✅ ChatInterface: Assistant message saved successfully');
         } else {
-          console.error('❌ ChatInterface: Failed to save assistant message!')
+          console.error('❌ ChatInterface: Failed to save assistant message!');
         }
+
+        // 🚨 YOU NEED TO ADD THIS SECTION:
+        const userQuestion = lastUserQuestionRef.current;
+        
+        console.log('🎯 About to generate follow-ups:', { 
+          userQuestion: userQuestion.slice(0, 50), 
+          aiResponse: content.slice(0, 50) 
+        });
+        
+        if (userQuestion && content) {
+          await generateFollowUpQuestions(userQuestion, content);
+        } else {
+          console.warn('⚠️ Missing question or response for follow-ups');
+        }
+        // 🚨 END OF SECTION TO ADD
+        
       } else {
         console.warn('⚠️ ChatInterface: Cannot save assistant message', {
           hasConversationId: !!conversationIdRef.current,
           role: message.role
-        })
+        });
       }
     },
   });
@@ -203,8 +268,9 @@ export function ChatInterface() {
     
     if (!input.trim() || isLoading) return;
 
+    lastUserQuestionRef.current = input.trim();
+
     // CHECK USAGE LIMIT BEFORE SENDING
-    console.log('📊 ChatInterface: Checking usage limits')
     const currentUsage = await getUserUsage();
     
     if (!currentUsage.canAsk) {
@@ -212,29 +278,16 @@ export function ChatInterface() {
       setShowPaywall(true);
       return;
     }
-    
-    console.log('✅ ChatInterface: Usage check passed', {
-      remaining: currentUsage.remaining,
-      canAsk: currentUsage.canAsk
-    })
 
     const messageText = input.trim();
-    console.log('📤 ChatInterface: Submitting message', { 
-      hasConversation: !!conversationId,
-      conversationId,
-      messageLength: messageText.length 
-    })
-
     let activeConvId = conversationId;
 
     // Create conversation on first message
     if (!conversationId) {
-      console.log('🆕 ChatInterface: Creating new conversation for first message')
       setIsSaving(true);
       const newConvId = await createConversation('New Chat');
       
       if (newConvId) {
-        console.log('✅ ChatInterface: New conversation created', { newConvId })
         updateConversationId(newConvId);
         activeConvId = newConvId;
         
@@ -242,7 +295,6 @@ export function ChatInterface() {
         
         setTimeout(async () => {
           const title = generateConversationTitle(messageText);
-          console.log('📝 ChatInterface: Updating conversation title', { title })
           await updateConversationTitle(newConvId, title);
           window.dispatchEvent(new Event('refreshSidebar'));
         }, 1000);
@@ -253,37 +305,22 @@ export function ChatInterface() {
       }
       setIsSaving(false);
     }
-
-    // Save user message to database
-    console.log('💾 ChatInterface: Saving user message to database', {
-      conversationId: activeConvId,
-      messageLength: messageText.length,
-      simplicityLevel
-    })
     
     if (activeConvId) {
-      const saved = await saveMessage(activeConvId, 'user', messageText, simplicityLevel);
-      if (saved) {
-        console.log('✅ ChatInterface: User message saved successfully')
-      } else {
-        console.error('❌ ChatInterface: Failed to save user message!')
-      }
+      await saveMessage(activeConvId, 'user', messageText, simplicityLevel);
     } else {
       console.error('❌ ChatInterface: No conversation ID available for saving!')
     }
 
     // INCREMENT USAGE COUNT
-    console.log('📊 ChatInterface: Incrementing usage count')
     const incremented = await incrementUsage();
     if (incremented) {
-      console.log('✅ ChatInterface: Usage incremented')
       loadUsage();
     } else {
       console.error('❌ ChatInterface: Failed to increment usage')
     }
 
     // Send message to AI
-    console.log('🤖 ChatInterface: Sending message to AI...')
     sendMessage({
       text: messageText,
     });
@@ -479,6 +516,8 @@ export function ChatInterface() {
                     />
                   );
                 })}
+
+              {/* LOADING ANIMATION - Show while AI is responding */}
               {isLoading && (
                 <div className="flex gap-3 mb-4">
                   <div className="flex-shrink-0 w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center">
@@ -493,6 +532,23 @@ export function ChatInterface() {
                   </div>
                 </div>
               )}
+
+              {console.log('🎯 AdaptiveFollowUp render check:', {
+                messagesLength: messages.length,
+                status,
+                followUpQuestionsLength: followUpQuestions.length,
+                loadingFollowUp
+              })}
+
+              {/* ADAPTIVE FOLLOW-UP - Show after AI finishes responding */}
+              {messages.length > 0 && !isLoading && (
+                <AdaptiveFollowUp
+                  questions={followUpQuestions}
+                  onQuestionClick={handleFollowUpClick}
+                  isLoading={loadingFollowUp}
+                />
+              )}
+
               <div ref={messagesEndRef} />
             </>
           )}
@@ -524,7 +580,7 @@ export function ChatInterface() {
             <Button 
               type="submit" 
               disabled={isLoading || !input.trim() || isSaving || isLoadingConversation}
-              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-xl px-6 shadow-md hover:shadow-lg transition-all h-12 flex-shrink-0"
+              className="mb-1 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-xl px-6 shadow-md hover:shadow-lg transition-all h-12 flex-shrink-0"
             >
               {isLoading || isSaving ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
