@@ -11,10 +11,12 @@ import { Button } from '@/components/ui/button';
 import { Send, Loader2, Sparkles } from 'lucide-react';
 import { SimplicityLevel } from '@/lib/prompts';
 import { createConversation, saveMessage, loadConversation, generateConversationTitle, updateConversationTitle } from '@/lib/conversations';
+import { extractTopics, getPersonalizedGreeting, getPersonalizedAnalogyPrompt, suggestLevelAdjustment, type UserProfile } from '@/lib/user-profiler';
 import { getUserUsage, incrementUsage, type UsageData } from '@/lib/usage';
 import { FollowUpQuestion } from '@/lib/question-predictor';
 import { AdaptiveFollowUp } from './AdaptiveFollowUp';
 import { detectConfusion, getRetryInstructions } from '@/lib/confusion-detector';
+import { createClient } from '@/lib/supabase/client';
 
 export function ChatInterface() {
   const [input, setInput] = useState('');
@@ -28,6 +30,10 @@ export function ChatInterface() {
   const [usage, setUsage] = useState<UsageData | null>(null);
   const [lastAIResponse, setLastAIResponse] = useState<string>('');
   const [isRetrying, setIsRetrying] = useState(false);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [questionsThisSession, setQuestionsThisSession] = useState(0);
+  const [showLevelSuggestion, setShowLevelSuggestion] = useState(false);
+  const [suggestedLevel, setSuggestedLevel] = useState<SimplicityLevel | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isFirstMessageRef = useRef(true);
@@ -150,6 +156,77 @@ export function ChatInterface() {
     conversationIdRef.current = newId;
   };
 
+  useEffect(() => {
+    loadUserProfile();
+  }, []);
+
+  async function loadUserProfile() {
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Get known topics
+      const { data: knowledgeData } = await supabase
+        .from('user_knowledge_graph')
+        .select('topic, questions_asked, understanding_level')
+        .eq('user_id', user.id)
+        .order('questions_asked', { ascending: false })
+        .limit(10);
+
+      // Get total questions and preferred level
+      const { data: convos } = await supabase
+        .from('conversations')
+        .select('id')
+        .eq('user_id', user.id);
+
+      const totalQuestions = convos?.length || 0;
+      const knownTopics = knowledgeData?.map(k => k.topic) || [];
+
+      setUserProfile({
+        userId: user.id,
+        preferredLevel: simplicityLevel,
+        knownTopics,
+        vocabularyLevel: 5,
+        totalQuestions,
+        averageSessionLength: 0,
+        lastActiveAt: new Date().toISOString()
+      });
+
+    } catch (error) {
+      console.error('Failed to load user profile:', error);
+    }
+  }
+
+  async function trackQuestion(question: string, level: SimplicityLevel) {
+    if (!userProfile) return;
+
+    const topics = extractTopics(question);
+    const supabase = createClient();
+
+    // Update or insert topics
+    for (const topic of topics) {
+      await supabase.rpc('upsert_user_knowledge', {
+        p_user_id: userProfile.userId,
+        p_topic: topic
+      });
+    }
+
+    // Update session count
+    setQuestionsThisSession(prev => prev + 1);
+
+    // Check if we should suggest level change
+    if (questionsThisSession >= 5) {
+      const avgUnderstanding = 7; // Calculate from knowledge graph
+      const suggestion = suggestLevelAdjustment(level, avgUnderstanding, questionsThisSession);
+      
+      if (suggestion.shouldAdjust) {
+        setSuggestedLevel(suggestion.newLevel);
+        setShowLevelSuggestion(true);
+      }
+    }
+  }
+
   // Auto-resize textarea
   useEffect(() => {
     if (textareaRef.current) {
@@ -269,6 +346,7 @@ export function ChatInterface() {
     if (!input.trim() || isLoading) return;
 
     lastUserQuestionRef.current = input.trim();
+    await trackQuestion(input.trim(), simplicityLevel);
 
     // 🚨 DETECT CONFUSION
     const confusionSignal = detectConfusion(
@@ -439,6 +517,14 @@ export function ChatInterface() {
           ) : messages.length === 0 ? (
             /* Empty State - WITH BLINKY MASCOT */
             <div className="text-center space-y-8 py-12">
+              {messages.length === 0 && userProfile && (
+                <div className="text-center space-y-4">
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    {getPersonalizedGreeting(userProfile)}
+                  </h2>
+                </div>
+              )}
+
               {/* Blinky Mascot */}
               <div className="mx-auto w-48">
                 <svg viewBox="0 0 200 200" className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
@@ -593,13 +679,6 @@ export function ChatInterface() {
                 </div>
               )}
 
-              {console.log('🎯 AdaptiveFollowUp render check:', {
-                messagesLength: messages.length,
-                status,
-                followUpQuestionsLength: followUpQuestions.length,
-                loadingFollowUp
-              })}
-
               {/* ADAPTIVE FOLLOW-UP - Show after AI finishes responding */}
               {messages.length > 0 && !isLoading && (
                 <AdaptiveFollowUp
@@ -614,6 +693,35 @@ export function ChatInterface() {
           )}
         </div>
       </div>
+
+      {showLevelSuggestion && suggestedLevel && (
+        <div className="max-w-4xl mx-auto px-6 mb-4">
+          <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 flex items-center justify-between">
+            <div className="flex-1">
+              <p className="text-sm font-medium text-purple-900">
+                💡 You're doing great! Want to try {suggestedLevel === 'advanced' ? 'more detailed' : 'simpler'} explanations?
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  setSimplicityLevel(suggestedLevel);
+                  setShowLevelSuggestion(false);
+                }}
+                className="px-3 py-1 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700"
+              >
+                Yes, switch
+              </button>
+              <button
+                onClick={() => setShowLevelSuggestion(false)}
+                className="px-3 py-1 bg-white text-purple-600 text-sm rounded-lg border border-purple-200 hover:bg-purple-50"
+              >
+                No thanks
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Input Area - POLISHED */}
       <div className="bg-white border-gray-200 shadow-lg">
