@@ -19,8 +19,6 @@ export default function ChatLayout({
     setCurrentConversationId(conversationId);
     setIsSidebarOpen(false);
     
-    // Dispatch event to ChatInterface
-    console.log('📡 Layout: Dispatching loadConversation event')
     window.dispatchEvent(new CustomEvent('loadConversation', { 
       detail: { conversationId } 
     }));
@@ -28,22 +26,15 @@ export default function ChatLayout({
 
   const handleNewChat = () => {
     console.log('🆕 Layout: New chat clicked')
-    console.log('🆕 Layout: Current conversation ID:', currentConversationId)
-    
     setCurrentConversationId(null);
     setIsSidebarOpen(false);
     
-    // Dispatch event to ChatInterface
-    console.log('📡 Layout: Dispatching newChat event')
     const event = new Event('newChat')
     window.dispatchEvent(event);
-    console.log('✅ Layout: newChat event dispatched')
   };
 
   // Expose refresh function to chat interface
   useEffect(() => {
-    console.log('🔧 Layout: Setting up refreshSidebar listener')
-    
     const handleRefreshSidebar = () => {
       console.log('🔄 Layout: Refresh sidebar triggered')
       setRefreshSidebar(Date.now());
@@ -52,29 +43,28 @@ export default function ChatLayout({
     window.addEventListener('refreshSidebar', handleRefreshSidebar);
     
     return () => {
-      console.log('🧹 Layout: Cleaning up refreshSidebar listener')
       window.removeEventListener('refreshSidebar', handleRefreshSidebar);
     }
   }, []);
 
-  console.log('🎨 Layout: Rendering', { 
-    isSidebarOpen, 
-    currentConversationId,
-    refreshSidebar 
-  })
+  // Broadcast sidebar state to children
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('sidebarStateChange', {
+      detail: { isOpen: isSidebarOpen }
+    }));
+  }, [isSidebarOpen]);
 
   return (
     <div className="flex h-screen overflow-hidden">
-      {/* Mobile Menu Button */}
+      {/* Mobile Menu Button - HIDE when sidebar is open */}
       <Button
-        onClick={() => {
-          console.log('📱 Layout: Mobile menu toggled', { 
-            from: isSidebarOpen, 
-            to: !isSidebarOpen 
-          })
-          setIsSidebarOpen(!isSidebarOpen)
-        }}
-        className="md:hidden fixed top-4 left-4 z-50 bg-white border-2 border-gray-300 hover:bg-gray-50 text-gray-700"
+        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+        className={`
+          md:hidden fixed top-4 z-50 
+          bg-white border-2 border-gray-300 hover:bg-gray-50 text-gray-700
+          transition-all duration-200
+          ${isSidebarOpen ? 'hidden' : 'left-4'}
+        `}
         size="icon"
       >
         {isSidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -102,15 +92,15 @@ export default function ChatLayout({
       {isSidebarOpen && (
         <div
           className="md:hidden fixed inset-0 bg-black/50 z-30"
-          onClick={() => {
-            console.log('📱 Layout: Mobile overlay clicked - closing sidebar')
-            setIsSidebarOpen(false)
-          }}
+          onClick={() => setIsSidebarOpen(false)}
         />
       )}
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-hidden">
+      {/* Main Content - Add data attribute for sidebar state */}
+      <main 
+        className="flex-1 overflow-hidden"
+        data-sidebar-open={isSidebarOpen}
+      >
         {children}
       </main>
     </div>
