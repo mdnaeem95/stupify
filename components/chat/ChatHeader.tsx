@@ -10,9 +10,9 @@ interface ChatHeaderProps {
 
 export function ChatHeader({ simplicityLevel, onLevelChange }: ChatHeaderProps) {
   return (
-    <div className="bg-white">
-      <div className="max-w-5xl mx-auto px-4 md:px-6 py-3 md:py-4">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+    <div className="bg-white safe-top">
+      <div className="max-w-5xl mx-auto px-4 md:px-6 py-4 md:py-4">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           {/* Logo & Title */}
           <div className="flex items-center gap-3">
             <div className="bg-gradient-to-br from-purple-500 to-blue-500 p-2 rounded-xl">

@@ -97,7 +97,7 @@ export function ChatEmptyState({ simplicityLevel, greeting }: ChatEmptyStateProp
       </div>
 
       {/* Mode Info Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl mx-auto pt-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 w-full max-w-md md:max-w-3xl px-4 pt-4">
         <div
           className={`rounded-xl p-4 text-left border-2 transition-all ${
             simplicityLevel === '5yo'

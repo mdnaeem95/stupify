@@ -33,9 +33,9 @@ const levels = [
   },
 ];
 
-export function SimplifySelector({ selected, onSelect }: SimplifySelectorProps) {
+  export function SimplifySelector({ selected, onSelect }: SimplifySelectorProps) {
   return (
-    <div className="flex flex-col sm:flex-row gap-2 w-full max-w-2xl mx-auto p-4">
+    <div className="flex flex-col sm:flex-row gap-2 w-full">
       {levels.map((level) => {
         const Icon = level.icon;
         const isSelected = selected === level.value;
@@ -45,15 +45,20 @@ export function SimplifySelector({ selected, onSelect }: SimplifySelectorProps) 
             key={level.value}
             variant="outline"
             onClick={() => onSelect(level.value)}
-            className={`flex-1 h-auto py-3 px-4 transition-all border-2 ${
-              isSelected 
-                ? `${level.selectedColor} shadow-lg scale-105` 
+            className={`
+              flex-1 h-auto py-3 px-4 transition-all border-2
+              min-h-[44px] min-w-full sm:min-w-fit
+              ${isSelected 
+                ? `${level.selectedColor} shadow-lg` 
                 : level.unselectedColor
-            }`}
+              }
+            `}
           >
-            <div className="flex items-center gap-2">
-              <Icon className="w-5 h-5" />
-              <span className="font-medium">{level.label}</span>
+            <div className="flex items-center gap-2 justify-center w-full">
+              <Icon className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+              <span className="font-medium text-sm sm:text-base truncate">
+                {level.label}
+              </span>
             </div>
           </Button>
         );
