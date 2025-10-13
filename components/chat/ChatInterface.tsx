@@ -204,7 +204,7 @@ export function ChatInterface() {
               </div>
             </div>
           ) : messages.length === 0 ? (
-            <ChatEmptyState simplicityLevel={simplicityLevel} greeting={profile.getGreeting()} />
+            <ChatEmptyState simplicityLevel={simplicityLevel} />
           ) : (
             <ChatMessages
               messages={messages}

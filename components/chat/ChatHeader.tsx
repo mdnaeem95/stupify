@@ -1,36 +1,46 @@
+'use client';
+
 import { Sparkles } from 'lucide-react';
-import { SimplifySelector } from './SimplifySelector';
 import { SimplicityLevel } from '@/lib/prompts';
+import { CompactLevelSelector } from './CompactLevelSelector';
 
 interface ChatHeaderProps {
   simplicityLevel: SimplicityLevel;
   onLevelChange: (level: SimplicityLevel) => void;
   isMobile?: boolean;
+  triggerHaptic?: (type?: 'light' | 'medium' | 'heavy') => void;
 }
 
-export function ChatHeader({ simplicityLevel, onLevelChange }: ChatHeaderProps) {
+export function ChatHeader({ 
+  simplicityLevel, 
+  onLevelChange,
+  isMobile,
+  triggerHaptic 
+}: ChatHeaderProps) {
   return (
-    <div className="bg-white safe-top">
-      <div className="max-w-5xl mx-auto px-4 md:px-6 py-4 md:py-4">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+    <div className="bg-white border-b border-gray-200">
+      <div className="max-w-5xl mx-auto px-4 md:px-6 py-3">
+        <div className="flex items-center justify-between gap-4">
+          
           {/* Logo & Title */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-shrink-0">
             <div className="bg-gradient-to-br from-purple-500 to-blue-500 p-2 rounded-xl">
-              <Sparkles className="w-4 h-4 md:w-5 md:h-5 text-white" />
+              <Sparkles className="w-5 h-5 text-white" />
             </div>
-            <div>
-              <h1 className="text-lg md:text-xl font-bold text-gray-900">Stupify</h1>
-              <p className="text-[10px] md:text-xs text-gray-500">Finally, an AI that speaks human</p>
+            <div className="hidden sm:block">
+              <h1 className="text-lg font-bold text-gray-900">Stupify</h1>
+              <p className="text-xs text-gray-500">AI that speaks human</p>
             </div>
           </div>
 
-          {/* Mode Selector */}
-          <div className="w-full md:w-auto">
-            <SimplifySelector 
-              selected={simplicityLevel} 
-              onSelect={onLevelChange}
-            />
-          </div>
+          {/* Compact Level Selector */}
+          <CompactLevelSelector
+            selected={simplicityLevel}
+            onSelect={onLevelChange}
+            isMobile={isMobile}
+            triggerHaptic={triggerHaptic}
+          />
+          
         </div>
       </div>
     </div>

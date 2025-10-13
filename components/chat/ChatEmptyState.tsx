@@ -1,154 +1,107 @@
+'use client';
+
+import { Sparkles } from 'lucide-react';
 import { SimplicityLevel } from '@/lib/prompts';
 
 interface ChatEmptyStateProps {
   simplicityLevel: SimplicityLevel;
-  greeting?: string | null;
+  greeting?: string;
+  onExampleClick?: (question: string) => void;
+  isMobile?: boolean;
+  triggerHaptic?: (type?: 'light' | 'medium' | 'heavy') => void;
 }
 
-export function ChatEmptyState({ simplicityLevel, greeting }: ChatEmptyStateProps) {
+const exampleQuestions = [
+  { emoji: '🧬', text: 'How does DNA work?', level: '5yo' as SimplicityLevel },
+  { emoji: '🌍', text: 'Why do we have time zones?', level: 'normal' as SimplicityLevel },
+  { emoji: '💡', text: 'How does electricity work?', level: 'advanced' as SimplicityLevel },
+  { emoji: '🚀', text: 'How do rockets work?', level: '5yo' as SimplicityLevel },
+  { emoji: '🌊', text: 'What causes ocean waves?', level: 'normal' as SimplicityLevel },
+  { emoji: '🧠', text: 'How does the brain learn?', level: 'advanced' as SimplicityLevel },
+];
+
+export function ChatEmptyState({ 
+  simplicityLevel, 
+  greeting,
+  onExampleClick,
+  isMobile,
+  triggerHaptic 
+}: ChatEmptyStateProps) {
+  
+  const handleExampleClick = (question: string) => {
+    if (onExampleClick) {
+      onExampleClick(question);
+    }
+    if (isMobile && triggerHaptic) {
+      triggerHaptic('light');
+    }
+  };
+
   return (
-    <div className="text-center space-y-8 py-12">
-      {/* Personalized Greeting */}
-      {greeting && (
-        <div className="text-center space-y-4">
-          <h2 className="text-2xl font-bold text-gray-900">{greeting}</h2>
-        </div>
-      )}
-
-      {/* Blinky Mascot */}
-      <div className="mx-auto w-48">
-        <svg viewBox="0 0 200 200" className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <linearGradient id="bulbGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" style={{ stopColor: '#a855f7', stopOpacity: 1 }} />
-              <stop offset="100%" style={{ stopColor: '#3b82f6', stopOpacity: 1 }} />
-            </linearGradient>
-            <linearGradient id="glowGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" style={{ stopColor: '#fbbf24', stopOpacity: 0.8 }} />
-              <stop offset="100%" style={{ stopColor: '#f59e0b', stopOpacity: 0.6 }} />
-            </linearGradient>
-          </defs>
-          <circle cx="100" cy="80" r="55" fill="url(#glowGradient)" opacity="0.3">
-            <animate attributeName="r" values="55;60;55" dur="2s" repeatCount="indefinite" />
-          </circle>
-          <path
-            d="M 100 30 C 75 30, 60 45, 60 70 C 60 85, 65 95, 70 105 L 70 115 L 130 115 L 130 105 C 135 95, 140 85, 140 70 C 140 45, 125 30, 100 30 Z"
-            fill="url(#bulbGradient)"
-            stroke="#6366f1"
-            strokeWidth="2"
-          />
-          <ellipse cx="85" cy="55" rx="15" ry="20" fill="white" opacity="0.4" />
-          <ellipse cx="90" cy="50" rx="8" ry="10" fill="white" opacity="0.6" />
-          <rect x="75" y="115" width="50" height="8" fill="#cbd5e1" rx="2" />
-          <rect x="75" y="125" width="50" height="8" fill="#94a3b8" rx="2" />
-          <rect x="75" y="135" width="50" height="8" fill="#cbd5e1" rx="2" />
-          <rect x="80" y="145" width="40" height="12" fill="#64748b" rx="3" />
-          <g>
-            <circle cx="85" cy="75" r="5" fill="#1e293b" />
-            <circle cx="87" cy="73" r="2" fill="white" />
-            <circle cx="115" cy="75" r="5" fill="#1e293b" />
-            <circle cx="117" cy="73" r="2" fill="white" />
-            <path d="M 80 90 Q 100 105, 120 90" stroke="#1e293b" strokeWidth="4" fill="none" strokeLinecap="round" />
-            <circle cx="70" cy="85" r="6" fill="#f472b6" opacity="0.4" />
-            <circle cx="130" cy="85" r="6" fill="#f472b6" opacity="0.4" />
-          </g>
-          <path d="M 60 90 Q 45 85, 35 95" stroke="#6366f1" strokeWidth="6" fill="none" strokeLinecap="round">
-            <animateTransform
-              attributeName="transform"
-              type="rotate"
-              from="0 60 90"
-              to="15 60 90"
-              dur="0.5s"
-              repeatCount="indefinite"
-              direction="alternate"
-            />
-          </path>
-          <circle cx="35" cy="95" r="5" fill="#6366f1">
-            <animateTransform
-              attributeName="transform"
-              type="rotate"
-              from="0 60 90"
-              to="15 60 90"
-              dur="0.5s"
-              repeatCount="indefinite"
-              direction="alternate"
-            />
-          </circle>
-          <g>
-            <path d="M 145 45 L 147 50 L 152 52 L 147 54 L 145 59 L 143 54 L 138 52 L 143 50 Z" fill="#fbbf24">
-              <animate attributeName="opacity" values="1;0.3;1" dur="1.5s" repeatCount="indefinite" />
-            </path>
-            <path d="M 55 50 L 57 55 L 62 57 L 57 59 L 55 64 L 53 59 L 48 57 L 53 55 Z" fill="#fbbf24">
-              <animate attributeName="opacity" values="0.3;1;0.3" dur="1.5s" repeatCount="indefinite" />
-            </path>
-            <path d="M 100 25 L 102 30 L 107 32 L 102 34 L 100 39 L 98 34 L 93 32 L 98 30 Z" fill="#fbbf24">
-              <animate attributeName="opacity" values="1;0.5;1" dur="2s" repeatCount="indefinite" />
-            </path>
-          </g>
-        </svg>
+    <div className="flex flex-col items-center justify-center py-8 md:py-16 text-center space-y-6 md:space-y-8">
+      
+      {/* Logo */}
+      <div className="bg-gradient-to-br from-purple-500 to-blue-500 p-6 md:p-8 rounded-3xl shadow-lg">
+        <Sparkles className="w-16 h-16 md:w-20 md:h-20 text-white" />
       </div>
-
-      {/* Text */}
-      <div className="space-y-2">
-        <h2 className="text-2xl font-bold text-gray-900">Hey! I&apos;m Blinky 👋</h2>
-        <p className="text-gray-600 text-lg">
-          Ask me anything and I&apos;ll explain it in a way that actually makes sense
+      
+      {/* Greeting & Description */}
+      <div className="space-y-3 max-w-md px-4">
+        <h2 className="text-2xl md:text-3xl font-bold text-gray-900">
+          {greeting || 'Ask me anything!'}
+        </h2>
+        <p className="text-sm md:text-base text-gray-600 leading-relaxed">
+          I&apos;ll explain it in a way that actually makes sense. No jargon, no confusion — just simple, clear answers.
+        </p>
+        <p className="text-xs text-purple-600 font-medium">
+          💡 Tip: Use the dropdown above to change how I explain things
         </p>
       </div>
 
-      {/* Mode Info Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 w-full max-w-md md:max-w-3xl px-4 pt-4">
-        <div
-          className={`rounded-xl p-4 text-left border-2 transition-all ${
-            simplicityLevel === '5yo'
-              ? 'bg-purple-50 border-purple-400 ring-2 ring-purple-200'
-              : 'bg-purple-50 border-purple-200 hover:border-purple-300'
-          }`}
-        >
-          <div className="text-2xl mb-2">👶</div>
-          <div className="font-semibold text-sm text-purple-900 mb-1 flex items-center gap-2">
-            5 years old mode
-            {simplicityLevel === '5yo' && (
-              <span className="text-[10px] bg-purple-200 px-1.5 py-0.5 rounded">Active</span>
-            )}
-          </div>
-          <div className="text-xs text-purple-700">Super simple words, fun analogies</div>
-        </div>
-
-        <div
-          className={`rounded-xl p-4 text-left border-2 transition-all ${
-            simplicityLevel === 'normal'
-              ? 'bg-blue-50 border-blue-400 ring-2 ring-blue-200'
-              : 'bg-blue-50 border-blue-200 hover:border-blue-300'
-          }`}
-        >
-          <div className="text-2xl mb-2">🤓</div>
-          <div className="font-semibold text-sm text-blue-900 mb-1 flex items-center gap-2">
-            Normal person mode
-            {simplicityLevel === 'normal' && (
-              <span className="text-[10px] bg-blue-200 px-1.5 py-0.5 rounded">Active</span>
-            )}
-          </div>
-          <div className="text-xs text-blue-700">Clear explanations, no jargon</div>
-        </div>
-
-        <div
-          className={`rounded-xl p-4 text-left border-2 transition-all ${
-            simplicityLevel === 'advanced'
-              ? 'bg-green-50 border-green-400 ring-2 ring-green-200'
-              : 'bg-green-50 border-green-200 hover:border-green-300'
-          }`}
-        >
-          <div className="text-2xl mb-2">📚</div>
-          <div className="font-semibold text-sm text-green-900 mb-1 flex items-center gap-2">
-            Advanced mode
-            {simplicityLevel === 'advanced' && (
-              <span className="text-[10px] bg-green-200 px-1.5 py-0.5 rounded">Active</span>
-            )}
-          </div>
-          <div className="text-xs text-green-700">More depth, still crystal clear</div>
+      {/* Example Questions */}
+      <div className="w-full max-w-2xl px-4">
+        <p className="text-sm font-medium text-gray-500 mb-4">
+          Try asking about...
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {exampleQuestions.map((example, i) => (
+            <button
+              key={i}
+              onClick={() => handleExampleClick(example.text)}
+              className={`
+                flex items-center gap-3 p-4 rounded-xl 
+                bg-white hover:bg-purple-50 
+                border-2 border-gray-200 hover:border-purple-300 
+                transition-all text-left group
+                min-h-[60px]
+                ${isMobile ? 'active:scale-95' : 'hover:scale-105'}
+              `}
+            >
+              <span className="text-2xl flex-shrink-0">{example.emoji}</span>
+              <span className="text-sm font-medium text-gray-700 group-hover:text-purple-700">
+                {example.text}
+              </span>
+            </button>
+          ))}
         </div>
       </div>
+
+      {/* Current Mode Indicator */}
+      <div className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-full">
+        <div className={`w-2 h-2 rounded-full ${
+          simplicityLevel === '5yo' ? 'bg-purple-500' :
+          simplicityLevel === 'normal' ? 'bg-blue-500' :
+          'bg-green-500'
+        }`} />
+        <span className="text-xs text-gray-600">
+          Currently in <span className="font-semibold">
+            {simplicityLevel === '5yo' ? '5 years old' : 
+             simplicityLevel === 'normal' ? 'normal' : 
+             'advanced'}
+          </span> mode
+        </span>
+      </div>
+      
     </div>
   );
 }
