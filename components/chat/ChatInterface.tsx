@@ -200,6 +200,8 @@ export function ChatInterface() {
               onFollowUpClick={handleFollowUpClick}
               onAnalogyRating={handleAnalogyRating}
               messagesEndRef={messagesEndRef}
+              conversationId={conversation.conversationId}
+              simplicityLevel={simplicityLevel}
             />
           )}
         </div>

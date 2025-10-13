@@ -4,6 +4,7 @@ import { MessageBubble } from './MessageBubble';
 import { AdaptiveFollowUp } from './AdaptiveFollowUp';
 import { FollowUpQuestion } from '@/lib/question-predictor';
 import { extractMessageText } from '@/lib/utils';
+import { SimplicityLevel } from '@/lib/prompts';
 
 interface ChatMessagesProps {
   messages: any[];
@@ -13,6 +14,8 @@ interface ChatMessagesProps {
   onFollowUpClick: (question: string) => void;
   onAnalogyRating: (messageId: string, rating: 'up' | 'down') => Promise<void>;
   messagesEndRef: React.RefObject<HTMLDivElement | null>;
+  conversationId?: string | null;
+  simplicityLevel: SimplicityLevel;
 }
 
 export function ChatMessages({
@@ -23,13 +26,27 @@ export function ChatMessages({
   onFollowUpClick,
   onAnalogyRating,
   messagesEndRef,
+  conversationId,
+  simplicityLevel,
 }: ChatMessagesProps) {
   return (
     <>
       {messages
         .filter((message) => message.role !== 'system')
-        .map((message) => {
+        .map((message, index) => {
           const content = extractMessageText(message);
+
+          // Find the previous user message for assistant responses (for share feature)
+          let previousUserMessage: string | undefined;
+          if (message.role === 'assistant') {
+            // Look backwards to find the most recent user message
+            for (let i = index - 1; i >= 0; i--) {
+              if (messages[i].role === 'user') {
+                previousUserMessage = extractMessageText(messages[i]);
+                break;
+              }
+            }
+          }
 
           return (
             <MessageBubble
@@ -37,7 +54,12 @@ export function ChatMessages({
               role={message.role as 'user' | 'assistant'}
               content={content}
               messageId={message.id}
+              // EXISTING: Preserve rating functionality
               onRate={message.role === 'assistant' ? onAnalogyRating : undefined}
+              // NEW: Add share functionality props
+              conversationId={conversationId || undefined}
+              simplicityLevel={simplicityLevel}
+              previousUserMessage={previousUserMessage}
             />
           );
         })}

@@ -23,6 +23,7 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
     "date-fns": "^4.0.0",
+    "html2canvas": "^1.4.1",
     "lucide-react": "latest",
     "next": "15.5.4",
     "openai": "^4.104.0",

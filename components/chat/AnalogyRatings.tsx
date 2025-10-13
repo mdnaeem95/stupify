@@ -29,7 +29,7 @@ export function AnalogyRating({ messageId, onRate }: AnalogyRatingProps) {
   };
 
   return (
-    <div className="flex items-center gap-3 mt-3 pt-3 border-t border-gray-100">
+    <div className="flex items-center gap-3 mt-1 mb-3 pt-1">
       <span className="text-xs text-gray-500">Was this helpful?</span>
       
       <button
