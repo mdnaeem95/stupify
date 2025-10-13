@@ -1,72 +1,98 @@
+/* eslint-disable  @typescript-eslint/no-explicit-any */
 /**
- * Card Generator - Creates downloadable images from ShareableCard components
- * Uses html2canvas for rendering
+ * Card Generator - modern-screenshot version
+ * - PNG via domToBlob (Blob)
+ * - JPG via domToJpeg (dataURL -> Blob)
+ * - Works with CSS Color 4 (lab/oklch/etc.) since it delegates to the browser (SVG/foreignObject)
  */
+
+type ImgFormat = 'png' | 'jpg';
+
+// Lazy import so it’s only loaded when needed
+async function loadMs() {
+  const ms = await import('modern-screenshot');
+  return ms;
+}
+
+// Utility: convert dataURL to Blob
+async function dataUrlToBlob(dataUrl: string): Promise<Blob> {
+  const res = await fetch(dataUrl);
+  return await res.blob();
+}
+
+// Core renderers
+async function renderPngBlob(
+  el: HTMLElement,
+  backgroundColor = '#ffffff'
+): Promise<Blob> {
+  const { domToBlob } = await loadMs();
+  // Options mirror html-to-image style; modern-screenshot supports these. 
+  // See README -> Methods/Options. 
+  return await domToBlob(el, {
+    backgroundColor,   // solid background (socials prefer non-transparent)
+    // If you load cross-origin images/fonts, ensure CORS headers on the asset servers.
+  });
+}
+
+async function renderJpegBlob(
+  el: HTMLElement,
+  quality = 0.95,
+  backgroundColor = '#ffffff'
+): Promise<Blob> {
+  const { domToJpeg } = await loadMs();
+  const dataUrl = await domToJpeg(el, {
+    quality,
+    backgroundColor,
+  });
+  return await dataUrlToBlob(dataUrl);
+}
 
 export async function generateCardImage(
   cardElement: HTMLElement,
   options: {
     filename?: string;
-    format?: 'png' | 'jpg';
-    quality?: number;
+    format?: ImgFormat;
+    quality?: number; // used for JPG
   } = {}
 ): Promise<Blob | null> {
-  const { filename = 'stupify-explanation', format = 'png', quality = 0.95 } = options;
-
+  const { format = 'png', quality = 0.95 } = options;
   try {
-    // Dynamically import html2canvas only when needed
-    const html2canvas = (await import('html2canvas')).default;
+    // Ensure webfonts are ready for accurate layout (optional but recommended)
+    if ('fonts' in document) {
+      try { await (document as any).fonts.ready; } catch {}
+    }
 
-    // Generate canvas from element
-    const canvas = await html2canvas(cardElement, {
-      scale: 2, // Higher quality
-      backgroundColor: null,
-      logging: false,
-      useCORS: true,
-      allowTaint: true,
-    });
-
-    // Convert canvas to blob
-    return new Promise((resolve, reject) => {
-      canvas.toBlob(
-        (blob) => {
-          if (blob) {
-            resolve(blob);
-          } else {
-            reject(new Error('Failed to generate image blob'));
-          }
-        },
-        format === 'png' ? 'image/png' : 'image/jpeg',
-        quality
-      );
-    });
-  } catch (error) {
-    console.error('Error generating card image:', error);
+    if (format === 'png') {
+      return await renderPngBlob(cardElement, '#ffffff');
+    } else {
+      return await renderJpegBlob(cardElement, quality, '#ffffff');
+    }
+  } catch (err) {
+    console.error('Error generating card image:', err);
     return null;
   }
 }
 
 export async function downloadCardImage(
   cardElement: HTMLElement,
-  filename: string = 'stupify-explanation'
+  filename: string = 'stupify-explanation',
+  format: ImgFormat = 'png'
 ): Promise<boolean> {
   try {
-    const blob = await generateCardImage(cardElement, { filename });
+    const blob = await generateCardImage(cardElement, { filename, format });
     if (!blob) return false;
 
-    // Create download link
     const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${filename}.png`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${filename}.${format}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
     URL.revokeObjectURL(url);
-
     return true;
-  } catch (error) {
-    console.error('Error downloading card:', error);
+  } catch (err) {
+    console.error('Error downloading card:', err);
     return false;
   }
 }
@@ -76,16 +102,23 @@ export async function shareCardImage(
   options: {
     question: string;
     answer: string;
+    filename?: string;
+    format?: ImgFormat;
   }
 ): Promise<boolean> {
+  const { filename = 'stupify-explanation', format = 'png' } = options;
+
   try {
-    const blob = await generateCardImage(cardElement);
+    const blob = await generateCardImage(cardElement, { filename, format });
     if (!blob) return false;
 
-    // Check if Web Share API is available with files support
     if (navigator.share && navigator.canShare) {
-      const file = new File([blob], 'stupify-explanation.png', { type: 'image/png' });
-      
+      const file = new File(
+        [blob],
+        `${filename}.${format}`,
+        { type: format === 'png' ? 'image/png' : 'image/jpeg' }
+      );
+
       if (navigator.canShare({ files: [file] })) {
         await navigator.share({
           files: [file],
@@ -96,80 +129,61 @@ export async function shareCardImage(
       }
     }
 
-    // Fallback: Download the image
-    return await downloadCardImage(cardElement);
-  } catch (error) {
-    console.error('Error sharing card:', error);
+    // Fallback to download
+    return await downloadCardImage(cardElement, filename, format);
+  } catch (err) {
+    console.error('Error sharing card:', err);
     return false;
   }
 }
 
 /**
- * Generate multiple card formats at once
+ * Generate multiple card formats at once (all PNGs)
+ * square: 1080x1080, story: 1080x1920, twitter: 1200x675
  */
 export async function generateCardFormats(cardElement: HTMLElement): Promise<{
-  square: Blob | null; // 1080x1080 for Instagram
-  story: Blob | null; // 1080x1920 for Stories
-  twitter: Blob | null; // 1200x675 for Twitter
+  square: Blob | null;
+  story: Blob | null;
+  twitter: Blob | null;
 }> {
   try {
-    const html2canvas = (await import('html2canvas')).default;
+    // Base PNG render (Blob)
+    const baseBlob = await renderPngBlob(cardElement, '#ffffff');
+    const baseBitmap = await createImageBitmap(baseBlob);
 
-    // Generate base canvas
-    const baseCanvas = await html2canvas(cardElement, {
-      scale: 2,
-      backgroundColor: null,
-      logging: false,
-      useCORS: true,
-      allowTaint: true,
-    });
+    const resize = async (w: number, h: number): Promise<Blob> => {
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('2D context unavailable');
 
-    // Helper to resize canvas
-    const resizeCanvas = (
-      originalCanvas: HTMLCanvasElement,
-      width: number,
-      height: number
-    ): Blob | null => {
-      const resizedCanvas = document.createElement('canvas');
-      resizedCanvas.width = width;
-      resizedCanvas.height = height;
-      const ctx = resizedCanvas.getContext('2d');
-      if (!ctx) return null;
+      // letterbox fit
+      const scale = Math.min(w / baseBitmap.width, h / baseBitmap.height);
+      const dw = Math.round(baseBitmap.width * scale);
+      const dh = Math.round(baseBitmap.height * scale);
+      const dx = Math.round((w - dw) / 2);
+      const dy = Math.round((h - dh) / 2);
 
-      // Calculate scaling to fit
-      const scale = Math.min(width / originalCanvas.width, height / originalCanvas.height);
-      const scaledWidth = originalCanvas.width * scale;
-      const scaledHeight = originalCanvas.height * scale;
-      const x = (width - scaledWidth) / 2;
-      const y = (height - scaledHeight) / 2;
-
-      // Fill background
       ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, width, height);
+      ctx.fillRect(0, 0, w, h);
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(baseBitmap, dx, dy, dw, dh);
 
-      // Draw scaled image
-      ctx.drawImage(originalCanvas, x, y, scaledWidth, scaledHeight);
-
-      // Convert to blob
-      let blob: Blob | null = null;
-      resizedCanvas.toBlob((b) => {
-        blob = b;
-      }, 'image/png');
-      
-      return blob;
+      return await new Promise<Blob>((resolve, reject) =>
+        canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('toBlob failed'))), 'image/png')
+      );
     };
 
-    return {
-      square: resizeCanvas(baseCanvas, 1080, 1080),
-      story: resizeCanvas(baseCanvas, 1080, 1920),
-      twitter: resizeCanvas(baseCanvas, 1200, 675),
-    };
-  } catch (error) {
-    console.error('Error generating card formats:', error);
-    return {
-      square: null,
-      story: null,
-      twitter: null,
-    };
+    const [square, story, twitter] = await Promise.all([
+      resize(1080, 1080),
+      resize(1080, 1920),
+      resize(1200, 675),
+    ]);
+
+    return { square, story, twitter };
+  } catch (err) {
+    console.error('Error generating card formats:', err);
+    return { square: null, story: null, twitter: null };
   }
 }

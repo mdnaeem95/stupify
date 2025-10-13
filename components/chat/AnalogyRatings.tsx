@@ -6,9 +6,10 @@ import { ThumbsUp, ThumbsDown } from 'lucide-react';
 interface AnalogyRatingProps {
   messageId: string;
   onRate: (messageId: string, rating: 'up' | 'down') => void;
+  isMobile?: boolean;
 }
 
-export function AnalogyRating({ messageId, onRate }: AnalogyRatingProps) {
+export function AnalogyRating({ messageId, onRate, isMobile }: AnalogyRatingProps) {
   const [rating, setRating] = useState<'up' | 'down' | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -41,6 +42,7 @@ export function AnalogyRating({ messageId, onRate }: AnalogyRatingProps) {
             ? 'bg-green-100 text-green-600' 
             : 'text-gray-400 hover:bg-gray-100 hover:text-green-600'}
           ${rating && rating !== 'up' ? 'opacity-40' : ''}
+          ${isMobile ? 'min-h-[44px] min-w-[44px] px-4 py-2.5' : ''}
           disabled:cursor-not-allowed
         `}
         title="Good explanation"
@@ -57,6 +59,7 @@ export function AnalogyRating({ messageId, onRate }: AnalogyRatingProps) {
             ? 'bg-red-100 text-red-600' 
             : 'text-gray-400 hover:bg-gray-100 hover:text-red-600'}
           ${rating && rating !== 'down' ? 'opacity-40' : ''}
+          ${isMobile ? 'min-h-[44px] min-w-[44px] px-4 py-2.5' : ''}
           disabled:cursor-not-allowed
         `}
         title="Confusing explanation"

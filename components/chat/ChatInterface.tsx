@@ -14,6 +14,9 @@ import { useConversation } from '../../hooks/useConversation';
 import { useUsageTracking } from '../../hooks/useUsageTracking';
 import { useUserProfile } from '../../hooks/useUserProfile';
 import { useFollowUpQuestions } from '../../hooks/useFollowUpQuestions';
+import { useMobileDetection } from '@/hooks/useMobileDetection';
+import { useKeyboardHeight } from '@/hooks/useKeyboardHeight';
+import { useHapticFeedback } from '@/hooks/useHapticFeedback';
 
 // Components
 import { ChatHeader } from './ChatHeader';
@@ -40,6 +43,9 @@ export function ChatInterface() {
   const usage = useUsageTracking();
   const profile = useUserProfile(simplicityLevel);
   const followUp = useFollowUpQuestions(simplicityLevel);
+  const { isMobile, isIOS } = useMobileDetection();
+  const { height: keyboardHeight, isVisible: isKeyboardVisible } = useKeyboardHeight();
+  const { triggerHaptic } = useHapticFeedback();
 
   // AI SDK v5 useChat
   const { messages, sendMessage, status, setMessages } = useChat({
@@ -126,6 +132,8 @@ export function ChatInterface() {
 
     if (!input.trim() || isLoading) return;
 
+    if (isMobile) triggerHaptic('light');
+
     lastUserQuestionRef.current = input.trim();
     await profile.trackQuestion(input.trim(), simplicityLevel);
 
@@ -177,10 +185,16 @@ export function ChatInterface() {
       {usage.showPaywall && usage.usage && <Paywall limit={usage.usage.limit} />}
 
       {/* Header */}
-      <ChatHeader simplicityLevel={simplicityLevel} onLevelChange={setSimplicityLevel} />
+      <ChatHeader simplicityLevel={simplicityLevel} onLevelChange={setSimplicityLevel} isMobile={isMobile} />
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto">
+        <div 
+          className="flex-1 overflow-y-auto overscroll-contain"
+          style={{
+            // Add padding when keyboard is visible on mobile
+            paddingBottom: isMobile && isKeyboardVisible ? `${keyboardHeight}px` : '0px',
+          }}
+        >
         <div className="max-w-4xl mx-auto px-6 py-8">
           {conversation.isLoadingConversation ? (
             <div className="flex items-center justify-center py-12">
@@ -202,6 +216,8 @@ export function ChatInterface() {
               messagesEndRef={messagesEndRef}
               conversationId={conversation.conversationId}
               simplicityLevel={simplicityLevel}
+              isMobile={isMobile}
+              triggerHaptic={triggerHaptic}
             />
           )}
         </div>
@@ -228,6 +244,11 @@ export function ChatInterface() {
         isSaving={conversation.isSaving}
         isLoadingConversation={conversation.isLoadingConversation}
         conversationId={conversation.conversationId}
+        isMobile={isMobile}
+        isIOS={isIOS}
+        isKeyboardVisible={isKeyboardVisible}
+        keyboardHeight={keyboardHeight}
+        triggerHaptic={triggerHaptic}
       />
     </div>
   );
