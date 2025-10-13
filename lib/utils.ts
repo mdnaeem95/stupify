@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
 
@@ -44,4 +45,42 @@ export function formatDate(date: Date | string): string {
 export function truncate(str: string, length: number): string {
   if (str.length <= length) return str;
   return str.slice(0, length) + '...';
+}
+
+/**
+ * Extract text content from AI SDK v5 message parts
+ */
+export function extractMessageText(message: any): string {
+  return message?.parts
+    ?.filter((part: any) => part.type === 'text')
+    .map((part: any) => part.text)
+    .join('') || '';
+}
+
+/**
+ * Convert database messages to UI message format
+ */
+export function convertToUIMessages(savedMessages: any[]) {
+  return savedMessages.map((msg) => ({
+    id: msg.id,
+    role: msg.role,
+    parts: [{ type: 'text' as const, text: msg.content }],
+    createdAt: new Date(msg.created_at),
+  }));
+}
+
+/**
+ * Dispatch custom window event
+ */
+export function dispatchCustomEvent(eventName: string, detail?: any) {
+  window.dispatchEvent(new CustomEvent(eventName, { detail }));
+}
+
+/**
+ * Auto-resize textarea based on content
+ */
+export function autoResizeTextarea(element: HTMLTextAreaElement | null) {
+  if (!element) return;
+  element.style.height = 'auto';
+  element.style.height = Math.min(element.scrollHeight, 200) + 'px';
 }
