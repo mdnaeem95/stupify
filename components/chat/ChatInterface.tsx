@@ -17,6 +17,7 @@ import { useFollowUpQuestions } from '../../hooks/useFollowUpQuestions';
 import { useMobileDetection } from '@/hooks/useMobileDetection';
 import { useKeyboardHeight } from '@/hooks/useKeyboardHeight';
 import { useHapticFeedback } from '@/hooks/useHapticFeedback';
+import { useVoiceInput } from '@/hooks/useVoiceInput';
 
 // Components
 import { ChatHeader } from './ChatHeader';
@@ -24,6 +25,7 @@ import { ChatEmptyState } from './ChatEmptyState';
 import { ChatMessages } from './ChatMessages';
 import { ChatInput } from './ChatInput';
 import { LevelSuggestion } from './LevelSuggestion';
+import { RecordingIndicator } from '../voice/RecordingIndicator';
 
 // Utils
 import { extractMessageText } from '@/lib/utils';
@@ -46,6 +48,32 @@ export function ChatInterface() {
   const { isMobile, isIOS } = useMobileDetection();
   const { height: keyboardHeight, isVisible: isKeyboardVisible } = useKeyboardHeight();
   const { triggerHaptic } = useHapticFeedback();
+
+  // ✨ ADD: Voice input hook
+  const voice = useVoiceInput({
+    onTranscript: (text) => {
+      // Add transcript to input
+      setInput((prev) => {
+        const newValue = prev ? `${prev} ${text}` : text;
+        return newValue.trim();
+      });
+    },
+    onError: (error) => {
+      console.error('Voice input error:', error);
+    },
+    autoStop: true,
+    maxDuration: 60000,
+    useWebSpeech: true,
+  });
+  
+  // ✨ ADD: Voice button handler
+  const handleVoiceClick = () => {
+    if (voice.isRecording) {
+      voice.stopRecording();
+    } else {
+      voice.startRecording();
+    }
+  };
 
   // AI SDK v5 useChat
   const { messages, sendMessage, status, setMessages } = useChat({
@@ -249,6 +277,18 @@ export function ChatInterface() {
         isKeyboardVisible={isKeyboardVisible}
         keyboardHeight={keyboardHeight}
         triggerHaptic={triggerHaptic}
+        voiceState={voice}
+        onVoiceClick={handleVoiceClick}
+      />
+
+      <RecordingIndicator
+        isVisible={voice.isRecording}
+        duration={voice.duration}
+        volume={voice.volume}
+        interimTranscript={voice.interimTranscript}
+        method={voice.method}
+        onStop={() => voice.stopRecording()}
+        onCancel={() => voice.cancelRecording()}
       />
     </div>
   );

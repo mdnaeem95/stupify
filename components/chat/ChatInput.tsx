@@ -2,6 +2,8 @@ import { useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Send, Loader2 } from 'lucide-react';
 import { autoResizeTextarea } from '@/lib/utils';
+import { VoiceButton } from '../voice/VoiceButton';
+import type { UseVoiceInputReturn } from '@/hooks/useVoiceInput';
 
 interface ChatInputProps {
   input: string;
@@ -16,6 +18,8 @@ interface ChatInputProps {
   isKeyboardVisible?: boolean;
   keyboardHeight?: number;
   triggerHaptic?: (type?: 'light' | 'medium' | 'heavy') => void;
+  voiceState?: UseVoiceInputReturn;
+  onVoiceClick?: () => void;
 }
 
 export function ChatInput({
@@ -29,6 +33,8 @@ export function ChatInput({
   isMobile,
   isKeyboardVisible,
   triggerHaptic,
+  voiceState,
+  onVoiceClick
 }: ChatInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -37,7 +43,7 @@ export function ChatInput({
     autoResizeTextarea(textareaRef.current);
   }, [input]);
 
-  const isDisabled = isLoading || isSaving || isLoadingConversation;
+  const isDisabled = isLoading || isSaving || isLoadingConversation || voiceState?.isRecording;
 
   return (
     <div 
@@ -55,6 +61,21 @@ export function ChatInput({
     >
       <div className="max-w-4xl mx-auto px-6 py-4">
         <form onSubmit={onSubmit} className="flex gap-3 items-end">
+
+          {/* ✨ NEW: Voice Button */}
+          {voiceState && onVoiceClick && (
+            <VoiceButton
+              isRecording={voiceState.isRecording}
+              isProcessing={voiceState.isProcessing}
+              isSupported={voiceState.isSupported}
+              error={voiceState.error}
+              duration={voiceState.duration}
+              onClick={onVoiceClick}
+              disabled={isDisabled}
+              size={isMobile ? 'lg' : 'md'}
+            />
+          )}
+
           <div className="flex-1 relative">
             <textarea
               ref={textareaRef}
@@ -66,7 +87,10 @@ export function ChatInput({
                   onSubmit(e);
                 }
               }}
-              placeholder="Ask me anything..."
+              placeholder={voiceState?.isSupported 
+                ? "Ask me anything... or use voice input 🎤" 
+                : "Ask me anything..."
+              }
               rows={1}
               disabled={isDisabled}
               className="w-full overflow-hidden resize-none rounded-xl border-2 border-gray-200 px-4 py-3 text-gray-900 placeholder-gray-500 focus:border-purple-500 focus:outline-none disabled:bg-gray-50 disabled:cursor-not-allowed transition-all scrollbar-hide"
