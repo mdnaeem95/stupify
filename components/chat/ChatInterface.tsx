@@ -18,6 +18,8 @@ import { useMobileDetection } from '@/hooks/useMobileDetection';
 import { useKeyboardHeight } from '@/hooks/useKeyboardHeight';
 import { useHapticFeedback } from '@/hooks/useHapticFeedback';
 import { useVoiceInput } from '@/hooks/useVoiceInput';
+import { useQuestionTracking } from '@/hooks/useGamification';
+import { useGamificationNotifications } from '@/hooks/useGamification';
 
 // Components
 import { ChatHeader } from './ChatHeader';
@@ -26,6 +28,8 @@ import { ChatMessages } from './ChatMessages';
 import { ChatInput } from './ChatInput';
 import { LevelSuggestion } from './LevelSuggestion';
 import { RecordingIndicator } from '../voice/RecordingIndicator';
+import { AchievementUnlockModal } from '@/components/gamification/AchievementUnlockModal';
+import { MilestoneCelebration } from '@/components/gamification/MilestoneCelebration';
 
 // Utils
 import { extractMessageText } from '@/lib/utils';
@@ -48,6 +52,9 @@ export function ChatInterface() {
   const { isMobile, isIOS } = useMobileDetection();
   const { height: keyboardHeight, isVisible: isKeyboardVisible } = useKeyboardHeight();
   const { triggerHaptic } = useHapticFeedback();
+  const gamification = useGamificationNotifications();
+  const { trackQuestion } = useQuestionTracking();
+  
 
   // ✨ ADD: Voice input hook
   const voice = useVoiceInput({
@@ -205,6 +212,12 @@ export function ChatInterface() {
     // Send message to AI
     sendMessage({ text: messageToSend });
     setInput('');
+
+    setTimeout(() => {
+      gamification.checkNotifications();
+    }, 1000); // Small delay to ensure backend has processed
+
+    await trackQuestion();
   };
 
   return (
@@ -289,6 +302,19 @@ export function ChatInterface() {
         method={voice.method}
         onStop={() => voice.stopRecording()}
         onCancel={() => voice.cancelRecording()}
+      />
+
+      {/* NEW: Gamification modals */}
+      <AchievementUnlockModal
+        achievement={gamification.pendingAchievement}
+        isOpen={gamification.showAchievementModal}
+        onClose={gamification.closeAchievementModal}
+      />
+
+      <MilestoneCelebration
+        milestone={gamification.currentMilestone || 0}
+        isOpen={gamification.showMilestoneModal}
+        onClose={gamification.closeMilestoneModal}
       />
     </div>
   );

@@ -5,6 +5,9 @@ import { getSystemPromptV2, SimplicityLevel } from '@/lib/prompts-v2';
 import { createClient } from '@/lib/supabase/client';
 import { getUserProfile } from '@/lib/get-user-profile';
 import { extractTopics, getPersonalizedAnalogyPrompt } from '@/lib/user-profiler';
+import { updateUserStreak } from '@/lib/gamification/streak-tracker';
+import { updateDailyStats } from '@/lib/gamification/learning-stats';
+import { checkAllAchievements } from '@/lib/gamification/achievement-checker';
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
@@ -41,6 +44,24 @@ export async function POST(req: Request) {
           currentTopic
         });
       }
+    }
+
+    if (user) {
+      // Run gamification tracking in background (don't block response)
+      Promise.all([
+        updateUserStreak(user.id),
+        updateDailyStats(user.id, undefined, level, false, false),
+        checkAllAchievements(user.id),
+      ]).then(([streakResult, , newAchievements]) => {
+        if (streakResult) {
+          console.log('🔥 Streak updated:', streakResult);
+        }
+        if (newAchievements && newAchievements.length > 0) {
+          console.log('🏆 New achievements unlocked:', newAchievements.length);
+        }
+      }).catch((error) => {
+        console.error('⚠️ Gamification tracking error (non-critical):', error);
+      });
     }
 
     // Convert UIMessages to ModelMessages for streamText

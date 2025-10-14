@@ -3,6 +3,7 @@
 import { Sparkles } from 'lucide-react';
 import { SimplicityLevel } from '@/lib/prompts';
 import { CompactLevelSelector } from './CompactLevelSelector';
+import { StreakDisplay } from '@/components/gamification/StreakDisplay';
 
 interface ChatHeaderProps {
   simplicityLevel: SimplicityLevel;
@@ -32,6 +33,9 @@ export function ChatHeader({
               <p className="text-xs text-gray-500">AI that speaks human</p>
             </div>
           </div>
+
+          {/* Streak Display */}
+          <StreakDisplay compact={isMobile} />
 
           {/* Compact Level Selector */}
           <CompactLevelSelector

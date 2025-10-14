@@ -1,6 +1,6 @@
 import React from 'react';
 
-type MascotExpression = 'happy' | 'thinking' | 'excited' | 'waving';
+type MascotExpression = 'happy' | 'thinking' | 'excited' | 'waving' | 'celebrating' | 'proud';
 
 interface MascotProps {
   expression?: MascotExpression;
@@ -85,7 +85,55 @@ export function Mascot({ expression = 'happy', size = 200, className = '' }: Mas
             <circle cx="130" cy="85" r="6" fill="#f472b6" opacity="0.4"/>
           </g>
         );
-      
+
+      case 'celebrating':
+        return (
+          <g id="celebrating-face">
+            {/* Star eyes! */}
+            <g transform="translate(85, 75)">
+              <path d="M 0 -5 L 1.5 -1.5 L 5 0 L 1.5 1.5 L 0 5 L -1.5 1.5 L -5 0 L -1.5 -1.5 Z" 
+                    fill="#fbbf24"/>
+            </g>
+            <g transform="translate(115, 75)">
+              <path d="M 0 -5 L 1.5 -1.5 L 5 0 L 1.5 1.5 L 0 5 L -1.5 1.5 L -5 0 L -1.5 -1.5 Z" 
+                    fill="#fbbf24"/>
+            </g>
+            
+            {/* Huge smile */}
+            <path d="M 70 90 Q 100 118, 130 90" 
+                  stroke="#1e293b" 
+                  strokeWidth="6" 
+                  fill="none" 
+                  strokeLinecap="round"/>
+            
+            {/* Extra rosy cheeks */}
+            <circle cx="65" cy="85" r="10" fill="#f472b6" opacity="0.7"/>
+            <circle cx="135" cy="85" r="10" fill="#f472b6" opacity="0.7"/>
+          </g>
+        );
+
+      case 'proud':
+        return (
+          <g id="proud-face">
+            {/* Confident eyes */}
+            <circle cx="85" cy="75" r="5" fill="#1e293b"/>
+            <circle cx="87" cy="73" r="2" fill="white"/>
+            <circle cx="115" cy="75" r="5" fill="#1e293b"/>
+            <circle cx="117" cy="73" r="2" fill="white"/>
+            
+            {/* Proud smile */}
+            <path d="M 80 92 Q 100 102, 120 92" 
+                  stroke="#1e293b" 
+                  strokeWidth="4" 
+                  fill="none" 
+                  strokeLinecap="round"/>
+            
+            {/* Slight blush */}
+            <circle cx="70" cy="85" r="6" fill="#f472b6" opacity="0.3"/>
+            <circle cx="130" cy="85" r="6" fill="#f472b6" opacity="0.3"/>
+          </g>
+        );
+
       default: // happy
         return (
           <g id="happy-face">
@@ -116,62 +164,63 @@ export function Mascot({ expression = 'happy', size = 200, className = '' }: Mas
       xmlns="http://www.w3.org/2000/svg"
     >
       <defs>
-        <linearGradient id={`bulbGradient-${expression}`} x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" style={{ stopColor: '#a855f7', stopOpacity: 1 }} />
-          <stop offset="100%" style={{ stopColor: '#3b82f6', stopOpacity: 1 }} />
+        <linearGradient id="bulbGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" style={{stopColor:'#a855f7',stopOpacity:1}} />
+          <stop offset="100%" style={{stopColor:'#3b82f6',stopOpacity:1}} />
         </linearGradient>
-        
-        <linearGradient id={`glowGradient-${expression}`} x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" style={{ stopColor: '#fbbf24', stopOpacity: 0.8 }} />
-          <stop offset="100%" style={{ stopColor: '#f59e0b', stopOpacity: 0.6 }} />
+        <linearGradient id="glowGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" style={{stopColor:'#fbbf24',stopOpacity:0.8}} />
+          <stop offset="100%" style={{stopColor:'#f59e0b',stopOpacity:0.6}} />
         </linearGradient>
       </defs>
       
       {/* Glow effect */}
-      <circle cx="100" cy="80" r="55" fill={`url(#glowGradient-${expression})`} opacity="0.3">
-        <animate attributeName="r" values="55;60;55" dur="2s" repeatCount="indefinite"/>
-        <animate attributeName="opacity" values="0.3;0.5;0.3" dur="2s" repeatCount="indefinite"/>
+      <circle cx="100" cy="80" r="55" fill="url(#glowGradient)" opacity="0.3">
+        {expression === 'celebrating' ? (
+          <animate attributeName="r" values="55;65;55" dur="1s" repeatCount="indefinite"/>
+        ) : (
+          <animate attributeName="r" values="55;60;55" dur="2s" repeatCount="indefinite"/>
+        )}
       </circle>
       
-      {/* Main lightbulb */}
+      {/* Main bulb body */}
       <path 
         d="M 100 30 C 75 30, 60 45, 60 70 C 60 85, 65 95, 70 105 L 70 115 L 130 115 L 130 105 C 135 95, 140 85, 140 70 C 140 45, 125 30, 100 30 Z" 
-        fill={`url(#bulbGradient-${expression})`}
-        stroke="#6366f1" 
-        strokeWidth="2"
+        fill="url(#bulbGradient)"
       />
       
-      {/* Bulb highlight */}
-      <ellipse cx="85" cy="55" rx="15" ry="20" fill="white" opacity="0.4"/>
-      <ellipse cx="90" cy="50" rx="8" ry="10" fill="white" opacity="0.6"/>
+      {/* Inner highlight */}
+      <ellipse cx="90" cy="55" rx="15" ry="20" fill="white" opacity="0.3"/>
       
-      {/* Screw threads */}
-      <rect x="75" y="115" width="50" height="8" fill="#cbd5e1" rx="2"/>
-      <rect x="75" y="125" width="50" height="8" fill="#94a3b8" rx="2"/>
-      <rect x="75" y="135" width="50" height="8" fill="#cbd5e1" rx="2"/>
+      {/* Base/socket */}
+      <rect x="85" y="115" width="30" height="10" rx="2" fill="#6366f1"/>
+      <rect x="80" y="125" width="40" height="8" rx="2" fill="#4f46e5"/>
       
-      {/* Base */}
-      <rect x="80" y="145" width="40" height="12" fill="#64748b" rx="3"/>
+      {/* Filament lines */}
+      <line x1="95" y1="70" x2="95" y2="100" stroke="#fbbf24" strokeWidth="2" opacity="0.6"/>
+      <line x1="105" y1="70" x2="105" y2="100" stroke="#fbbf24" strokeWidth="2" opacity="0.6"/>
       
       {/* Face based on expression */}
       {getFaceForExpression()}
       
-      {/* Sparkles */}
-      <g id="sparkles">
-        <path d="M 145 45 L 147 50 L 152 52 L 147 54 L 145 59 L 143 54 L 138 52 L 143 50 Z" fill="#fbbf24">
-          <animate attributeName="opacity" values="1;0.3;1" dur="1.5s" repeatCount="indefinite"/>
-        </path>
-        <path d="M 55 50 L 57 55 L 62 57 L 57 59 L 55 64 L 53 59 L 48 57 L 53 55 Z" fill="#fbbf24">
-          <animate attributeName="opacity" values="0.3;1;0.3" dur="1.5s" repeatCount="indefinite"/>
-        </path>
-        <path d="M 100 25 L 102 30 L 107 32 L 102 34 L 100 39 L 98 34 L 93 32 L 98 30 Z" fill="#fbbf24">
-          <animate attributeName="opacity" values="1;0.5;1" dur="2s" repeatCount="indefinite"/>
-        </path>
-      </g>
+      {/* Extra sparkles for celebrating */}
+      {expression === 'celebrating' && (
+        <g id="celebration-sparkles">
+          <path d="M 145 50 L 147 55 L 152 57 L 147 59 L 145 64 L 143 59 L 138 57 L 143 55 Z" fill="#fbbf24">
+            <animate attributeName="opacity" values="1;0.3;1" dur="0.8s" repeatCount="indefinite"/>
+          </path>
+          <path d="M 55 50 L 57 55 L 62 57 L 57 59 L 55 64 L 53 59 L 48 57 L 53 55 Z" fill="#fbbf24">
+            <animate attributeName="opacity" values="0.3;1;0.3" dur="0.8s" repeatCount="indefinite"/>
+          </path>
+          <path d="M 100 20 L 102 25 L 107 27 L 102 29 L 100 34 L 98 29 L 93 27 L 98 25 Z" fill="#fbbf24">
+            <animate attributeName="opacity" values="1;0.5;1" dur="1s" repeatCount="indefinite"/>
+          </path>
+        </g>
+      )}
       
-      {/* Arms - only show for waving */}
+      {/* Waving arm */}
       {expression === 'waving' && (
-        <g id="arms">
+        <g id="waving-arm">
           <path d="M 60 90 Q 45 85, 35 95" 
                 stroke="#6366f1" 
                 strokeWidth="6" 
