@@ -60,20 +60,22 @@ export function ChatInput({
       }}
     >
       <div className="max-w-4xl mx-auto px-6 py-4">
-        <form onSubmit={onSubmit} className="flex gap-3 items-end">
+        <form onSubmit={onSubmit} className="flex gap-2 items-center">
 
           {/* ✨ NEW: Voice Button */}
           {voiceState && onVoiceClick && (
-            <VoiceButton
-              isRecording={voiceState.isRecording}
-              isProcessing={voiceState.isProcessing}
-              isSupported={voiceState.isSupported}
-              error={voiceState.error}
-              duration={voiceState.duration}
-              onClick={onVoiceClick}
-              disabled={isDisabled}
-              size={isMobile ? 'lg' : 'md'}
-            />
+            <div className='flex-shrink-0'>
+              <VoiceButton
+                isRecording={voiceState.isRecording}
+                isProcessing={voiceState.isProcessing}
+                isSupported={voiceState.isSupported}
+                error={voiceState.error}
+                duration={voiceState.duration}
+                onClick={onVoiceClick}
+                disabled={isDisabled}
+                size={isMobile ? 'lg' : 'md'}
+                />
+            </div>
           )}
 
           <div className="flex-1 relative">
@@ -94,17 +96,27 @@ export function ChatInput({
               rows={1}
               disabled={isDisabled}
               className="w-full overflow-hidden resize-none rounded-xl border-2 border-gray-200 px-4 py-3 text-gray-900 placeholder-gray-500 focus:border-purple-500 focus:outline-none disabled:bg-gray-50 disabled:cursor-not-allowed transition-all scrollbar-hide"
-              style={{ minHeight: '44px', maxHeight: '200px', fontSize: isMobile ? '16px' : '14px' }}
+              style={{ 
+                minHeight: isMobile ? '48px' : '44px',  // Match button heights
+                maxHeight: '200px', 
+                fontSize: isMobile ? '16px' : '14px' 
+              }}
             />
           </div>
-          <Button
-            type="submit"
-            disabled={isDisabled || !input.trim()}
-            onClick={() => isMobile && triggerHaptic && triggerHaptic('medium')}
-            className="mb-1 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-xl px-6 shadow-md hover:shadow-lg transition-all h-12 flex-shrink-0 min-h-[44px] min-w-[44px]"
-          >
-            {isLoading || isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
-          </Button>
+          <div className='flex-shrink-0'>
+            <Button
+              type="submit"
+              disabled={isDisabled || !input.trim()}
+              onClick={() => isMobile && triggerHaptic && triggerHaptic('medium')}
+              className="mb-1 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-xl px-6 shadow-md hover:shadow-lg transition-all h-12 flex-shrink-0 min-h-[44px] min-w-[44px]"
+              style={{
+                height: isMobile ? '48px' : '44px',
+                width: isMobile ? '48px' : '44px',
+              }}
+            >
+              {isLoading || isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+            </Button>
+          </div>
         </form>
         <p className="text-xs text-gray-500 text-center mt-2">
           {conversationId

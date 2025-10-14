@@ -40,7 +40,7 @@ export function VoiceButton({
   // Size classes
   const sizeClasses = {
     sm: 'h-8 w-8',
-    md: 'h-10 w-10',
+    md: 'h-11 w-11',
     lg: 'h-12 w-12',
   };
   
@@ -67,7 +67,7 @@ export function VoiceButton({
         onClick={onClick}
         disabled={isDisabled}
         className={cn(
-          'rounded-full transition-all duration-200',
+          'rounded-xl transition-all duration-200',
           sizeClasses[size],
           // Base styles
           'relative overflow-hidden',
@@ -90,6 +90,10 @@ export function VoiceButton({
           !isSupported ? 'Voice input not supported' :
           'Start voice input'
         }
+        style={{
+          minHeight: size === 'lg' ? '48px' : '44px',
+          minWidth: size === 'lg' ? '48px' : '44px',
+        }}
       >
         {isProcessing ? (
           <Loader2 className={cn(iconSizeClasses[size], 'animate-spin text-white')} />
