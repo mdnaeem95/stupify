@@ -1,20 +1,19 @@
-import { createClient as createSupabaseClient } from '@supabase/supabase-js'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 
-export function createClient(authToken?: string) {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_PUBLISHABLE_KEY!
-
-  if (authToken) {
-    // Create client with custom auth header
-    return createSupabaseClient(supabaseUrl, supabaseAnonKey, {
+/**
+ * Create Supabase client with JWT from Authorization header
+ * Used for API routes that receive tokens from extensions
+ */
+export function createClientWithToken(token: string) {
+  return createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_PUBLISHABLE_KEY!,
+    {
       global: {
         headers: {
-          Authorization: `Bearer ${authToken}`
+          Authorization: `Bearer ${token}`
         }
       }
-    })
-  }
-
-  // Regular client without custom auth
-  return createSupabaseClient(supabaseUrl, supabaseAnonKey)
+    }
+  );
 }
