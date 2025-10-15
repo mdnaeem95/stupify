@@ -85,7 +85,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Stupify - AI That Speaks Human',
     description: 'Finally, an AI that explains things simply. No jargon, no confusion. Just clear explanations.',
-    images: ['https://stupify-brown.vercel.app/og-image.png'],
+    images: ['https://stupify.app/og-image.png'],
     creator: '@stupify', // Add your Twitter handle if you have one
   },
 
@@ -111,9 +111,9 @@ export const metadata: Metadata = {
   manifest: '/site.webmanifest',
 
   // Additional Metadata
-  metadataBase: new URL('https://stupify-brown.vercel.app'),
+  metadataBase: new URL('https://stupify.app'),
   alternates: {
-    canonical: 'https://stupify-brown.vercel.app',
+    canonical: 'https://stupify.app',
   },
 
   // Verification (add these when you set them up)
@@ -164,7 +164,7 @@ export default function RootLayout({
               "@type": "WebApplication",
               "name": "Stupify",
               "description": "AI-powered question-answering service that explains complex topics in simple, accessible language",
-              "url": "https://stupify-brown.vercel.app",
+              "url": "https://stupify.app",
               "applicationCategory": "EducationalApplication",
               "offers": {
                 "@type": "Offer",

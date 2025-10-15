@@ -32,7 +32,7 @@ export default function PrivacyPage() {
           <section className="mb-8">
             <h2 className="text-2xl font-bold mb-4 text-gray-900">1. Introduction</h2>
             <p className="text-gray-700 mb-4">
-              Welcome to Stupify (`&quot;`we,`&quot;` `&quot;`our,`&quot;` or `&quot;`us`&quot;`). We are committed to protecting your personal information and your right to privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our AI-powered question-answering service at stupify-brown.vercel.app (the &quot;Service&quot;).
+              Welcome to Stupify (`&quot;`we,`&quot;` `&quot;`our,`&quot;` or `&quot;`us`&quot;`). We are committed to protecting your personal information and your right to privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our AI-powered question-answering service at stupify.app (the &quot;Service&quot;).
             </p>
             <p className="text-gray-700 mb-4">
               By using our Service, you agree to the collection and use of information in accordance with this Privacy Policy. If you do not agree with our policies and practices, please do not use our Service.

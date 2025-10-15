@@ -32,7 +32,7 @@ export default function TermsPage() {
           <section className="mb-8">
             <h2 className="text-2xl font-bold mb-4 text-gray-900">1. Agreement to Terms</h2>
             <p className="text-gray-700 mb-4">
-              Welcome to Stupify. These Terms of Service (&quot;Terms&quot;) constitute a legally binding agreement between you (&quot;you,&quot; &quot;your,&quot; or &quot;user&quot;) and Stupify (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;) governing your access to and use of the Stupify website, application, and AI-powered question-answering service (collectively, the &quot;Service&quot;) located at stupify-brown.vercel.app.
+              Welcome to Stupify. These Terms of Service (&quot;Terms&quot;) constitute a legally binding agreement between you (&quot;you,&quot; &quot;your,&quot; or &quot;user&quot;) and Stupify (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;) governing your access to and use of the Stupify website, application, and AI-powered question-answering service (collectively, the &quot;Service&quot;) located at stupify.app.
             </p>
             <p className="text-gray-700 mb-4">
               <strong>By accessing or using our Service, you agree to be bound by these Terms and our Privacy Policy.</strong> If you do not agree to these Terms, you must not access or use the Service.
