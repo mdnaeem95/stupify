@@ -2,7 +2,7 @@
 import { openai } from '@ai-sdk/openai';
 import { streamText, convertToModelMessages } from 'ai';
 import { getSystemPromptV2, SimplicityLevel } from '@/lib/prompts-v2';
-import { createClient } from '@/lib/supabase/server-api';
+import { createClient } from '@/lib/supabase/server';
 import { getUserProfile } from '@/lib/get-user-profile';
 import { extractTopics, getPersonalizedAnalogyPrompt } from '@/lib/user-profiler';
 import { updateUserStreak } from '@/lib/gamification/streak-tracker';
@@ -15,10 +15,9 @@ export const maxDuration = 30;
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    console.log('📦 Request body:', body);
+    const { messages, simplicityLevel, source } = body;
     
-    const { messages, simplicityLevel } = body;
-    
+    // Validate messages
     if (!messages || !Array.isArray(messages)) {
       return Response.json({ 
         error: 'Invalid request: messages must be an array' 
@@ -26,24 +25,44 @@ export async function POST(req: Request) {
     }
     
     const level = (simplicityLevel || 'normal') as SimplicityLevel;
+    const isExtension = source === 'extension';
+    
+    console.log('🚀 Chat request:', { 
+      source: isExtension ? 'extension' : 'web',
+      messageCount: messages.length,
+      level 
+    });
 
     // Get authenticated user
-    const authHeader = req.headers.get('authorization');
-    const token = authHeader?.replace('Bearer ', '');
-    
     let user = null;
     try {
-      const supabase = createClient(token);
-      const { data, error: authError } = await supabase.auth.getUser();
-      if (!authError) {
-        user = data.user;
-        console.log('✅ Authenticated user:', user?.email);
+      // For extension, extract JWT from Authorization header
+      if (isExtension) {
+        const authHeader = req.headers.get('authorization');
+        const token = authHeader?.replace('Bearer ', '');
+        
+        if (token) {
+          const supabase = await createClient();
+          const { data, error: authError } = await supabase.auth.getUser();
+          if (!authError && data.user) {
+            user = data.user;
+            console.log('✅ Extension user authenticated:', user.email);
+          }
+        }
+      } else {
+        // For web app, use normal server client (reads cookies)
+        const supabase = await createClient();
+        const { data, error: authError } = await supabase.auth.getUser();
+        if (!authError && data.user) {
+          user = data.user;
+          console.log('✅ Web user authenticated:', user.email);
+        }
       }
-    } catch (error) {
-      console.log('⚠️ Auth failed (continuing without user):', error);
+    } catch (authError) {
+      console.log('⚠️ Auth failed (continuing without user):', authError);
     }
     
-    // Get system prompt
+    // Get the appropriate system prompt
     let systemPrompt = getSystemPromptV2(level);
 
     // Add personalization if user is logged in
@@ -51,12 +70,20 @@ export async function POST(req: Request) {
       try {
         const profile = await getUserProfile(user.id);
         
-        // ✅ Safely check if profile and knownTopics exist
         if (profile && Array.isArray(profile.knownTopics) && profile.knownTopics.length > 0) {
           // Extract topic from user's question
-          const userMessages = messages.filter((m: any) => m?.role === 'user');
-          const lastUserMessage = userMessages[userMessages.length - 1];
-          const userQuestion = lastUserMessage?.content || '';
+          // For extension: simple message format
+          // For web: UI message format
+          let userQuestion = '';
+          
+          if (isExtension) {
+            const lastUserMessage = messages.filter((m: any) => m?.role === 'user').pop();
+            userQuestion = lastUserMessage?.content || '';
+          } else {
+            const userMessages = messages.filter((m: any) => m?.role === 'user');
+            const lastUserMessage = userMessages[userMessages.length - 1];
+            userQuestion = lastUserMessage?.content || '';
+          }
           
           if (userQuestion) {
             const topics = extractTopics(userQuestion);
@@ -66,16 +93,26 @@ export async function POST(req: Request) {
             const personalizedAddition = getPersonalizedAnalogyPrompt(profile, currentTopic);
             systemPrompt += personalizedAddition;
             
-            console.log('🎯 Personalized prompt for user');
+            console.log('🎯 Personalized prompt:', {
+              knownTopics: profile.knownTopics.slice(0, 3),
+              currentTopic
+            });
           }
         }
 
-        // Run gamification tracking in background (don't await)
+        // Run gamification tracking in background (don't block response)
         Promise.all([
           updateUserStreak(user.id),
           updateDailyStats(user.id, undefined, level, false, false),
           checkAllAchievements(user.id),
-        ]).catch((error) => {
+        ]).then(([streakResult, , newAchievements]) => {
+          if (streakResult) {
+            console.log('🔥 Streak updated:', streakResult);
+          }
+          if (newAchievements && newAchievements.length > 0) {
+            console.log('🏆 New achievements:', newAchievements.length);
+          }
+        }).catch((error) => {
           console.error('⚠️ Gamification error (non-critical):', error);
         });
       } catch (profileError) {
@@ -84,10 +121,17 @@ export async function POST(req: Request) {
       }
     }
 
-    // Convert UIMessages to ModelMessages for streamText
-    const modelMessages = convertToModelMessages(messages);
+    // Convert messages based on source
+    let modelMessages;
+    if (isExtension) {
+      // Extension sends simple message format - use directly
+      modelMessages = messages;
+    } else {
+      // Web app sends UI message format - convert
+      modelMessages = convertToModelMessages(messages);
+    }
 
-    // Use the new AI SDK v5 streamText
+    // Use the AI SDK v5 streamText
     const result = streamText({
       model: openai('gpt-4o-mini'),
       system: systemPrompt,
@@ -95,12 +139,16 @@ export async function POST(req: Request) {
       temperature: 0.7,
     });
 
-    // Return as AI Stream Response
-    return result.toUIMessageStreamResponse();
+    // Return appropriate format based on source
+    if (isExtension) {
+      return result.toTextStreamResponse();
+    } else {
+      return result.toUIMessageStreamResponse();
+    }
 
   } catch (error) {
     console.error('Chat API Error:', error);
-    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    console.error('Stack:', error instanceof Error ? error.stack : 'No stack');
     
     return Response.json({ 
       error: 'Error processing chat request',
