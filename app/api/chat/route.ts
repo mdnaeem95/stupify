@@ -14,24 +14,28 @@ export const maxDuration = 30;
 
 export async function POST(req: Request) {
   try {
-    const { messages, simplicityLevel } = await req.json();
-    const level = (simplicityLevel || 'normal') as SimplicityLevel;
-
-    // ✅ Extract JWT from Authorization header
-    const authHeader = req.headers.get('authorization');
-    const token = authHeader?.replace('Bearer ', '');
-
-    // Get authenticated user
-    const supabase = createClient(token);
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-
-    // Optional: Check if user is authenticated (for extension requests)
-    if (authError) {
-      console.warn('⚠️ Auth warning:', authError.message);
-      // Don't block - allow anonymous requests if needed
+    const body = await req.json();
+    console.log('📦 Request body:', body); // Debug log
+    
+    const { messages, simplicityLevel } = body;
+    
+    // ✅ Validate messages exists and is an array
+    if (!messages || !Array.isArray(messages)) {
+      console.error('❌ Invalid messages:', messages);
+      return Response.json({ 
+        error: 'Invalid request: messages must be an array' 
+      }, { status: 400 });
     }
     
-    // Get the appropriate system prompt
+    const level = (simplicityLevel || 'normal') as SimplicityLevel;
+
+    // Get authenticated user
+    const authHeader = req.headers.get('authorization');
+    const token = authHeader?.replace('Bearer ', '');
+    const supabase = createClient(token);
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    // Get system prompt
     let systemPrompt = getSystemPromptV2(level);
 
     // Add personalization if user is logged in
@@ -39,23 +43,27 @@ export async function POST(req: Request) {
       const profile = await getUserProfile(user.id);
       
       if (profile && profile.knownTopics.length > 0) {
-        // Extract topic from user's question
-        const lastUserMessage = messages.filter((m: any) => m.role === 'user').pop();
+        // ✅ Safely filter with validation
+        const userMessages = messages.filter((m: any) => m?.role === 'user');
+        const lastUserMessage = userMessages[userMessages.length - 1];
         const userQuestion = lastUserMessage?.content || '';
-        const topics = extractTopics(userQuestion);
-        const currentTopic = topics[0] || '';
         
-        // Add personalization to prompt
-        const personalizedAddition = getPersonalizedAnalogyPrompt(profile, currentTopic);
-        systemPrompt += personalizedAddition;
-        
-        console.log('🎯 Personalized prompt for user:', {
-          knownTopics: profile.knownTopics,
-          currentTopic
-        });
+        if (userQuestion) {
+          const topics = extractTopics(userQuestion);
+          const currentTopic = topics[0] || '';
+          
+          // Add personalization to prompt
+          const personalizedAddition = getPersonalizedAnalogyPrompt(profile, currentTopic);
+          systemPrompt += personalizedAddition;
+          
+          console.log('🎯 Personalized prompt for user:', {
+            knownTopics: profile.knownTopics,
+            currentTopic
+          });
+        }
       }
 
-      // Run gamification tracking in background (don't block response)
+      // Run gamification tracking in background
       Promise.all([
         updateUserStreak(user.id),
         updateDailyStats(user.id, undefined, level, false, false),
@@ -88,6 +96,9 @@ export async function POST(req: Request) {
 
   } catch (error) {
     console.error('Chat API Error:', error);
-    return new Response('Error processing chat request', { status: 500 });
+    return Response.json({ 
+      error: 'Error processing chat request',
+      details: error instanceof Error ? error.message : String(error),
+    }, { status: 500 });
   }
 }
