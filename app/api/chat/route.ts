@@ -2,7 +2,7 @@
 import { openai } from '@ai-sdk/openai';
 import { streamText, convertToModelMessages } from 'ai';
 import { getSystemPromptV2, SimplicityLevel } from '@/lib/prompts-v2';
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '@/lib/supabase/server';
 import { getUserProfile } from '@/lib/get-user-profile';
 import { extractTopics, getPersonalizedAnalogyPrompt } from '@/lib/user-profiler';
 import { updateUserStreak } from '@/lib/gamification/streak-tracker';
@@ -18,8 +18,14 @@ export async function POST(req: Request) {
     const level = (simplicityLevel || 'normal') as SimplicityLevel;
 
     // Get authenticated user
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    // Optional: Check if user is authenticated (for extension requests)
+    if (authError) {
+      console.warn('⚠️ Auth warning:', authError.message);
+      // Don't block - allow anonymous requests if needed
+    }
     
     // Get the appropriate system prompt
     let systemPrompt = getSystemPromptV2(level);
@@ -44,9 +50,7 @@ export async function POST(req: Request) {
           currentTopic
         });
       }
-    }
 
-    if (user) {
       // Run gamification tracking in background (don't block response)
       Promise.all([
         updateUserStreak(user.id),
