@@ -2,7 +2,7 @@
 import { openai } from '@ai-sdk/openai';
 import { streamText, convertToModelMessages } from 'ai';
 import { getSystemPromptV2, SimplicityLevel } from '@/lib/prompts-v2';
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/server-api';
 import { getUserProfile } from '@/lib/get-user-profile';
 import { extractTopics, getPersonalizedAnalogyPrompt } from '@/lib/user-profiler';
 import { updateUserStreak } from '@/lib/gamification/streak-tracker';
@@ -17,8 +17,12 @@ export async function POST(req: Request) {
     const { messages, simplicityLevel } = await req.json();
     const level = (simplicityLevel || 'normal') as SimplicityLevel;
 
+    // ✅ Extract JWT from Authorization header
+    const authHeader = req.headers.get('authorization');
+    const token = authHeader?.replace('Bearer ', '');
+
     // Get authenticated user
-    const supabase = await createClient();
+    const supabase = createClient(token);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     // Optional: Check if user is authenticated (for extension requests)
