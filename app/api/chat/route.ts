@@ -13,6 +13,7 @@ import { checkAllAchievements } from '@/lib/gamification/achievement-checker';
 export const maxDuration = 30;
 
 export async function POST(req: Request) {
+  console.log('🚀 Chat API called');
   try {
     const body = await req.json();
     console.log('📦 Request body:', body); // Debug log
