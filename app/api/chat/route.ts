@@ -13,16 +13,13 @@ import { checkAllAchievements } from '@/lib/gamification/achievement-checker';
 export const maxDuration = 30;
 
 export async function POST(req: Request) {
-  console.log('🚀 Chat API called');
   try {
     const body = await req.json();
-    console.log('📦 Request body:', body); // Debug log
+    console.log('📦 Request body:', body);
     
     const { messages, simplicityLevel } = body;
     
-    // ✅ Validate messages exists and is an array
     if (!messages || !Array.isArray(messages)) {
-      console.error('❌ Invalid messages:', messages);
       return Response.json({ 
         error: 'Invalid request: messages must be an array' 
       }, { status: 400 });
@@ -33,52 +30,58 @@ export async function POST(req: Request) {
     // Get authenticated user
     const authHeader = req.headers.get('authorization');
     const token = authHeader?.replace('Bearer ', '');
-    const supabase = createClient(token);
-    const { data: { user } } = await supabase.auth.getUser();
+    
+    let user = null;
+    try {
+      const supabase = createClient(token);
+      const { data, error: authError } = await supabase.auth.getUser();
+      if (!authError) {
+        user = data.user;
+        console.log('✅ Authenticated user:', user?.email);
+      }
+    } catch (error) {
+      console.log('⚠️ Auth failed (continuing without user):', error);
+    }
     
     // Get system prompt
     let systemPrompt = getSystemPromptV2(level);
 
     // Add personalization if user is logged in
     if (user) {
-      const profile = await getUserProfile(user.id);
-      
-      if (profile && profile.knownTopics.length > 0) {
-        // ✅ Safely filter with validation
-        const userMessages = messages.filter((m: any) => m?.role === 'user');
-        const lastUserMessage = userMessages[userMessages.length - 1];
-        const userQuestion = lastUserMessage?.content || '';
+      try {
+        const profile = await getUserProfile(user.id);
         
-        if (userQuestion) {
-          const topics = extractTopics(userQuestion);
-          const currentTopic = topics[0] || '';
+        // ✅ Safely check if profile and knownTopics exist
+        if (profile && Array.isArray(profile.knownTopics) && profile.knownTopics.length > 0) {
+          // Extract topic from user's question
+          const userMessages = messages.filter((m: any) => m?.role === 'user');
+          const lastUserMessage = userMessages[userMessages.length - 1];
+          const userQuestion = lastUserMessage?.content || '';
           
-          // Add personalization to prompt
-          const personalizedAddition = getPersonalizedAnalogyPrompt(profile, currentTopic);
-          systemPrompt += personalizedAddition;
-          
-          console.log('🎯 Personalized prompt for user:', {
-            knownTopics: profile.knownTopics,
-            currentTopic
-          });
+          if (userQuestion) {
+            const topics = extractTopics(userQuestion);
+            const currentTopic = topics[0] || '';
+            
+            // Add personalization to prompt
+            const personalizedAddition = getPersonalizedAnalogyPrompt(profile, currentTopic);
+            systemPrompt += personalizedAddition;
+            
+            console.log('🎯 Personalized prompt for user');
+          }
         }
-      }
 
-      // Run gamification tracking in background
-      Promise.all([
-        updateUserStreak(user.id),
-        updateDailyStats(user.id, undefined, level, false, false),
-        checkAllAchievements(user.id),
-      ]).then(([streakResult, , newAchievements]) => {
-        if (streakResult) {
-          console.log('🔥 Streak updated:', streakResult);
-        }
-        if (newAchievements && newAchievements.length > 0) {
-          console.log('🏆 New achievements unlocked:', newAchievements.length);
-        }
-      }).catch((error) => {
-        console.error('⚠️ Gamification tracking error (non-critical):', error);
-      });
+        // Run gamification tracking in background (don't await)
+        Promise.all([
+          updateUserStreak(user.id),
+          updateDailyStats(user.id, undefined, level, false, false),
+          checkAllAchievements(user.id),
+        ]).catch((error) => {
+          console.error('⚠️ Gamification error (non-critical):', error);
+        });
+      } catch (profileError) {
+        console.error('⚠️ Personalization error (continuing):', profileError);
+        // Continue without personalization
+      }
     }
 
     // Convert UIMessages to ModelMessages for streamText
@@ -97,6 +100,8 @@ export async function POST(req: Request) {
 
   } catch (error) {
     console.error('Chat API Error:', error);
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    
     return Response.json({ 
       error: 'Error processing chat request',
       details: error instanceof Error ? error.message : String(error),
