@@ -5,7 +5,7 @@ User-agent: *
 Allow: /
 
 # Sitemap location
-Sitemap: https://stupify-brown.vercel.app/sitemap.xml
+Sitemap: https://stupify.app/sitemap.xml
 
 # Optional: Block specific paths if needed in the future
 # Disallow: /api/

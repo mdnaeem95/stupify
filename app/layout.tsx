@@ -66,13 +66,13 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://stupify-brown.vercel.app',
+    url: 'https://stupify.app',
     siteName: 'Stupify',
     title: 'Stupify - AI That Speaks Human',
     description: 'Finally, an AI that explains things simply. No jargon, no confusion. Just clear explanations that make sense.',
     images: [
       {
-        url: 'https://stupify-brown.vercel.app/og-image.png', // You'll create this
+        url: 'https://stupify.app/og-image.png', // You'll create this
         width: 1200,
         height: 630,
         alt: 'Stupify - AI That Speaks Human',

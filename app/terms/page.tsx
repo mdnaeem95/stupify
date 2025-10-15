@@ -321,7 +321,7 @@ export default function TermsPage() {
             </p>
             <ul className="list-disc pl-6 mb-4 text-gray-700 space-y-2">
               <li>Using the account deletion feature in your settings</li>
-              <li>Contacting us at naeemsani95@gmail.com</li>
+              <li>Contacting us at support@stupify.app</li>
               <li>Canceling your subscription through Stripe</li>
             </ul>
 
@@ -354,7 +354,7 @@ export default function TermsPage() {
             
             <h3 className="text-xl font-semibold mb-3 text-gray-900">14.1 Informal Resolution</h3>
             <p className="text-gray-700 mb-4">
-              Before filing a claim, you agree to contact us at naeemsani95@gmail.com to attempt to resolve the dispute informally. We will attempt to resolve the dispute within 60 days.
+              Before filing a claim, you agree to contact us at support@stupify.app to attempt to resolve the dispute informally. We will attempt to resolve the dispute within 60 days.
             </p>
 
             <h3 className="text-xl font-semibold mb-3 text-gray-900">14.2 Binding Arbitration</h3>
@@ -426,9 +426,9 @@ export default function TermsPage() {
               For questions about these Terms, please contact us:
             </p>
             <div className="bg-gray-50 rounded-lg p-6 mb-4">
-              <p className="text-gray-700 mb-2"><strong>Email:</strong> naeemsani95@gmail.com</p>
-              <p className="text-gray-700 mb-2"><strong>Support:</strong> naeemsani95@gmail.com</p>
-              <p className="text-gray-700"><strong>Website:</strong> stupify-brown.vercel.app</p>
+              <p className="text-gray-700 mb-2"><strong>Email:</strong> support@stupify.app</p>
+              <p className="text-gray-700 mb-2"><strong>Support:</strong> support@stupify.app</p>
+              <p className="text-gray-700"><strong>Website:</strong> https://stupify.app</p>
             </div>
           </section>
 

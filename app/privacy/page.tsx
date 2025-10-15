@@ -170,7 +170,7 @@ export default function PrivacyPage() {
 
             <h3 className="text-xl font-semibold mb-3 text-gray-900">7.4 How to Exercise Your Rights</h3>
             <p className="text-gray-700 mb-4">
-              To exercise any of these rights, please contact us at: <strong>naeemsani95@gmail.com</strong> (or your contact email)
+              To exercise any of these rights, please contact us at: <strong>support@stupify.app</strong> (or your contact email)
             </p>
             <p className="text-gray-700 mb-4">
               We will respond to your request within 30 days. To delete your account, you can also use the account deletion feature in your account settings.
@@ -213,7 +213,7 @@ export default function PrivacyPage() {
           <section className="mb-8">
             <h2 className="text-2xl font-bold mb-4 text-gray-900">10. Children`&apos;`s Privacy</h2>
             <p className="text-gray-700 mb-4">
-              Our Service is not intended for children under 13 years of age. We do not knowingly collect personal information from children under 13. If you are a parent or guardian and believe your child has provided us with personal information, please contact us at naeemsani95@gmail.com, and we will delete such information from our systems.
+              Our Service is not intended for children under 13 years of age. We do not knowingly collect personal information from children under 13. If you are a parent or guardian and believe your child has provided us with personal information, please contact us at support@stupify.app, and we will delete such information from our systems.
             </p>
             <p className="text-gray-700 mb-4">
               For users between 13 and 18 years of age, we recommend parental guidance when using our Service.
@@ -267,8 +267,8 @@ export default function PrivacyPage() {
               If you have questions, concerns, or requests regarding this Privacy Policy or our data practices, please contact us:
             </p>
             <div className="bg-gray-50 rounded-lg p-6 mb-4">
-              <p className="text-gray-700 mb-2"><strong>Email:</strong> naeemsani95@gmail.com</p>
-              <p className="text-gray-700 mb-2"><strong>Website:</strong> stupify-brown.vercel.app</p>
+              <p className="text-gray-700 mb-2"><strong>Email:</strong> support@stupify.app</p>
+              <p className="text-gray-700 mb-2"><strong>Website:</strong> https://stupify.app</p>
               <p className="text-gray-700"><strong>Response Time:</strong> We will respond to your inquiry within 30 days</p>
             </div>
           </section>
