@@ -21,11 +21,11 @@ export function ChatHeader({
   return (
     <div className="bg-white">
       <div className="max-w-5xl mx-auto px-4 md:px-6 py-3">
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center justify-between gap-3">
           
-          {/* Logo & Title */}
+          {/* Logo & Title - Left */}
           <div className="flex items-center gap-3 flex-shrink-0">
-            <div className="bg-gradient-to-br from-purple-500 to-blue-500 p-2 rounded-xl">
+            <div className="bg-gradient-to-br from-purple-500 to-blue-500 p-2 rounded-xl shadow-sm">
               <Sparkles className="w-5 h-5 text-white" />
             </div>
             <div className="hidden sm:block">
@@ -34,16 +34,17 @@ export function ChatHeader({
             </div>
           </div>
 
-          {/* Streak Display */}
-          <StreakDisplay compact={isMobile} />
-
-          {/* Compact Level Selector */}
-          <CompactLevelSelector
-            selected={simplicityLevel}
-            onSelect={onLevelChange}
-            isMobile={isMobile}
-            triggerHaptic={triggerHaptic}
-          />
+          {/* Streak + Level Selector - Right */}
+          <div className="flex items-center gap-3 flex-shrink-0">
+            <StreakDisplay compact={isMobile} />
+            
+            <CompactLevelSelector
+              selected={simplicityLevel}
+              onSelect={onLevelChange}
+              isMobile={isMobile}
+              triggerHaptic={triggerHaptic}
+            />
+          </div>
           
         </div>
       </div>

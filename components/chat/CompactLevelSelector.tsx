@@ -116,13 +116,13 @@ export function CompactLevelSelector({
             />
           )}
 
-          {/* Menu */}
+          {/* Menu - FIXED: Always align to right edge to prevent overflow */}
           <div 
             className={cn(
               'absolute z-50 mt-2 w-64 rounded-xl shadow-lg',
               'bg-white border-2 border-gray-200',
               'overflow-hidden',
-              isMobile ? 'right-0' : 'left-0'
+              'right-0' // Always align to right to prevent overflow
             )}
           >
             {levels.map((level) => {
