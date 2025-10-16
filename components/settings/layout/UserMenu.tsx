@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { User, LogOut, Loader2, Crown, Settings, ChevronDown, CreditCard, BarChart3 } from 'lucide-react';
+import { User, LogOut, Loader2, Crown, Settings, ChevronDown, CreditCard } from 'lucide-react';
 import { getCurrentUser, signOut, type AuthUser } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/client';
 
@@ -95,38 +95,26 @@ export function UserMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button 
-          variant="outline" 
-          className="w-full justify-start gap-3 h-12 border-gray-200 hover:bg-gray-50 transition-colors"
-        >
-          <div className="w-9 h-9 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+        <Button variant="outline" className="flex items-center gap-2 text-black">
+          <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
             {isPremium ? (
               <Crown className="w-4 h-4 text-yellow-300" />
             ) : (
               <User className="w-4 h-4 text-white" />
             )}
           </div>
-          <div className="flex-1 text-left min-w-0">
-            <p className="text-sm font-medium text-gray-900 truncate">
-              {user.full_name || 'User'}
-            </p>
-            <p className="text-xs text-gray-500 truncate">
-              {user.email}
-            </p>
-          </div>
-          <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
+          <span className="hidden sm:inline">{user.full_name || 'Account'}</span>
+          <ChevronDown className="w-4 h-4" />
         </Button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="end" className="w-64">
+      <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel>
-          <div className="flex items-center gap-2">
-            <div className="flex-1">
-              <p className="font-medium text-gray-900">{user.full_name || 'User'}</p>
-              <p className="text-xs text-gray-500 font-normal">{user.email}</p>
-            </div>
+          <div>
+            <p className="font-medium">{user.full_name || 'User'}</p>
+            <p className="text-xs text-gray-500 font-normal">{user.email}</p>
             {isPremium && (
-              <div className="inline-flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-yellow-400 to-orange-400 text-white rounded-full text-xs font-semibold">
+              <div className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 bg-gradient-to-r from-yellow-400 to-orange-400 text-white rounded-full text-xs font-semibold">
                 <Crown className="w-3 h-3" />
                 Premium
               </div>
@@ -141,14 +129,6 @@ export function UserMenu() {
           <Settings className="w-4 h-4 mr-2" />
           Settings
         </DropdownMenuItem>
-
-        {/* Stats */}
-        <DropdownMenuItem onClick={() => router.push('/stats')}>
-          <BarChart3 className="w-4 h-4 mr-2" />
-          Your Stats
-        </DropdownMenuItem>
-
-        <DropdownMenuSeparator />
 
         {/* Manage Subscription or Upgrade */}
         {isPremium ? (
