@@ -97,7 +97,7 @@ export function UserMenu() {
       <DropdownMenuTrigger asChild>
         <Button 
           variant="outline" 
-          className="w-full justify-start gap-3 h-12 border-gray-200 hover:bg-gray-50 transition-colors"
+          className="w-full justify-start gap-3 h-12 border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 cursor-pointer"
         >
           <div className="w-9 h-9 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
             {isPremium ? (
@@ -125,25 +125,25 @@ export function UserMenu() {
               <p className="font-medium text-gray-900">{user.full_name || 'User'}</p>
               <p className="text-xs text-gray-500 font-normal">{user.email}</p>
             </div>
-            {isPremium && (
-              <div className="inline-flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-yellow-400 to-orange-400 text-white rounded-full text-xs font-semibold">
-                <Crown className="w-3 h-3" />
-                Premium
-              </div>
-            )}
           </div>
         </DropdownMenuLabel>
 
         <DropdownMenuSeparator />
 
         {/* Settings */}
-        <DropdownMenuItem onClick={() => router.push('/settings')}>
+        <DropdownMenuItem 
+          onClick={() => router.push('/settings')}
+          className="cursor-pointer hover:bg-gray-100 transition-colors"
+        >
           <Settings className="w-4 h-4 mr-2" />
           Settings
         </DropdownMenuItem>
 
         {/* Stats */}
-        <DropdownMenuItem onClick={() => router.push('/stats')}>
+        <DropdownMenuItem 
+          onClick={() => router.push('/stats')}
+          className="cursor-pointer hover:bg-gray-100 transition-colors"
+        >
           <BarChart3 className="w-4 h-4 mr-2" />
           Your Stats
         </DropdownMenuItem>
@@ -155,6 +155,7 @@ export function UserMenu() {
           <DropdownMenuItem 
             onClick={handleManageSubscription}
             disabled={isOpeningPortal}
+            className="cursor-pointer hover:bg-gray-100 transition-colors"
           >
             {isOpeningPortal ? (
               <>
@@ -169,7 +170,10 @@ export function UserMenu() {
             )}
           </DropdownMenuItem>
         ) : (
-          <DropdownMenuItem onClick={() => router.push('/pricing')}>
+          <DropdownMenuItem 
+            onClick={() => router.push('/pricing')}
+            className="cursor-pointer hover:bg-purple-50 transition-colors"
+          >
             <Crown className="w-4 h-4 mr-2 text-yellow-500" />
             Upgrade to Premium
           </DropdownMenuItem>
@@ -181,6 +185,7 @@ export function UserMenu() {
         <DropdownMenuItem 
           onClick={handleSignOut}
           disabled={isLoggingOut}
+          className="cursor-pointer hover:bg-red-50 transition-colors"
         >
           {isLoggingOut ? (
             <>
