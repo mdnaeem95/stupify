@@ -48,7 +48,7 @@ export function ChatInput({
   return (
     <div 
       className={`
-        bg-white border-t border-gray-200 shadow-lg
+        bg-white shadow-lg
         ${isMobile ? 'fixed bottom-0 left-0 right-0 z-30' : 'relative'}
       `}
       style={{
