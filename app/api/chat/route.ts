@@ -23,6 +23,8 @@ export async function POST(req: Request) {
   const startTime = Date.now();
   
   try {
+    console.error('[CHAT] 🚀 Request received');
+    
     const body = await req.json();
     const { 
       messages, 
@@ -32,7 +34,15 @@ export async function POST(req: Request) {
       retryInstructions = null
     } = body;
     
+    console.error('[CHAT] 📝 Parsed body:', {
+      messageCount: messages?.length,
+      level: simplicityLevel,
+      source,
+      confusionRetry
+    });
+    
     if (!messages || !Array.isArray(messages)) {
+      console.error('[CHAT] ❌ Invalid messages format');
       return Response.json({ 
         error: 'Invalid request: messages must be an array' 
       }, { status: 400 });
@@ -46,6 +56,8 @@ export async function POST(req: Request) {
     let supabaseClient = null;
     
     try {
+      console.error('[CHAT] 🔐 Attempting authentication...');
+      
       if (isExtension) {
         const authHeader = req.headers.get('authorization');
         const token = authHeader?.replace('Bearer ', '');
@@ -55,6 +67,7 @@ export async function POST(req: Request) {
           const { data, error: authError } = await supabaseClient.auth.getUser();
           if (!authError && data.user) {
             user = data.user;
+            console.error('[CHAT] ✅ Extension user authenticated:', user.email);
           }
         }
       } else {
@@ -62,16 +75,19 @@ export async function POST(req: Request) {
         const { data, error: authError } = await supabaseClient.auth.getUser();
         if (!authError && data.user) {
           user = data.user;
+          console.error('[CHAT] ✅ Web user authenticated:', user.email);
         }
       }
     } catch (authError) {
-      // Continue without user
+      console.error('[CHAT] ⚠️ Auth error:', authError);
     }
     
     // A/B TEST: Determine AI provider and model
     let isPremium = false;
     let aiProvider: AIProvider = 'openai';
     let aiModel = 'gpt-4o-mini' as OpenAIModel | ClaudeModel;
+    
+    console.error('[CHAT] 🧪 Starting A/B test assignment...');
     
     if (user && supabaseClient) {
       try {
@@ -84,19 +100,29 @@ export async function POST(req: Request) {
         isPremium = profile?.subscription_status === 'premium';
         aiProvider = getABTestProvider(user.id);
         aiModel = getModelForTier(aiProvider, isPremium);
+        
+        console.error('[CHAT] ✅ A/B assignment:', {
+          userId: user.id.slice(0, 8),
+          isPremium,
+          provider: aiProvider,
+          model: aiModel
+        });
       } catch (subError) {
-        // Continue with defaults
+        console.error('[CHAT] ⚠️ Subscription check error:', subError);
       }
     } else {
       aiProvider = getABTestProvider(null);
       aiModel = getModelForTier(aiProvider, false);
+      console.error('[CHAT] ℹ️ Guest user assigned:', { provider: aiProvider, model: aiModel });
     }
     
     // Get system prompt
+    console.error('[CHAT] 📄 Building system prompt...');
     let systemPrompt = getSystemPromptV2(level);
 
     // Add confusion retry instructions if needed
     if (confusionRetry && retryInstructions) {
+      console.error('[CHAT] 😕 Adding confusion retry instructions');
       systemPrompt += `\n\n[IMPORTANT INSTRUCTION FOR THIS RESPONSE ONLY]: ${retryInstructions}`;
     }
 
@@ -122,6 +148,7 @@ export async function POST(req: Request) {
             const currentTopic = topics[0] || '';
             const personalizedAddition = getPersonalizedAnalogyPrompt(profile, currentTopic);
             systemPrompt += personalizedAddition;
+            console.error('[CHAT] 🎯 Added personalization for topics:', topics.slice(0, 3));
           }
         }
 
@@ -130,23 +157,32 @@ export async function POST(req: Request) {
           updateUserStreak(user.id),
           updateDailyStats(user.id, undefined, level, false, false),
           checkAllAchievements(user.id),
-        ]).catch(() => {
-          // Fail silently for gamification errors
+        ]).catch((gamError) => {
+          console.error('[CHAT] ⚠️ Gamification error:', gamError);
         });
       } catch (profileError) {
-        // Continue without personalization
+        console.error('[CHAT] ⚠️ Personalization error:', profileError);
       }
     }
 
     // Convert messages based on source
+    console.error('[CHAT] 🔄 Converting messages...');
     let modelMessages;
     if (isExtension) {
       modelMessages = messages;
     } else {
       modelMessages = convertToModelMessages(messages);
     }
+    console.error('[CHAT] ✅ Messages converted:', modelMessages.length);
 
     // Stream from appropriate AI provider
+    console.error('[CHAT] 🤖 Calling streamAIResponse with:', {
+      provider: aiProvider,
+      model: aiModel,
+      messageCount: modelMessages.length,
+      promptLength: systemPrompt.length
+    });
+    
     const result = await streamAIResponse({
       provider: aiProvider,
       model: aiModel,
@@ -155,9 +191,13 @@ export async function POST(req: Request) {
       temperature: 0.7,
     });
 
+    console.error('[CHAT] ✅ Stream result received');
+
     const responseTime = Date.now() - startTime;
 
     // Return appropriate format
+    console.error('[CHAT] 📤 Preparing response format:', isExtension ? 'text' : 'ui');
+    
     const response = isExtension 
       ? result.toTextStreamResponse() 
       : result.toUIMessageStreamResponse();
@@ -168,11 +208,17 @@ export async function POST(req: Request) {
     response.headers.set('X-Response-Time', responseTime.toString());
     response.headers.set('X-Is-Premium', isPremium.toString());
 
+    console.error('[CHAT] ✅ Response ready, returning stream');
+
     return response;
 
   } catch (error) {
-    // Log to error monitoring service in production
-    // e.g., Sentry.captureException(error);
+    console.error('[CHAT] ❌❌❌ CRITICAL ERROR:', error);
+    console.error('[CHAT] Error stack:', error instanceof Error ? error.stack : 'No stack');
+    console.error('[CHAT] Error details:', {
+      message: error instanceof Error ? error.message : String(error),
+      name: error instanceof Error ? error.name : 'Unknown',
+    });
     
     return Response.json({ 
       error: 'Error processing chat request',
