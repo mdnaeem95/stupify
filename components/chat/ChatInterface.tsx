@@ -39,6 +39,8 @@ export function ChatInterface() {
   const [input, setInput] = useState('');
   const [simplicityLevel, setSimplicityLevel] = useState<SimplicityLevel>('normal');
   const [, setIsRetrying] = useState(false);
+  const [confusionRetry, setConfusionRetry] = useState(false);
+  const [retryInstructions, setRetryInstructions] = useState<string | null>(null);
 
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -86,14 +88,21 @@ export function ChatInterface() {
   const { messages, sendMessage, status, setMessages } = useChat({
     transport: new DefaultChatTransport({
       api: '/api/chat',
-      body: (options: any) => ({
+      body: () => ({
         simplicityLevel,
-        // Add confusion handling metadata if needed
-        confusionRetry: options.confusionRetry || false,
-        retryInstructions: options.retryInstructions || null,
+        // ✅ Include confusion state in the body
+        confusionRetry,
+        retryInstructions,
       }),
     }),
     onFinish: async ({ message }) => {
+      // Clear confusion state after response
+      if (confusionRetry) {
+        setConfusionRetry(false);
+        setRetryInstructions(null);
+        setIsRetrying(false);
+      }
+
       if (conversation.conversationIdRef.current && message.role === 'assistant') {
         const content = extractMessageText(message);
         await conversation.save('assistant', content, simplicityLevel);
@@ -107,7 +116,7 @@ export function ChatInterface() {
     },
   });
 
-  const isLoading = status === 'streaming';
+  const isLoading = status === 'streaming' || status === 'submitted';
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -182,28 +191,27 @@ export function ChatInterface() {
     const canAsk = await usage.checkCanAsk();
     if (!canAsk) return;
 
-    // Detect confusion
+    // ✅ Detect confusion
     const confusionSignal = detectConfusion(userMessage, lastUserQuestionRef.current);
 
-    // Prepare send options
-    const sendOptions: any = {
-      text: userMessage, // Always send the clean user message
-    };
-
     if (confusionSignal.isConfused && confusionSignal.confidence > 0.7) {
-      console.log('😕 Confusion detected, auto-retrying');
+      console.log('😕 Confusion detected, auto-retrying with adjusted explanation');
 
       const { newLevel, instructions } = getRetryInstructions(confusionSignal, simplicityLevel);
 
+      // Update level if needed
       if (newLevel !== simplicityLevel) {
         setSimplicityLevel(newLevel);
       }
 
-      // Send instructions separately to the API, not in the message
-      sendOptions.confusionRetry = true;
-      sendOptions.retryInstructions = instructions;
+      // Set confusion state - this will be included in the next request via body()
+      setConfusionRetry(true);
+      setRetryInstructions(instructions);
       setIsRetrying(true);
     } else {
+      // Normal message - clear any previous confusion state
+      setConfusionRetry(false);
+      setRetryInstructions(null);
       setIsRetrying(false);
     }
 
@@ -214,14 +222,14 @@ export function ChatInterface() {
       if (!activeConvId) return;
     }
 
-    // Save user message (the clean version, not with instructions)
+    // Save user message
     await conversation.save('user', userMessage, simplicityLevel);
 
     // Increment usage
     await usage.increment();
 
-    // Send message to AI with options
-    sendMessage(sendOptions);
+    // Send message to AI
+    sendMessage({ text: userMessage });
     setInput('');
 
     setTimeout(() => {

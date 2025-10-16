@@ -68,30 +68,30 @@ export function ChatMessages({
           );
         })}
 
-      {/* Loading Animation */}
-      {isLoading && (
-        <div className="flex gap-2 md:gap-3 mb-4">
-          <div className="flex-shrink-0 w-7 h-7 md:w-8 md:h-8 rounded-full bg-purple-600 flex items-center justify-center">
-            <Loader2 className="w-4 h-4 md:w-5 md:h-5 text-white animate-spin" />
-          </div>
-          <div className="flex-1 max-w-[80%] px-3 md:px-4 py-2 md:py-3 rounded-2xl bg-white border border-gray-200 rounded-tl-none shadow-sm">
-            <div className="flex gap-1">
-              <span
-                className="w-1.5 h-1.5 md:w-2 md:h-2 bg-purple-500 rounded-full animate-bounce"
-                style={{ animationDelay: '0ms' }}
-              />
-              <span
-                className="w-1.5 h-1.5 md:w-2 md:h-2 bg-purple-500 rounded-full animate-bounce"
-                style={{ animationDelay: '150ms' }}
-              />
-              <span
-                className="w-1.5 h-1.5 md:w-2 md:h-2 bg-purple-500 rounded-full animate-bounce"
-                style={{ animationDelay: '300ms' }}
-              />
+        {/* Loading Animation */}
+        {isLoading && (
+          <div className="flex gap-2 md:gap-3 mb-4">
+            <div className="flex-shrink-0 w-7 h-7 md:w-8 md:h-8 rounded-full bg-purple-600 flex items-center justify-center">
+              <Loader2 className="w-4 h-4 md:w-5 md:h-5 text-white animate-spin" />
+            </div>
+            <div className="flex-1 max-w-[80%] px-3 md:px-4 py-2 md:py-3 rounded-2xl bg-white border border-gray-200 rounded-tl-none shadow-sm">
+              <div className="flex gap-1">
+                <span
+                  className="w-1.5 h-1.5 md:w-2 md:h-2 bg-purple-500 rounded-full animate-bounce"
+                  style={{ animationDelay: '0ms' }}
+                />
+                <span
+                  className="w-1.5 h-1.5 md:w-2 md:h-2 bg-purple-500 rounded-full animate-bounce"
+                  style={{ animationDelay: '150ms' }}
+                />
+                <span
+                  className="w-1.5 h-1.5 md:w-2 md:h-2 bg-purple-500 rounded-full animate-bounce"
+                  style={{ animationDelay: '300ms' }}
+                />
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
       {/* Adaptive Follow-Up */}
       {messages.length > 0 && !isLoading && (
