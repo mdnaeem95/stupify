@@ -8,18 +8,43 @@ export interface ConfusionSignal {
 }
 
 const CONFUSION_PATTERNS = [
+  // Strong confusion signals
   { pattern: /^(huh|what|wut)\??$/i, weight: 0.9, action: 'retry' as const },
-  { pattern: /i don'?t (get|understand)/i, weight: 0.9, action: 'retry' as const },
+  { pattern: /i don'?t (get|understand|follow)/i, weight: 0.9, action: 'retry' as const },
   { pattern: /makes no sense/i, weight: 0.9, action: 'retry' as const },
   { pattern: /still confused/i, weight: 0.9, action: 'retry' as const },
   { pattern: /that'?s confusing/i, weight: 0.8, action: 'retry' as const },
+  { pattern: /lost me/i, weight: 0.8, action: 'retry' as const },
+  
+  // Simplification requests
   { pattern: /simpler|easier|dumb(er)? (it )?down/i, weight: 0.9, action: 'simplify' as const },
   { pattern: /like (i'?m|im) (\d+|five|a kid)/i, weight: 0.8, action: 'simplify' as const },
+  { pattern: /too (complicated|complex|hard|difficult)/i, weight: 0.8, action: 'simplify' as const },
+  
+  // Different analogy requests
   { pattern: /different (way|example|analogy)/i, weight: 0.8, action: 'different_analogy' as const },
   { pattern: /another (way|example|analogy)/i, weight: 0.8, action: 'different_analogy' as const },
-  { pattern: /can you (explain|clarify|rephrase)/i, weight: 0.7, action: 'retry' as const },
-  { pattern: /lost me/i, weight: 0.8, action: 'retry' as const },
-  { pattern: /too (complicated|complex|hard)/i, weight: 0.8, action: 'simplify' as const },
+  
+  // Clarification requests - IMPROVED to avoid false positives
+  { pattern: /can you (explain|clarify|rephrase) (that|this|it)/i, weight: 0.7, action: 'retry' as const },
+];
+
+// Questions that should NEVER trigger confusion detection
+const NORMAL_QUESTION_PATTERNS = [
+  /^how are you/i,
+  /^how'?s it going/i,
+  /^how do (i|you)/i,
+  /^how does (it|this|that)/i,
+  /^how would (i|you)/i,
+  /^how can (i|you)/i,
+  /^what is/i,
+  /^what are/i,
+  /^why (is|are|do|does)/i,
+  /^when (is|are|do|does)/i,
+  /^where (is|are|do|does)/i,
+  /^who (is|are)/i,
+  /^tell me (about|how|what|why)/i,
+  /^explain (how|what|why)/i,
 ];
 
 export function detectConfusion(
@@ -27,10 +52,24 @@ export function detectConfusion(
   previousQuestion?: string
 ): ConfusionSignal {
   const message = userMessage.trim();
+  
+  // Check if this is just a normal question first
+  for (const pattern of NORMAL_QUESTION_PATTERNS) {
+    if (pattern.test(message)) {
+      return {
+        isConfused: false,
+        confidence: 0,
+        signals: [],
+        suggestedAction: 'retry'
+      };
+    }
+  }
+  
   const signals: string[] = [];
   let totalWeight = 0;
   let suggestedAction: 'retry' | 'simplify' | 'different_analogy' = 'retry';
 
+  // Check for confusion patterns
   for (const { pattern, weight, action } of CONFUSION_PATTERNS) {
     if (pattern.test(message)) {
       signals.push(pattern.toString());
@@ -41,6 +80,7 @@ export function detectConfusion(
     }
   }
 
+  // Check for repeated similar questions
   if (previousQuestion && message.length > 10) {
     const similarity = calculateSimilarity(message, previousQuestion);
     if (similarity > 0.7) {

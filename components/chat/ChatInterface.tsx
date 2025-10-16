@@ -86,7 +86,12 @@ export function ChatInterface() {
   const { messages, sendMessage, status, setMessages } = useChat({
     transport: new DefaultChatTransport({
       api: '/api/chat',
-      body: { simplicityLevel },
+      body: (options: any) => ({
+        simplicityLevel,
+        // Add confusion handling metadata if needed
+        confusionRetry: options.confusionRetry || false,
+        retryInstructions: options.retryInstructions || null,
+      }),
     }),
     onFinish: async ({ message }) => {
       if (conversation.conversationIdRef.current && message.role === 'assistant') {
@@ -169,17 +174,21 @@ export function ChatInterface() {
 
     if (isMobile) triggerHaptic('light');
 
-    lastUserQuestionRef.current = input.trim();
-    await profile.trackQuestion(input.trim(), simplicityLevel);
+    const userMessage = input.trim();
+    lastUserQuestionRef.current = userMessage;
+    await profile.trackQuestion(userMessage, simplicityLevel);
 
     // Check usage limit
     const canAsk = await usage.checkCanAsk();
     if (!canAsk) return;
 
     // Detect confusion
-    const confusionSignal = detectConfusion(input.trim(), lastUserQuestionRef.current);
+    const confusionSignal = detectConfusion(userMessage, lastUserQuestionRef.current);
 
-    let messageToSend = input.trim();
+    // Prepare send options
+    const sendOptions: any = {
+      text: userMessage, // Always send the clean user message
+    };
 
     if (confusionSignal.isConfused && confusionSignal.confidence > 0.7) {
       console.log('😕 Confusion detected, auto-retrying');
@@ -190,7 +199,9 @@ export function ChatInterface() {
         setSimplicityLevel(newLevel);
       }
 
-      messageToSend = `[User is confused about previous answer. ${instructions}]\n\nUser says: "${input.trim()}"`;
+      // Send instructions separately to the API, not in the message
+      sendOptions.confusionRetry = true;
+      sendOptions.retryInstructions = instructions;
       setIsRetrying(true);
     } else {
       setIsRetrying(false);
@@ -199,23 +210,23 @@ export function ChatInterface() {
     // Create conversation if needed
     let activeConvId = conversation.conversationId;
     if (!activeConvId) {
-      activeConvId = await conversation.createNew(messageToSend);
+      activeConvId = await conversation.createNew(userMessage);
       if (!activeConvId) return;
     }
 
-    // Save user message
-    await conversation.save('user', messageToSend, simplicityLevel);
+    // Save user message (the clean version, not with instructions)
+    await conversation.save('user', userMessage, simplicityLevel);
 
     // Increment usage
     await usage.increment();
 
-    // Send message to AI
-    sendMessage({ text: messageToSend });
+    // Send message to AI with options
+    sendMessage(sendOptions);
     setInput('');
 
     setTimeout(() => {
       gamification.checkNotifications();
-    }, 1000); // Small delay to ensure backend has processed
+    }, 1000);
 
     await trackQuestion();
   };

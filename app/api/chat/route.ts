@@ -16,7 +16,14 @@ export const maxDuration = 30;
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { messages, simplicityLevel, source } = body;
+    const { 
+      messages, 
+      simplicityLevel, 
+      source,
+      // NEW: Confusion detection fields
+      confusionRetry = false,
+      retryInstructions = null
+    } = body;
     
     // Validate messages
     if (!messages || !Array.isArray(messages)) {
@@ -31,7 +38,8 @@ export async function POST(req: Request) {
     console.log('🚀 Chat request:', { 
       source: isExtension ? 'extension' : 'web',
       messageCount: messages.length,
-      level 
+      level,
+      confusionRetry // NEW: Log confusion retries
     });
 
     // Get authenticated user
@@ -65,6 +73,12 @@ export async function POST(req: Request) {
     
     // Get the appropriate system prompt
     let systemPrompt = getSystemPromptV2(level);
+
+    // NEW: Add confusion retry instructions to system prompt if detected
+    if (confusionRetry && retryInstructions) {
+      console.log('😕 Adding confusion retry instructions to system prompt');
+      systemPrompt += `\n\n[IMPORTANT INSTRUCTION FOR THIS RESPONSE ONLY]: ${retryInstructions}`;
+    }
 
     // Add personalization if user is logged in
     if (user) {
