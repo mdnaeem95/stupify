@@ -66,16 +66,28 @@ export function UserMenu() {
         method: 'POST',
       });
 
+      // Check if response is OK before parsing JSON
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create billing portal session');
+      }
+
       const data = await response.json();
 
       if (data.url) {
         window.location.href = data.url;
       } else {
-        throw new Error('No portal URL returned');
+        throw new Error('No portal URL returned from server');
       }
     } catch (error) {
       console.error('Portal error:', error);
-      alert('Failed to open subscription management. Please try again.');
+      
+      // Show more specific error message
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : 'Failed to open subscription management. Please try again.';
+      
+      alert(errorMessage);
       setIsOpeningPortal(false);
     }
   };
@@ -130,72 +142,72 @@ export function UserMenu() {
 
         <DropdownMenuSeparator />
 
-        {/* Settings */}
+        {/* Settings - Fixed spacing */}
         <DropdownMenuItem 
           onClick={() => router.push('/settings')}
-          className="cursor-pointer hover:bg-gray-100 transition-colors"
+          className="cursor-pointer hover:bg-gray-100 transition-colors py-2.5"
         >
-          <Settings className="w-4 h-4 mr-2" />
-          Settings
+          <Settings className="w-4 h-4 mr-3" />
+          <span className="flex-1">Settings</span>
         </DropdownMenuItem>
 
-        {/* Stats */}
+        {/* Stats - Fixed spacing */}
         <DropdownMenuItem 
           onClick={() => router.push('/stats')}
-          className="cursor-pointer hover:bg-gray-100 transition-colors"
+          className="cursor-pointer hover:bg-gray-100 transition-colors py-2.5"
         >
-          <BarChart3 className="w-4 h-4 mr-2" />
-          Your Stats
+          <BarChart3 className="w-4 h-4 mr-3" />
+          <span className="flex-1">Your Stats</span>
         </DropdownMenuItem>
 
         <DropdownMenuSeparator />
 
-        {/* Manage Subscription or Upgrade */}
+        {/* Manage Subscription or Upgrade - Fixed spacing */}
         {isPremium ? (
           <DropdownMenuItem 
             onClick={handleManageSubscription}
             disabled={isOpeningPortal}
-            className="cursor-pointer hover:bg-gray-100 transition-colors"
+            className="cursor-pointer hover:bg-gray-100 transition-colors py-2.5"
           >
             {isOpeningPortal ? (
               <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Loading...
+                <Loader2 className="w-4 h-4 mr-3 animate-spin" />
+                <span className="flex-1">Loading...</span>
               </>
             ) : (
               <>
-                <CreditCard className="w-4 h-4 mr-2" />
-                Manage Billing
+                <CreditCard className="w-4 h-4 mr-3" />
+                <span className="flex-1">Manage Billing</span>
               </>
             )}
           </DropdownMenuItem>
         ) : (
           <DropdownMenuItem 
             onClick={() => router.push('/pricing')}
-            className="cursor-pointer hover:bg-purple-50 transition-colors"
+            className="cursor-pointer hover:bg-purple-50 transition-colors py-2.5"
           >
-            <Crown className="w-4 h-4 mr-2 text-yellow-500" />
-            Upgrade to Premium
+            <Crown className="w-4 h-4 mr-3 text-yellow-500" />
+            <span className="flex-1">Upgrade to Premium</span>
           </DropdownMenuItem>
         )}
 
         <DropdownMenuSeparator />
 
-        {/* Sign Out */}
+        {/* Sign Out - Fixed spacing */}
         <DropdownMenuItem 
           onClick={handleSignOut}
           disabled={isLoggingOut}
-          className="cursor-pointer hover:bg-red-50 transition-colors"
+          className="cursor-pointer hover:bg-red-50 transition-colors py-2.5"
         >
           {isLoggingOut ? (
             <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Signing out...
+              <Loader2 className="w-4 h-4 mr-3 animate-spin" />
+              <span className="flex-1">Signing out...</span>
             </>
           ) : (
             <>
-              <LogOut className="w-4 h-4 mr-2" />
-              Sign Out
+              <LogOut className="w-4 h-4 mr-3" />
+              <span className="flex-1">Sign Out</span>
             </>
           )}
         </DropdownMenuItem>
