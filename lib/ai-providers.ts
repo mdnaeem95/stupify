@@ -1,167 +1,84 @@
 /* eslint-disable  @typescript-eslint/no-explicit-any */
-import Anthropic from '@anthropic-ai/sdk';
+import { anthropic } from '@ai-sdk/anthropic';
 import { openai } from '@ai-sdk/openai';
 import { streamText } from 'ai';
 
 export type AIProvider = 'openai' | 'anthropic';
 export type OpenAIModel = 'gpt-4o-mini' | 'gpt-4o';
-export type ClaudeModel = 'claude-sonnet-4-20250514' | 'claude-3-5-sonnet-20241022' | 'claude-3-5-haiku-20241022';
+export type ClaudeModel =
+  | 'claude-sonnet-4-20250514'
+  | 'claude-sonnet-4-5-20250929' // optional newest Sonnet 4.5
+  | 'claude-3-5-sonnet-20241022'
+  | 'claude-3-5-haiku-20241022';
 
 export interface AIConfig {
   provider: AIProvider;
   model: OpenAIModel | ClaudeModel;
   systemPrompt: string;
-  messages: any[];
+  messages: any[];      // [{ role: 'user'|'assistant'|'system', content: string }]
   temperature?: number;
 }
 
-/**
- * Get AI provider based on A/B test assignment
- */
+/** A/B provider choice */
 export function getABTestProvider(userId: string | null): AIProvider {
-  if (process.env.ENABLE_AB_TEST !== 'true') {
-    return 'openai';
-  }
-
-  if (!userId) {
-    return Math.random() < 0.5 ? 'anthropic' : 'openai';
-  }
+  if (process.env.ENABLE_AB_TEST !== 'true') return 'openai';
+  if (!userId) return Math.random() < 0.5 ? 'anthropic' : 'openai';
 
   const hash = hashString(userId);
-  const claudePercentage = parseInt(process.env.CLAUDE_PERCENTAGE || '50');
-  
+  const claudePercentage = parseInt(process.env.CLAUDE_PERCENTAGE || '50', 10);
   return (hash % 100) < claudePercentage ? 'anthropic' : 'openai';
 }
 
-/**
- * Simple string hash function
- */
+/** Simple string hash */
 function hashString(str: string): number {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash;
+    hash = ((hash << 5) - hash) + str.charCodeAt(i);
+    hash |= 0;
   }
   return Math.abs(hash);
 }
 
-/**
- * Get model based on provider and subscription tier
- */
+/** Tier-based model selection (fixed: premium => stronger) */
 export function getModelForTier(
   provider: AIProvider,
   isPremium: boolean
 ): OpenAIModel | ClaudeModel {
   if (provider === 'anthropic') {
-    return isPremium ? 'claude-3-5-haiku-20241022' : 'claude-sonnet-4-20250514';
-  } else {
-    return isPremium ? 'gpt-4o' : 'gpt-4o-mini';
+    return isPremium
+      ? 'claude-sonnet-4-20250514'       // or 'claude-sonnet-4-5-20250929'
+      : 'claude-3-5-haiku-20241022';
   }
+  return isPremium ? 'gpt-4o' : 'gpt-4o-mini';
 }
 
-/**
- * Stream response from appropriate AI provider
- */
+/** Single entrypoint */
 export async function streamAIResponse(config: AIConfig) {
-  if (config.provider === 'anthropic') {
-    return streamClaudeResponse(config);
-  } else {
-    return streamOpenAIResponse(config);
-  }
+  return config.provider === 'anthropic'
+    ? streamClaudeResponse(config)
+    : streamOpenAIResponse(config);
 }
 
-/**
- * Stream from OpenAI
- */
+/** OpenAI via AI SDK */
 async function streamOpenAIResponse(config: AIConfig) {
   return streamText({
     model: openai(config.model as OpenAIModel),
     system: config.systemPrompt,
     messages: config.messages,
-    temperature: config.temperature || 0.7,
+    temperature: config.temperature ?? 0.7,
   });
 }
 
-/**
- * Stream from Claude
- */
+/** Anthropic via AI SDK (no manual streaming loop) */
 async function streamClaudeResponse(config: AIConfig) {
-  const anthropic = new Anthropic({
-    apiKey: process.env.ANTHROPIC_API_KEY,
-  });
-
-  const claudeMessages = config.messages.map((msg: any) => ({
-    role: msg.role === 'user' ? 'user' : 'assistant' as 'user' | 'assistant',
-    content: msg.content,
-  }));
-
-  const stream = await anthropic.messages.create({
-    model: config.model as ClaudeModel,
-    max_tokens: 2048,
-    temperature: config.temperature || 0.7,
+  // Ensure ANTHROPIC_API_KEY is set in env (AI SDK reads it automatically
+  return streamText({
+    model: anthropic(config.model as ClaudeModel),
     system: config.systemPrompt,
-    messages: claudeMessages,
-    stream: true,
+    messages: config.messages,
+    temperature: config.temperature ?? 0.7,
+
+    // Optional: enable thinking on Sonnet 4 / Opus 4 models when needed
+    // providerOptions: { anthropic: { thinking: { type: 'enabled', budgetTokens: 8000 } } },
   });
-
-  const readableStream = new ReadableStream({
-    async start(controller) {
-      try {
-        for await (const event of stream) {
-          if (event.type === 'content_block_delta') {
-            if (event.delta.type === 'text_delta') {
-              controller.enqueue(
-                new TextEncoder().encode(event.delta.text)
-              );
-            }
-          }
-        }
-        controller.close();
-      } catch (error) {
-        controller.error(error);
-      }
-    },
-  });
-
-  return {
-    toTextStreamResponse: () => new Response(readableStream, {
-      headers: {
-        'Content-Type': 'text/plain; charset=utf-8',
-        'X-AI-Provider': 'anthropic',
-        'X-AI-Model': config.model,
-      },
-    }),
-    toUIMessageStreamResponse: () => {
-      const dataStream = new ReadableStream({
-        async start(controller) {
-          const reader = readableStream.getReader();
-          const decoder = new TextDecoder();
-          
-          try {
-            while (true) {
-              const { done, value } = await reader.read();
-              if (done) break;
-              
-              const text = decoder.decode(value, { stream: true });
-              controller.enqueue(
-                new TextEncoder().encode(`0:${JSON.stringify(text)}\n`)
-              );
-            }
-            controller.close();
-          } catch (error) {
-            controller.error(error);
-          }
-        },
-      });
-
-      return new Response(dataStream, {
-        headers: {
-          'Content-Type': 'text/plain; charset=utf-8',
-          'X-AI-Provider': 'anthropic',
-          'X-AI-Model': config.model,
-        },
-      });
-    },
-  };
 }
