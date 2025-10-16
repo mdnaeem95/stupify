@@ -160,7 +160,7 @@ export default function SuccessPage() {
             <CheckCircle className="w-4 h-4 text-green-500" />
             A receipt has been sent to your email
           </p>
-          <p>Questions? Contact us at <a href="mailto:support@stupify.ai" className="text-purple-600 hover:underline">support@stupify.ai</a></p>
+          <p>Questions? Contact us at <a href="mailto:support@stupify.app" className="text-purple-600 hover:underline">support@stupify.app</a></p>
         </div>
       </div>
     </div>

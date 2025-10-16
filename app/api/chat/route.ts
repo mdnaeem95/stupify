@@ -20,7 +20,7 @@ export async function POST(req: Request) {
       messages, 
       simplicityLevel, 
       source,
-      // NEW: Confusion detection fields
+      // Confusion detection fields
       confusionRetry = false,
       retryInstructions = null
     } = body;
@@ -35,15 +35,10 @@ export async function POST(req: Request) {
     const level = (simplicityLevel || 'normal') as SimplicityLevel;
     const isExtension = source === 'extension';
     
-    console.log('🚀 Chat request:', { 
-      source: isExtension ? 'extension' : 'web',
-      messageCount: messages.length,
-      level,
-      confusionRetry // NEW: Log confusion retries
-    });
-
     // Get authenticated user
     let user = null;
+    let supabaseClient = null;
+    
     try {
       // For extension, extract JWT from Authorization header
       if (isExtension) {
@@ -51,8 +46,8 @@ export async function POST(req: Request) {
         const token = authHeader?.replace('Bearer ', '');
         
         if (token) {
-          const supabase = await createClientWithToken(token);
-          const { data, error: authError } = await supabase.auth.getUser();
+          supabaseClient = await createClientWithToken(token);
+          const { data, error: authError } = await supabaseClient.auth.getUser();
           if (!authError && data.user) {
             user = data.user;
             console.log('✅ Extension user authenticated:', user.email);
@@ -60,8 +55,8 @@ export async function POST(req: Request) {
         }
       } else {
         // For web app, use normal server client (reads cookies)
-        const supabase = await createClient();
-        const { data, error: authError } = await supabase.auth.getUser();
+        supabaseClient = await createClient();
+        const { data, error: authError } = await supabaseClient.auth.getUser();
         if (!authError && data.user) {
           user = data.user;
           console.log('✅ Web user authenticated:', user.email);
@@ -71,10 +66,40 @@ export async function POST(req: Request) {
       console.log('⚠️ Auth failed (continuing without user):', authError);
     }
     
+    // ✨ NEW: Check subscription status and select model
+    let isPremium = false;
+    let modelName = 'gpt-4o-mini'; // Default for free/unauthenticated users
+    
+    if (user && supabaseClient) {
+      try {
+        console.log('🔍 Checking subscription status...');
+        const { data: profile } = await supabaseClient
+          .from('profiles')
+          .select('subscription_status')
+          .eq('id', user.id)
+          .single();
+        
+        isPremium = profile?.subscription_status === 'premium';
+        modelName = isPremium ? 'gpt-4o' : 'gpt-4o-mini';
+        
+        console.log('🎯 Model selection:', {
+          userId: user.id,
+          isPremium,
+          model: modelName,
+          cost: isPremium ? '$2.50/1M tokens' : '$0.15/1M tokens'
+        });
+      } catch (subError) {
+        console.error('⚠️ Failed to check subscription (using free model):', subError);
+        // Continue with default free model
+      }
+    } else {
+      console.log('ℹ️ No authenticated user - using free model (gpt-4o-mini)');
+    }
+    
     // Get the appropriate system prompt
     let systemPrompt = getSystemPromptV2(level);
 
-    // NEW: Add confusion retry instructions to system prompt if detected
+    // Add confusion retry instructions to system prompt if detected
     if (confusionRetry && retryInstructions) {
       console.log('😕 Adding confusion retry instructions to system prompt');
       systemPrompt += `\n\n[IMPORTANT INSTRUCTION FOR THIS RESPONSE ONLY]: ${retryInstructions}`;
@@ -146,13 +171,16 @@ export async function POST(req: Request) {
       modelMessages = convertToModelMessages(messages);
     }
 
-    // Use the AI SDK v5 streamText
+    // ✨ UPDATED: Use model based on subscription status
+    console.log(`🚀 Starting stream with ${modelName}...`);
     const result = streamText({
-      model: openai('gpt-4o-mini'),
+      model: openai(modelName),  // ← Now uses premium model for premium users!
       system: systemPrompt,
       messages: modelMessages,
       temperature: 0.7,
     });
+
+    console.log('✅ Stream started successfully');
 
     // Return appropriate format based on source
     if (isExtension) {

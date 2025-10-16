@@ -113,7 +113,7 @@ export default function CancelPage() {
 
         {/* Support */}
         <div className="mt-8 text-sm text-gray-500">
-          <p>Have questions about Premium? <a href="mailto:support@stupify.ai" className="text-purple-600 hover:underline">Contact us</a></p>
+          <p>Have questions about Premium? <a href="mailto:support@stupify.app" className="text-purple-600 hover:underline">Contact us</a></p>
         </div>
       </div>
     </div>
