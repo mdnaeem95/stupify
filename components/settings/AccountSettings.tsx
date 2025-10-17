@@ -1,3 +1,4 @@
+/* eslint-disable  @typescript-eslint/no-explicit-any */
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -24,6 +25,7 @@ export function AccountSettings() {
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSendingReset, setIsSendingReset] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -52,33 +54,59 @@ export function AccountSettings() {
     
     try {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
       
-      if (!user) throw new Error('Not authenticated');
+      if (authError) {
+        console.error('Auth error:', authError);
+        throw new Error('Not authenticated');
+      }
+      
+      if (!user) {
+        throw new Error('No user found');
+      }
 
-      const { error } = await supabase
+      console.log('Updating profile for user:', user.id);
+      console.log('New name:', fullName);
+
+      // Update the profile - removed updated_at since it should auto-update via trigger
+      const { data, error } = await supabase
         .from('profiles')
         .update({ 
-          full_name: fullName,
-          updated_at: new Date().toISOString()
+          full_name: fullName.trim()
         })
-        .eq('id', user.id);
+        .eq('id', user.id)
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
+
+      console.log('Update result:', data);
 
       setMessage({ type: 'success', text: 'Name updated successfully!' });
       
       // Clear message after 3 seconds
       setTimeout(() => setMessage(null), 3000);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to update name:', error);
-      setMessage({ type: 'error', text: 'Failed to update name. Please try again.' });
+      
+      // More detailed error message
+      let errorMessage = 'Failed to update name. Please try again.';
+      if (error.message) {
+        errorMessage += ` (${error.message})`;
+      }
+      
+      setMessage({ type: 'error', text: errorMessage });
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleChangePassword = async () => {
+    setMessage(null);
+    setIsSendingReset(true);
+    
     try {
       const supabase = createClient();
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
@@ -92,14 +120,16 @@ export function AccountSettings() {
         text: 'Password reset email sent! Check your inbox.' 
       });
       
-      // Clear message after 3 seconds
-      setTimeout(() => setMessage(null), 3000);
-    } catch (error) {
+      // Clear message after 5 seconds
+      setTimeout(() => setMessage(null), 5000);
+    } catch (error: any) {
       console.error('Failed to send reset email:', error);
       setMessage({ 
         type: 'error', 
-        text: 'Failed to send reset email. Please try again.' 
+        text: error.message || 'Failed to send reset email. Please try again.' 
       });
+    } finally {
+      setIsSendingReset(false);
     }
   };
 
@@ -117,16 +147,19 @@ export function AccountSettings() {
         method: 'DELETE',
       });
 
-      if (!response.ok) throw new Error('Failed to delete account');
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to delete account');
+      }
 
       // Sign out and redirect
       await supabase.auth.signOut();
       window.location.href = '/';
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to delete account:', error);
       setMessage({ 
         type: 'error', 
-        text: 'Failed to delete account. Please contact support.' 
+        text: error.message || 'Failed to delete account. Please contact support.' 
       });
       setIsDeleting(false);
     }
@@ -231,9 +264,17 @@ export function AccountSettings() {
         <Button 
           variant="outline" 
           onClick={handleChangePassword}
+          disabled={isSendingReset}
           className="hover:bg-gray-50 transition-colors"
         >
-          Send Password Reset Email
+          {isSendingReset ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" strokeWidth={2} />
+              Sending Email...
+            </>
+          ) : (
+            'Send Password Reset Email'
+          )}
         </Button>
       </div>
 
