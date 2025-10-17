@@ -6,7 +6,7 @@ export interface AuthUser {
   full_name?: string;
 }
 
-// Sign up with email and password
+// Sign up with email verification
 export async function signUp(email: string, password: string, fullName?: string) {
   const supabase = createClient();
   
@@ -17,6 +17,8 @@ export async function signUp(email: string, password: string, fullName?: string)
       data: {
         full_name: fullName,
       },
+      // Email verification configuration
+      emailRedirectTo: `${window.location.origin}/api/auth/callback`,
     },
   });
 
@@ -24,6 +26,7 @@ export async function signUp(email: string, password: string, fullName?: string)
     throw error;
   }
 
+  // Return data - will include session: null if email confirmation required
   return data;
 }
 
