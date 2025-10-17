@@ -1,10 +1,3 @@
-/**
- * VoiceButton Component
- * 
- * Microphone button for voice input
- * Shows different states: idle, recording, processing
- */
-
 'use client';
 
 import { Mic, MicOff, Loader2 } from 'lucide-react';
@@ -61,26 +54,24 @@ export function VoiceButton({
   };
   
   return (
-    <div className="relative">
+    <div className="relative group">
       <Button
         type="button"
         onClick={onClick}
         disabled={isDisabled}
         className={cn(
-          'rounded-xl transition-all duration-200',
+          'rounded-2xl transition-all duration-200 relative overflow-hidden',
           sizeClasses[size],
-          // Base styles
-          'relative overflow-hidden',
-          // Idle state
-          !isRecording && !isProcessing && 'bg-gradient-to-br from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600',
-          // Recording state
-          isRecording && 'bg-red-500 hover:bg-red-600 animate-pulse',
+          // Idle state - gradient matching design system
+          !isRecording && !isProcessing && !error && 'bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30 transform hover:-translate-y-0.5',
+          // Recording state - red with pulse
+          isRecording && 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 shadow-lg shadow-red-500/25',
           // Processing state
           isProcessing && 'bg-gray-400 cursor-wait',
           // Disabled state
           isDisabled && !isProcessing && 'opacity-50 cursor-not-allowed',
           // Error state
-          error && !isRecording && !isProcessing && 'bg-red-500',
+          error && !isRecording && !isProcessing && 'bg-gradient-to-r from-red-500 to-red-600',
           className
         )}
         aria-label={
@@ -96,45 +87,42 @@ export function VoiceButton({
         }}
       >
         {isProcessing ? (
-          <Loader2 className={cn(iconSizeClasses[size], 'animate-spin text-white')} />
+          <Loader2 className={cn(iconSizeClasses[size], 'animate-spin text-white')} strokeWidth={2.5} />
         ) : isRecording ? (
-          <MicOff className={cn(iconSizeClasses[size], 'text-white')} />
+          <MicOff className={cn(iconSizeClasses[size], 'text-white')} strokeWidth={2.5} />
         ) : error ? (
-          <Mic className={cn(iconSizeClasses[size], 'text-white opacity-50')} />
+          <Mic className={cn(iconSizeClasses[size], 'text-white opacity-50')} strokeWidth={2.5} />
         ) : (
-          <Mic className={cn(iconSizeClasses[size], 'text-white')} />
+          <Mic className={cn(iconSizeClasses[size], 'text-white')} strokeWidth={2.5} />
         )}
         
         {/* Recording pulse effect */}
         {isRecording && (
-          <span className="absolute inset-0 rounded-full bg-red-400 animate-ping opacity-75" />
+          <>
+            <span className="absolute inset-0 rounded-2xl bg-red-400/50 animate-ping" />
+            <span className="absolute inset-0 rounded-2xl bg-red-400/30 animate-pulse" />
+          </>
         )}
       </Button>
       
-      {/* Duration display */}
+      {/* Duration display - redesigned */}
       {isRecording && duration > 0 && (
-        <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-black/75 text-white text-xs px-2 py-1 rounded-full whitespace-nowrap">
+        <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-indigo-900 to-violet-900 text-white text-xs font-semibold px-3 py-1.5 rounded-full whitespace-nowrap shadow-lg">
           {formatDuration(duration)}
         </div>
       )}
       
-      {/* Tooltip for unsupported browsers */}
+      {/* Tooltip for unsupported browsers - redesigned */}
       {!isSupported && !isRecording && !isProcessing && (
-        <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-black/90 text-white text-xs px-3 py-1.5 rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+        <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs font-medium px-3 py-2 rounded-xl whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-xl">
           Voice input not supported
-          <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1">
-            <div className="border-4 border-transparent border-t-black/90" />
-          </div>
         </div>
       )}
       
-      {/* Error tooltip */}
+      {/* Error tooltip - redesigned */}
       {error && !isRecording && !isProcessing && (
-        <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-red-600 text-white text-xs px-3 py-1.5 rounded-lg whitespace-nowrap max-w-[200px] text-center">
+        <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-red-600 to-red-700 text-white text-xs font-medium px-3 py-2 rounded-xl whitespace-nowrap max-w-[200px] text-center shadow-xl">
           {error}
-          <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1">
-            <div className="border-4 border-transparent border-t-red-600" />
-          </div>
         </div>
       )}
     </div>

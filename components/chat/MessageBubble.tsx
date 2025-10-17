@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
-import { Bot, User, Share2 } from 'lucide-react';
+import { Sparkles, User, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ShareModal } from '@/components/shareable/ShareModal';
 import { AnalogyRating } from './AnalogyRatings';
@@ -14,8 +14,8 @@ interface MessageBubbleProps {
   messageId?: string;
   conversationId?: string;
   simplicityLevel?: SimplicityLevel;
-  previousUserMessage?: string; // The question that prompted this response
-  onRate?: (messageId: string, rating: 'up' | 'down') => void; // KEEP existing rating callback
+  previousUserMessage?: string;
+  onRate?: (messageId: string, rating: 'up' | 'down') => void;
   isMobile?: boolean;
   triggerHaptic?: (type?: 'light' | 'medium' | 'heavy') => void;
 }
@@ -27,7 +27,7 @@ export function MessageBubble({
   conversationId,
   simplicityLevel = 'normal',
   previousUserMessage,
-  onRate, // KEEP existing onRate prop
+  onRate,
   isMobile,
   triggerHaptic
 }: MessageBubbleProps) {
@@ -39,7 +39,6 @@ export function MessageBubble({
   const handleShareClick = async () => {
     if (!previousUserMessage || !messageId) return;
     
-    // Save the explanation first
     setIsSaving(true);
     try {
       const response = await fetch('/api/share/save', {
@@ -69,18 +68,26 @@ export function MessageBubble({
   return (
     <>
       <div className={cn(
-        'flex gap-2 md:gap-3 mb-4 md:mb-6 group',
+        'flex gap-3 mb-6 group',
         isUser ? 'flex-row-reverse' : 'flex-row'
       )}>
         {/* Avatar */}
         <div className={cn(
-          'flex-shrink-0 w-7 h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center',
-          isUser ? 'bg-blue-500' : 'bg-purple-500'
+          'flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center relative',
+          isUser 
+            ? 'bg-gray-100' 
+            : ''
         )}>
           {isUser ? (
-            <User className="w-4 h-4 md:w-5 md:h-5 text-white" />
+            <User className="w-5 h-5 text-gray-700" strokeWidth={2} />
           ) : (
-            <Bot className="w-4 h-4 md:w-5 md:h-5 text-white" />
+            <>
+              {/* Ambient glow for AI avatar */}
+              <div className="absolute inset-0 bg-gradient-to-br from-indigo-600 to-violet-600 rounded-full blur-md opacity-30" />
+              <div className="relative bg-gradient-to-br from-indigo-600 to-violet-600 w-9 h-9 rounded-full flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                <Sparkles className="w-5 h-5 text-white" strokeWidth={2.5} />
+              </div>
+            </>
           )}
         </div>
 
@@ -89,12 +96,12 @@ export function MessageBubble({
           'flex-1 max-w-[85%] md:max-w-[80%]',
         )}>
           <div className={cn(
-            'px-3 md:px-4 py-2 md:py-3 rounded-2xl',
+            'px-5 py-3.5 rounded-2xl',
             isUser 
-              ? 'bg-blue-500 text-white rounded-tr-none' 
-              : 'bg-gray-100 text-gray-900 rounded-tl-none'
+              ? 'bg-gray-100 text-gray-900 rounded-tr-sm border border-gray-200' 
+              : 'bg-gradient-to-br from-indigo-50 to-violet-50 text-gray-900 rounded-tl-sm border border-indigo-100'
           )}>
-            <div className="text-sm md:text-base whitespace-pre-wrap break-words">
+            <div className="text-base leading-relaxed whitespace-pre-wrap break-words">
               {content}
             </div>
           </div>
@@ -106,7 +113,7 @@ export function MessageBubble({
               ${isMobile ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} 
               transition-opacity
             `}>
-              {/* Share Button - NEW */}
+              {/* Share Button */}
               {previousUserMessage && (
                 <Button
                   variant="ghost"
@@ -116,10 +123,9 @@ export function MessageBubble({
                     if (isMobile && triggerHaptic) triggerHaptic('light');
                   }}
                   disabled={isSaving}
-                  className={`text-gray-500 hover:text-purple-600 hover:bg-purple-50 transition-all                       min-h-[44px] min-w-[44px]
-                  ${isMobile ? 'w-full justify-center' : ''}`}
+                  className={`text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 transition-colors font-medium min-h-[44px] min-w-[44px] ${isMobile ? 'w-full justify-center' : ''}`}
                 >
-                  <Share2 className="w-4 h-4 mr-2" />
+                  <Share2 className="w-4 h-4 mr-2" strokeWidth={2} />
                   {isSaving ? 'Saving...' : 'Share'}
                 </Button>
               )}
@@ -128,7 +134,7 @@ export function MessageBubble({
         </div>
       </div>
 
-      {/* AnalogyRating - KEEP existing functionality exactly as it was */}
+      {/* AnalogyRating - Keep existing functionality */}
       {role === 'assistant' && messageId && onRate && (
         <div className={isMobile ? 'w-full' : ''}>
           <AnalogyRating
@@ -142,7 +148,7 @@ export function MessageBubble({
         </div>
       )}
 
-      {/* Share Modal - NEW */}
+      {/* Share Modal */}
       {showShareModal && previousUserMessage && (
         <ShareModal
           isOpen={showShareModal}

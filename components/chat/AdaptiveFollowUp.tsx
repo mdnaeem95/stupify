@@ -33,17 +33,11 @@ export function AdaptiveFollowUp({
     return null;
   }
 
-  // Category styling
+  // Category styling - updated to match design system
   const categoryStyles = {
-    deeper: 'bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-800',
-    related: 'bg-purple-50 hover:bg-purple-100 border-purple-200 text-purple-800',
-    practical: 'bg-green-50 hover:bg-green-100 border-green-200 text-green-800'
-  };
-
-  const categoryIcons = {
-    deeper: '🔍',
-    related: '🔗',
-    practical: '💡'
+    deeper: 'bg-indigo-50 hover:bg-indigo-100/80 text-indigo-700',
+    related: 'bg-violet-50 hover:bg-violet-100/80 text-violet-700',
+    practical: 'bg-purple-50 hover:bg-purple-100/80 text-purple-700'
   };
 
   const categoryLabels = {
@@ -53,22 +47,27 @@ export function AdaptiveFollowUp({
   };
 
   return (
-    <div className="my-6 space-y-3">
+    <div className="my-8 space-y-4">
       {/* Header */}
-      <div className="flex items-center gap-2 text-sm text-gray-600 font-medium">
-        <Sparkles className="w-4 h-4 text-purple-500" />
-        <span>Want to learn more?</span>
+      <div className="flex items-center gap-2.5">
+        <div className="relative">
+          <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-violet-600 rounded-lg blur-sm opacity-30" />
+          <div className="relative bg-gradient-to-r from-indigo-600 to-violet-600 p-1.5 rounded-lg">
+            <Sparkles className="w-4 h-4 text-white" strokeWidth={2.5} />
+          </div>
+        </div>
+        <span className="text-sm font-semibold text-gray-900">Want to learn more?</span>
       </div>
 
       {/* Loading State */}
       {isLoading ? (
-        <div className="flex items-center gap-2 text-sm text-gray-500">
-          <Loader2 className="w-4 h-4 animate-spin" />
+        <div className="flex items-center gap-2.5 text-sm text-gray-600">
+          <Loader2 className="w-4 h-4 animate-spin" strokeWidth={2} />
           <span>Thinking of great follow-up questions...</span>
         </div>
       ) : (
         /* Questions */
-        <div className="space-y-2">
+        <div className="space-y-2.5">
           {questions.map((question) => (
             <Button
               key={question.id}
@@ -76,23 +75,22 @@ export function AdaptiveFollowUp({
               disabled={clickedId !== null}
               variant="outline"
               className={`
-                w-full justify-start text-left h-auto py-3 px-4
+                w-full justify-start text-left h-auto py-3.5 px-4
                 transition-all duration-200 
+                rounded-2xl
+                border-0
                 ${categoryStyles[question.category]}
-                ${clickedId === question.id ? 'ring-2 ring-offset-2 ring-purple-500 opacity-50' : ''}
+                ${clickedId === question.id ? 'ring-2 ring-indigo-500/20 opacity-50' : ''}
                 ${clickedId && clickedId !== question.id ? 'opacity-40' : ''}
-                hover:shadow-sm
+                hover:shadow-md hover:-translate-y-0.5
               `}
             >
               <span className="flex items-start gap-3 w-full">
-                <span className="text-lg mt-0.5 flex-shrink-0">
-                  {categoryIcons[question.category]}
-                </span>
                 <span className="flex-1">
-                  <span className="block text-xs font-semibold mb-1 opacity-70">
+                  <span className="block text-xs font-bold mb-1.5 opacity-60 uppercase tracking-wide">
                     {categoryLabels[question.category]}
                   </span>
-                  <span className="block text-sm">
+                  <span className="block text-sm font-medium leading-relaxed">
                     {question.text}
                   </span>
                 </span>
@@ -104,7 +102,7 @@ export function AdaptiveFollowUp({
 
       {/* Help Text */}
       {!isLoading && questions.length > 0 && (
-        <p className="text-xs text-gray-400 text-center mt-3">
+        <p className="text-xs text-gray-500 text-center mt-4">
           Click a question to explore, or type your own below
         </p>
       )}
@@ -130,15 +128,20 @@ export function AdaptiveFollowUpCompact({
   }
 
   return (
-    <div className="my-4 space-y-2">
-      <div className="flex items-center gap-2 text-xs text-gray-500 font-medium">
-        <Sparkles className="w-3.5 h-3.5 text-purple-500" />
-        <span>Continue exploring:</span>
+    <div className="my-6 space-y-3">
+      <div className="flex items-center gap-2.5">
+        <div className="relative">
+          <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-violet-600 rounded-lg blur-sm opacity-30" />
+          <div className="relative bg-gradient-to-r from-indigo-600 to-violet-600 p-1 rounded-lg">
+            <Sparkles className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />
+          </div>
+        </div>
+        <span className="text-xs font-semibold text-gray-700">Continue exploring:</span>
       </div>
 
       {isLoading ? (
-        <div className="flex items-center gap-2 text-xs text-gray-400">
-          <Loader2 className="w-3 h-3 animate-spin" />
+        <div className="flex items-center gap-2 text-xs text-gray-600">
+          <Loader2 className="w-3.5 h-3.5 animate-spin" strokeWidth={2} />
           <span>Loading questions...</span>
         </div>
       ) : (
@@ -149,7 +152,7 @@ export function AdaptiveFollowUpCompact({
               onClick={() => handleQuestionClick(question.text)}
               variant="outline"
               size="sm"
-              className="text-xs hover:bg-purple-50 hover:border-purple-300 hover:text-purple-700 transition-colors"
+              className="text-xs bg-gray-50 border-0 hover:bg-gradient-to-br hover:from-indigo-50 hover:to-violet-50 hover:shadow-sm transition-all duration-200 rounded-xl font-medium"
             >
               {question.text}
             </Button>
@@ -173,13 +176,13 @@ export function AdaptiveFollowUpMinimal({
   }
 
   return (
-    <div className="my-3 text-sm">
-      <span className="text-gray-500 font-medium">Ask me: </span>
+    <div className="my-4 text-sm">
+      <span className="text-gray-600 font-semibold">Ask me: </span>
       {questions.map((question, index) => (
         <span key={question.id}>
           <button
             onClick={() => onQuestionClick(question.text)}
-            className="text-purple-600 hover:text-purple-800 hover:underline"
+            className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 font-medium transition-colors"
           >
             {question.text}
           </button>

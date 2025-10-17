@@ -87,15 +87,15 @@ export function ConversationList({
   if (isLoading) {
     console.log('⏳ ConversationList: Showing loading state')
     return (
-      <div className="flex flex-col h-full bg-white border-gray-200/60">
-        <div className="p-3 bg-white">
-          <div className="h-4 w-24 bg-gray-200 rounded animate-pulse mb-3"></div>
-          <div className="h-10 bg-gray-200 rounded-lg animate-pulse"></div>
+      <div className="flex flex-col h-full bg-gray-50">
+        <div className="p-4">
+          <div className="h-4 w-24 bg-gray-200 rounded animate-pulse mb-4"></div>
+          <div className="h-11 bg-gray-200 rounded-xl animate-pulse"></div>
         </div>
-        <div className="p-2 space-y-1">
-          <div className="h-10 bg-gray-100 rounded-lg animate-pulse"></div>
-          <div className="h-10 bg-gray-100 rounded-lg animate-pulse"></div>
-          <div className="h-10 bg-gray-100 rounded-lg animate-pulse"></div>
+        <div className="p-3 space-y-2">
+          <div className="h-12 bg-gray-100 rounded-xl animate-pulse"></div>
+          <div className="h-12 bg-gray-100 rounded-xl animate-pulse"></div>
+          <div className="h-12 bg-gray-100 rounded-xl animate-pulse"></div>
         </div>
       </div>
     );
@@ -104,19 +104,19 @@ export function ConversationList({
   if (error) {
     console.error('⚠️ ConversationList: Showing error state', { error })
     return (
-      <div className="flex flex-col h-full bg-white">
+      <div className="flex flex-col h-full bg-gray-50">
         <div className="p-4">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 shadow-sm">
+          <div className="bg-red-50 rounded-2xl p-4">
             <div className="flex items-start gap-3 text-red-800 mb-3">
-              <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+              <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" strokeWidth={2} />
               <div className="flex-1">
-                <p className="font-medium text-sm mb-1">Something went wrong</p>
-                <p className="text-xs text-red-700">{error}</p>
+                <p className="font-semibold text-sm mb-1">Something went wrong</p>
+                <p className="text-xs text-red-700 leading-relaxed">{error}</p>
               </div>
             </div>
             <Button 
               onClick={loadConversations}
-              className="w-full bg-red-600 hover:bg-red-700 text-white text-sm h-9"
+              className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-sm font-semibold h-10 rounded-xl"
             >
               Try Again
             </Button>
@@ -132,12 +132,17 @@ export function ConversationList({
   })
 
   return (
-    <div className="flex flex-col h-full bg-white">
+    <div className="flex flex-col h-full bg-gray-50">
       {/* Header */}
-      <div className="p-3 bg-white sticky top-0 z-10">
-        <div className="flex items-center gap-2 mb-3 px-1">
-          <Sparkles className="w-4 h-4 text-purple-600" />
-          <h2 className="text-sm font-semibold text-gray-700">
+      <div className="p-4 bg-gray-50 sticky top-0 z-10">
+        <div className="flex items-center gap-2.5 mb-4">
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-violet-600 rounded-lg blur-sm opacity-30" />
+            <div className="relative bg-gradient-to-r from-indigo-600 to-violet-600 p-1.5 rounded-lg">
+              <Sparkles className="w-4 h-4 text-white" strokeWidth={2.5} />
+            </div>
+          </div>
+          <h2 className="text-base font-bold text-gray-900">
             Your Chats
           </h2>
         </div>
@@ -146,9 +151,9 @@ export function ConversationList({
             console.log('🆕 ConversationList: New Chat button clicked')
             onNewChat()
           }}
-          className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-medium shadow-sm hover:shadow transition-all duration-200 rounded-lg h-10 text-sm"
+          className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-semibold shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30 transition-all duration-200 rounded-xl h-11 text-sm"
         >
-          <Plus className="w-4 h-4 mr-2" />
+          <Plus className="w-4 h-4 mr-2" strokeWidth={2.5} />
           New Chat
         </Button>
       </div>
@@ -157,18 +162,21 @@ export function ConversationList({
       <div className="flex-1 overflow-y-auto custom-scrollbar">
         {conversations.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-8 text-center h-full">
-            <div className="bg-gray-100 p-5 rounded-2xl mb-3">
-              <MessageSquare className="w-10 h-10 text-gray-400" />
+            <div className="relative mb-4">
+              <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-violet-500/10 blur-2xl rounded-full" />
+              <div className="relative bg-gray-50 p-6 rounded-2xl">
+                <MessageSquare className="w-10 h-10 text-gray-400" strokeWidth={2} />
+              </div>
             </div>
-            <h3 className="text-sm font-medium text-gray-700 mb-1">
+            <h3 className="text-sm font-semibold text-gray-900 mb-2">
               No conversations yet
             </h3>
-            <p className="text-xs text-gray-500 max-w-[200px]">
+            <p className="text-xs text-gray-600 leading-relaxed max-w-[200px]">
               Start your first chat to see your history here
             </p>
           </div>
         ) : (
-          <div className="p-2 space-y-0.5">
+          <div className="p-3 space-y-1">
             {conversations.map((conversation) => (
               <div
                 key={conversation.id}
@@ -179,24 +187,24 @@ export function ConversationList({
                   })
                   onSelectConversation(conversation.id)
                 }}
-                className={`group relative rounded-lg transition-colors duration-150 cursor-pointer ${
+                className={`group relative rounded-xl transition-all duration-200 cursor-pointer ${
                   currentConversationId === conversation.id
-                    ? 'bg-gray-100'
+                    ? 'bg-gradient-to-br from-indigo-50 to-violet-50 shadow-sm'
                     : 'hover:bg-gray-50'
                 }`}
               >
-                <div className="flex items-center justify-between gap-2 px-3 py-2.5">
-                  <div className="flex-1 min-w-0 flex items-center gap-2.5">
+                <div className="flex items-center justify-between gap-2 px-3 py-3">
+                  <div className="flex-1 min-w-0 flex items-center gap-3">
                     <MessageSquare className={`w-4 h-4 flex-shrink-0 ${
                       currentConversationId === conversation.id
-                        ? 'text-gray-700'
+                        ? 'text-indigo-600'
                         : 'text-gray-400'
-                    }`} />
+                    }`} strokeWidth={2} />
                     <div className="flex-1 min-w-0">
                       <p className={`text-sm truncate ${
                         currentConversationId === conversation.id
-                          ? 'text-gray-900 font-medium'
-                          : 'text-gray-700'
+                          ? 'text-gray-900 font-semibold'
+                          : 'text-gray-700 font-medium'
                       }`}>
                         {conversation.title}
                       </p>
@@ -207,9 +215,9 @@ export function ConversationList({
                     variant="ghost"
                     size="icon"
                     onClick={(e) => handleDelete(conversation.id, e)}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity duration-150 hover:bg-gray-200 h-7 w-7 rounded-md flex-shrink-0"
+                    className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-red-50 hover:text-red-600 h-8 w-8 rounded-lg flex-shrink-0"
                   >
-                    <Trash2 className="w-3.5 h-3.5 text-gray-600" />
+                    <Trash2 className="w-4 h-4" strokeWidth={2} />
                   </Button>
                 </div>
               </div>
@@ -219,7 +227,7 @@ export function ConversationList({
       </div>
 
       {/* Footer - User Menu & Usage */}
-      <div className="p-3 bg-white">
+      <div className="p-4 bg-gray-50">
         <div className="space-y-3">
           {/* Usage Badge */}
           {usage && (
@@ -239,14 +247,14 @@ export function ConversationList({
 
       <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar {
-          width: 4px;
+          width: 6px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
           background: transparent;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
           background: #e5e7eb;
-          border-radius: 2px;
+          border-radius: 3px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
           background: #d1d5db;

@@ -30,45 +30,45 @@ export function AnalogyRating({ messageId, onRate, isMobile }: AnalogyRatingProp
   };
 
   return (
-    <div className="flex items-center gap-3 mt-1 mb-3 pt-1">
-      <span className="text-xs text-gray-500">Was this helpful?</span>
+    <div className="flex items-center gap-3 mt-2 mb-4">
+      <span className="text-xs font-medium text-gray-600">Was this helpful?</span>
       
       <button
         onClick={() => handleRate('up')}
         disabled={rating !== null}
         className={`
-          p-1.5 rounded-lg transition-all
+          p-2 rounded-xl transition-all duration-200
           ${rating === 'up' 
-            ? 'bg-green-100 text-green-600' 
-            : 'text-gray-400 hover:bg-gray-100 hover:text-green-600'}
+            ? 'bg-gradient-to-r from-green-50 to-emerald-50 text-green-600 shadow-sm' 
+            : 'text-gray-400 hover:bg-gray-50 hover:text-green-600'}
           ${rating && rating !== 'up' ? 'opacity-40' : ''}
-          ${isMobile ? 'min-h-[44px] min-w-[44px] px-4 py-2.5' : ''}
+          ${isMobile ? 'min-h-[44px] min-w-[44px]' : ''}
           disabled:cursor-not-allowed
         `}
         title="Good explanation"
       >
-        <ThumbsUp className="w-4 h-4" />
+        <ThumbsUp className="w-4 h-4" strokeWidth={2} />
       </button>
 
       <button
         onClick={() => handleRate('down')}
         disabled={rating !== null}
         className={`
-          p-1.5 rounded-lg transition-all
+          p-2 rounded-xl transition-all duration-200
           ${rating === 'down' 
-            ? 'bg-red-100 text-red-600' 
-            : 'text-gray-400 hover:bg-gray-100 hover:text-red-600'}
+            ? 'bg-red-50 text-red-600 shadow-sm' 
+            : 'text-gray-400 hover:bg-gray-50 hover:text-red-600'}
           ${rating && rating !== 'down' ? 'opacity-40' : ''}
-          ${isMobile ? 'min-h-[44px] min-w-[44px] px-4 py-2.5' : ''}
+          ${isMobile ? 'min-h-[44px] min-w-[44px]' : ''}
           disabled:cursor-not-allowed
         `}
         title="Confusing explanation"
       >
-        <ThumbsDown className="w-4 h-4" />
+        <ThumbsDown className="w-4 h-4" strokeWidth={2} />
       </button>
 
       {rating && (
-        <span className="text-xs text-gray-500 animate-fade-in">
+        <span className="text-xs font-medium text-gray-600 animate-fade-in">
           Thanks for your feedback!
         </span>
       )}
