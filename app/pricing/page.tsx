@@ -2,9 +2,8 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Check, Crown, Sparkles, Zap, Shield, X } from 'lucide-react';
+import { Check, Crown, Sparkles, Zap, Shield, X, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
-import { Mascot } from '@/components/mascot/Mascot';
 
 export default function PricingPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -13,7 +12,6 @@ export default function PricingPage() {
     setIsLoading(true);
     
     try {
-      // Call Stripe checkout API
       const response = await fetch('/api/stripe/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -22,7 +20,6 @@ export default function PricingPage() {
       const data = await response.json();
 
       if (data.url) {
-        // Redirect to Stripe checkout
         window.location.href = data.url;
       } else {
         throw new Error('No checkout URL returned');
@@ -37,82 +34,86 @@ export default function PricingPage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
-      <div className="max-w-6xl mx-auto px-4 py-8 border-b border-gray-100">
-        <Link href="/" className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 transition">
-          ← Back to Home
+      <div className="max-w-7xl mx-auto px-6 py-6">
+        <Link href="/" className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors duration-200 font-medium group">
+          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+          Back to Home
         </Link>
       </div>
 
       {/* Hero Section */}
-      <div className="max-w-4xl mx-auto px-4 py-16 text-center relative">
-        {/* Blinky on the side - desktop only */}
-        <div className="hidden lg:block absolute -left-20 top-1/2 -translate-y-1/2">
-          <Mascot expression="excited" size={120} />
+      <div className="max-w-4xl mx-auto px-6 py-20 text-center">
+        <div className="inline-flex items-center gap-2.5 bg-gradient-to-r from-indigo-50 to-violet-50 px-4 py-2.5 rounded-full border border-indigo-100 mb-8">
+          <Crown className="w-5 h-5 text-indigo-600" />
+          <span className="text-sm font-semibold bg-gradient-to-r from-indigo-900 to-violet-900 bg-clip-text text-transparent">
+            Simple, transparent pricing
+          </span>
         </div>
 
-        {/* Mobile Blinky - centered above text */}
-        <div className="lg:hidden flex justify-center mb-6">
-          <Mascot expression="excited" size={100} />
-        </div>
-
-        <div className="inline-flex items-center gap-2 bg-purple-100 px-4 py-2 rounded-full mb-6">
-          <Crown className="w-5 h-5 text-purple-600" />
-          <span className="text-purple-900 font-semibold">Simple, Transparent Pricing</span>
-        </div>
-
-        <h1 className="text-5xl sm:text-6xl font-bold mb-6 leading-tight text-gray-900">
-          Unlimited Questions,
+        <h1 className="text-5xl lg:text-6xl font-bold mb-6 leading-tight tracking-tight">
+          <span className="text-gray-900">Unlimited questions,</span>
           <br />
-          <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-            Zero Confusion
+          <span className="bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 bg-clip-text text-transparent">
+            zero confusion
           </span>
         </h1>
 
-        <p className="text-xl text-gray-600 mb-12 max-w-2xl mx-auto">
-          Get unlimited access to Stupify&apos;s AI that actually explains things simply.
-          No jargon, no limits.
+        <p className="text-xl lg:text-2xl text-gray-600 leading-relaxed max-w-2xl mx-auto">
+          Get unlimited access to AI that actually explains things simply. No jargon, no limits.
         </p>
       </div>
 
       {/* Pricing Cards */}
-      <div className="max-w-5xl mx-auto px-4 pb-20">
-        <div className="grid md:grid-cols-2 gap-8">
+      <div className="max-w-5xl mx-auto px-6 pb-24">
+        <div className="grid lg:grid-cols-2 gap-8">
           {/* Free Plan */}
-          <div className="bg-white rounded-3xl shadow-lg border-2 border-gray-200 p-8 hover:shadow-xl transition">
-            <div className="text-center mb-6">
-              <h3 className="text-2xl font-bold mb-2 text-gray-900">Free</h3>
-              <div className="text-5xl font-bold mb-2 text-gray-900">$0</div>
-              <p className="text-gray-600">Try it out, no credit card needed</p>
+          <div className="bg-white rounded-3xl p-8 shadow-xl shadow-gray-900/10 hover:shadow-2xl hover:shadow-gray-900/15 transition-all duration-300 ring-1 ring-gray-900/5">
+            <div className="text-center mb-8">
+              <h3 className="text-2xl font-bold mb-3 text-gray-900">Free</h3>
+              <div className="mb-4">
+                <span className="text-6xl font-bold text-gray-900">$0</span>
+              </div>
+              <p className="text-gray-600 leading-relaxed">Try it out, no credit card needed</p>
             </div>
 
             <ul className="space-y-4 mb-8">
               <li className="flex items-start gap-3">
-                <Check className="w-6 h-6 text-green-500 flex-shrink-0 mt-0.5" />
-                <span className="text-gray-700">
-                  <strong className="text-gray-900">10 questions per day</strong> - Perfect for trying out
+                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-green-400 to-emerald-400 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Check className="w-4 h-4 text-white" strokeWidth={3} />
+                </div>
+                <span className="text-gray-700 leading-relaxed">
+                  <strong className="text-gray-900 font-semibold">10 questions per day</strong> — Perfect for trying out
                 </span>
               </li>
               <li className="flex items-start gap-3">
-                <Check className="w-6 h-6 text-green-500 flex-shrink-0 mt-0.5" />
-                <span className="text-gray-700">
-                  <strong className="text-gray-900">3 simplicity levels</strong> - From 5yo to advanced
+                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-green-400 to-emerald-400 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Check className="w-4 h-4 text-white" strokeWidth={3} />
+                </div>
+                <span className="text-gray-700 leading-relaxed">
+                  <strong className="text-gray-900 font-semibold">3 simplicity levels</strong> — From 5yo to advanced
                 </span>
               </li>
               <li className="flex items-start gap-3">
-                <Check className="w-6 h-6 text-green-500 flex-shrink-0 mt-0.5" />
-                <span className="text-gray-700">
-                  <strong className="text-gray-900">Save conversations</strong> - Access your chat history
+                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-green-400 to-emerald-400 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Check className="w-4 h-4 text-white" strokeWidth={3} />
+                </div>
+                <span className="text-gray-700 leading-relaxed">
+                  <strong className="text-gray-900 font-semibold">Save conversations</strong> — Access your chat history
                 </span>
               </li>
               <li className="flex items-start gap-3">
-                <X className="w-6 h-6 text-gray-400 flex-shrink-0 mt-0.5" />
-                <span className="text-gray-500">
+                <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <X className="w-4 h-4 text-gray-400" strokeWidth={3} />
+                </div>
+                <span className="text-gray-500 leading-relaxed">
                   Daily limit resets at midnight
                 </span>
               </li>
               <li className="flex items-start gap-3">
-                <X className="w-6 h-6 text-gray-400 flex-shrink-0 mt-0.5" />
-                <span className="text-gray-500">
+                <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <X className="w-4 h-4 text-gray-400" strokeWidth={3} />
+                </div>
+                <span className="text-gray-500 leading-relaxed">
                   No priority support
                 </span>
               </li>
@@ -122,7 +123,7 @@ export default function PricingPage() {
               <Button 
                 variant="outline" 
                 size="lg" 
-                className="w-full text-lg h-14 border-2 border-gray-300 hover:bg-gray-50 hover:text-gray-800 text-gray-900 font-semibold"
+                className="w-full text-lg font-semibold h-14 hover:bg-gray-50"
               >
                 Get Started Free
               </Button>
@@ -130,177 +131,155 @@ export default function PricingPage() {
           </div>
 
           {/* Premium Plan */}
-          <div className="bg-gradient-to-br from-purple-600 to-blue-600 rounded-3xl shadow-2xl border-2 border-purple-400 p-8 relative overflow-hidden hover:scale-105 transition-transform">
+          <div className="relative bg-gradient-to-br from-indigo-600 to-violet-600 rounded-3xl p-8 shadow-2xl shadow-indigo-500/30 hover:shadow-indigo-500/40 hover:scale-[1.02] transition-all duration-300">
             {/* Popular Badge */}
-            <div className="absolute top-4 right-4 bg-yellow-400 text-yellow-900 px-3 py-1 rounded-full text-sm font-bold shadow-lg">
-              POPULAR
+            <div className="absolute -top-3 -right-3 bg-gradient-to-r from-yellow-400 to-orange-400 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg">
+              MOST POPULAR
             </div>
 
-            <div className="text-center mb-6 text-white">
-              <h3 className="text-2xl font-bold mb-2 flex items-center justify-center gap-2">
-                <Crown className="w-6 h-6" />
-                Premium
-              </h3>
-              <div className="text-5xl font-bold mb-2">
-                $4.99
-                <span className="text-xl font-normal opacity-90">/month</span>
+            <div className="text-center mb-8 text-white">
+              <div className="flex items-center justify-center gap-2 mb-3">
+                <Crown className="w-7 h-7 text-yellow-300" />
+                <h3 className="text-2xl font-bold">Premium</h3>
               </div>
-              <p className="text-purple-100">Unlimited learning, unlimited questions</p>
+              <div className="mb-4">
+                <span className="text-6xl font-bold">$4.99</span>
+                <span className="text-xl font-normal text-indigo-100 ml-2">/month</span>
+              </div>
+              <p className="text-indigo-100 leading-relaxed">Unlimited learning, unlimited questions</p>
             </div>
 
             <ul className="space-y-4 mb-8 text-white">
               <li className="flex items-start gap-3">
-                <Sparkles className="w-6 h-6 text-yellow-300 flex-shrink-0 mt-0.5" />
-                <span className="text-white">
-                  <strong className="font-bold">Unlimited questions</strong> - Ask as much as you want, anytime
+                <div className="w-6 h-6 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Sparkles className="w-4 h-4 text-yellow-300" strokeWidth={2.5} />
+                </div>
+                <span className="text-white leading-relaxed">
+                  <strong className="font-semibold">Unlimited questions</strong> — Ask as much as you want, anytime
                 </span>
               </li>
               <li className="flex items-start gap-3">
-                <Zap className="w-6 h-6 text-yellow-300 flex-shrink-0 mt-0.5" />
-                <span className="text-white">
-                  <strong className="font-bold">Priority AI responses</strong> - Faster answers during peak times
+                <div className="w-6 h-6 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Zap className="w-4 h-4 text-yellow-300" strokeWidth={2.5} />
+                </div>
+                <span className="text-white leading-relaxed">
+                  <strong className="font-semibold">Priority AI responses</strong> — Faster answers during peak times
                 </span>
               </li>
               <li className="flex items-start gap-3">
-                <Crown className="w-6 h-6 text-yellow-300 flex-shrink-0 mt-0.5" />
-                <span className="text-white">
-                  <strong className="font-bold">Unlimited chat history</strong> - Never lose a conversation
+                <div className="w-6 h-6 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Crown className="w-4 h-4 text-yellow-300" strokeWidth={2.5} />
+                </div>
+                <span className="text-white leading-relaxed">
+                  <strong className="font-semibold">Unlimited chat history</strong> — Never lose a conversation
                 </span>
               </li>
               <li className="flex items-start gap-3">
-                <Shield className="w-6 h-6 text-yellow-300 flex-shrink-0 mt-0.5" />
-                <span className="text-white">
-                  <strong className="font-bold">Priority support</strong> - Get help when you need it
+                <div className="w-6 h-6 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Shield className="w-4 h-4 text-yellow-300" strokeWidth={2.5} />
+                </div>
+                <span className="text-white leading-relaxed">
+                  <strong className="font-semibold">Priority support</strong> — Get help when you need it
                 </span>
               </li>
               <li className="flex items-start gap-3">
-                <Check className="w-6 h-6 text-yellow-300 flex-shrink-0 mt-0.5" />
-                <span className="text-white">
-                  <strong className="font-bold">Cancel anytime</strong> - No questions asked
+                <div className="w-6 h-6 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Check className="w-4 h-4 text-yellow-300" strokeWidth={3} />
+                </div>
+                <span className="text-white leading-relaxed">
+                  <strong className="font-semibold">Cancel anytime</strong> — No questions asked
                 </span>
               </li>
             </ul>
 
             <Button 
               size="lg" 
-              className="w-full bg-white text-purple-600 hover:bg-gray-100 text-lg font-bold h-14 shadow-lg hover:scale-105 transition-transform"
+              className="w-full bg-white text-indigo-600 hover:bg-gray-50 text-lg font-bold h-14 shadow-xl hover:scale-105 transition-transform"
               onClick={handleUpgrade}
               disabled={isLoading}
             >
               {isLoading ? 'Loading...' : 'Upgrade to Premium'}
             </Button>
 
-            <p className="text-white text-center text-sm mt-4 opacity-95">
-              🎉 Join hundreds of learners loving Stupify
+            <p className="text-white text-center text-sm mt-4">
+              Join hundreds of learners loving Stupify
             </p>
           </div>
         </div>
 
         {/* Money Back Guarantee */}
-        <div className="mt-12 text-center">
-          {/* Mobile Blinky - centered above */}
-          <div className="sm:hidden flex justify-center mb-4">
-            <Mascot expression="happy" size={60} />
-          </div>
-          
-          <div className="inline-flex items-center gap-3 bg-green-50 border-2 border-green-200 px-6 py-4 rounded-2xl relative">
-            {/* Desktop Blinky on top right */}
-            <div className="absolute -top-8 -right-8 hidden sm:block">
-              <Mascot expression="happy" size={70} />
+        <div className="mt-16 text-center">
+          <div className="inline-flex items-center gap-4 bg-gradient-to-r from-green-50 to-emerald-50 px-8 py-5 rounded-2xl shadow-lg shadow-green-500/10">
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-400 to-emerald-400 flex items-center justify-center flex-shrink-0">
+              <Shield className="w-6 h-6 text-white" strokeWidth={2.5} />
             </div>
-            
-            <Shield className="w-8 h-8 text-green-600" />
             <div className="text-left">
-              <div className="font-bold text-green-900">30-Day Money Back Guarantee</div>
-              <div className="text-sm text-green-700">Not happy? Get a full refund, no questions asked.</div>
+              <div className="font-bold text-gray-900 text-lg">30-Day Money Back Guarantee</div>
+              <div className="text-gray-600">Not happy? Get a full refund, no questions asked.</div>
             </div>
           </div>
         </div>
       </div>
 
       {/* FAQ Section */}
-      <div className="bg-gray-50 py-20">
-        <div className="max-w-3xl mx-auto px-4">
-          <h2 className="text-4xl font-bold text-center mb-12 text-gray-900">
+      <div className="bg-gradient-to-br from-gray-50 to-indigo-50/30 py-24">
+        <div className="max-w-3xl mx-auto px-6">
+          <h2 className="text-4xl lg:text-5xl font-bold text-center mb-16 text-gray-900">
             Frequently Asked Questions
           </h2>
 
           <div className="space-y-6">
-            <div className="bg-white p-6 rounded-xl border border-gray-200">
-              <h3 className="text-xl font-bold mb-2 text-gray-900">Can I cancel anytime?</h3>
-              <p className="text-gray-700">
-                Absolutely! Cancel your subscription anytime from your account settings. 
-                No hidden fees, no questions asked. You&apos;ll keep access until the end of your billing period.
-              </p>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl border border-gray-200">
-              <h3 className="text-xl font-bold mb-2 text-gray-900">What happens to my conversations if I downgrade?</h3>
-              <p className="text-gray-700">
-                All your conversations stay saved! You just go back to the 10 questions/day limit. 
-                You can still view all your old chats anytime.
-              </p>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl border border-gray-200">
-              <h3 className="text-xl font-bold mb-2 text-gray-900">Is this really unlimited?</h3>
-              <p className="text-gray-700">
-                Yes! Premium users can ask as many questions as they want. 
-                No daily limits, no hourly caps, no tricks. Just unlimited learning.
-              </p>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl border border-gray-200">
-              <h3 className="text-xl font-bold mb-2 text-gray-900">How does the 30-day guarantee work?</h3>
-              <p className="text-gray-700">
-                If you&apos;re not satisfied within 30 days of subscribing, just email us and we&apos;ll 
-                refund your money. No complicated process, no hassle.
-              </p>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl border border-gray-200">
-              <h3 className="text-xl font-bold mb-2 text-gray-900">Can I try before I buy?</h3>
-              <p className="text-gray-700">
-                Yes! Everyone gets 10 free questions per day. No credit card required to start. 
-                Try Stupify out and upgrade when you&apos;re ready for unlimited access.
-              </p>
-            </div>
+            {[
+              {
+                question: "Can I cancel anytime?",
+                answer: "Absolutely! Cancel your subscription anytime from your account settings. No hidden fees, no questions asked. You'll keep access until the end of your billing period."
+              },
+              {
+                question: "What happens to my conversations if I downgrade?",
+                answer: "All your conversations stay saved! You just go back to the 10 questions/day limit. You can still view all your old chats anytime."
+              },
+              {
+                question: "Is this really unlimited?",
+                answer: "Yes! Premium users can ask as many questions as they want. No daily limits, no hourly caps, no tricks. Just unlimited learning."
+              },
+              {
+                question: "How does the 30-day guarantee work?",
+                answer: "If you're not satisfied within 30 days of subscribing, just email us and we'll refund your money. No complicated process, no hassle."
+              },
+              {
+                question: "Can I try before I buy?",
+                answer: "Yes! Everyone gets 10 free questions per day. No credit card required to start. Try Stupify out and upgrade when you're ready for unlimited access."
+              }
+            ].map((faq, i) => (
+              <div key={i} className="bg-white p-8 rounded-2xl shadow-lg shadow-gray-200/50 hover:shadow-xl hover:shadow-indigo-100/50 transition-all duration-300">
+                <h3 className="text-xl font-bold mb-3 text-gray-900">{faq.question}</h3>
+                <p className="text-gray-600 leading-relaxed">{faq.answer}</p>
+              </div>
+            ))}
           </div>
         </div>
       </div>
 
       {/* Final CTA */}
-      <div className="bg-gradient-to-r from-purple-600 to-blue-600 py-20 relative overflow-hidden">
-        {/* Blinky waving - positioned left (desktop) */}
-        <div className="absolute left-8 top-1/2 -translate-y-1/2 hidden lg:block">
-          <Mascot expression="waving" size={140} />
-        </div>
-        
-        {/* Blinky waving - positioned right (desktop) */}
-        <div className="absolute right-8 top-1/2 -translate-y-1/2 hidden lg:block">
-          <Mascot expression="excited" size={140} />
-        </div>
-
-        {/* Mobile Blinky - centered above text */}
-        <div className="lg:hidden flex justify-center mb-8">
-          <Mascot expression="waving" size={100} />
-        </div>
-
-        <div className="max-w-4xl mx-auto px-4 text-center text-white relative z-10">
-          <h2 className="text-4xl sm:text-5xl font-bold mb-6">
-            Ready to learn without limits?
-          </h2>
-          <p className="text-xl mb-8 text-purple-100">
-            Join Stupify Premium and never hit a question limit again.
-          </p>
-          <Button 
-            size="lg" 
-            className="bg-white text-purple-600 hover:bg-gray-100 text-lg font-bold px-12 h-16 hover:scale-105 transition-transform shadow-xl"
-            onClick={handleUpgrade}
-            disabled={isLoading}
-          >
-            {isLoading ? 'Loading...' : 'Start Premium Now - $4.99/month'}
-          </Button>
+      <div className="relative">
+        <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-violet-600 blur-2xl opacity-20" />
+        <div className="relative bg-gradient-to-r from-indigo-600 to-violet-600 py-24">
+          <div className="max-w-4xl mx-auto px-6 text-center text-white">
+            <h2 className="text-4xl lg:text-5xl font-bold mb-6">
+              Ready to learn without limits?
+            </h2>
+            <p className="text-xl lg:text-2xl mb-10 text-indigo-100 leading-relaxed">
+              Join Stupify Premium and never hit a question limit again.
+            </p>
+            <Button 
+              size="lg" 
+              className="bg-white text-indigo-600 hover:bg-gray-50 text-lg font-bold px-12 h-16 hover:scale-105 transition-transform shadow-2xl"
+              onClick={handleUpgrade}
+              disabled={isLoading}
+            >
+              {isLoading ? 'Loading...' : 'Start Premium Now — $4.99/month'}
+            </Button>
+          </div>
         </div>
       </div>
     </div>
