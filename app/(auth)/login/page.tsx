@@ -1,7 +1,7 @@
 /* eslint-disable  @typescript-eslint/no-explicit-any */
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Sparkles, Loader2, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { signIn } from '@/lib/auth';
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
@@ -55,6 +55,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-white flex items-center justify-center p-6">
       <div className="w-full max-w-md">
+        {/* Logo */}
         <Link href="/" className="flex items-center justify-center gap-3 mb-12 group">
           <div className="relative">
             <div className="absolute inset-0 bg-gradient-to-br from-indigo-600 to-violet-600 rounded-2xl blur-lg opacity-30 group-hover:opacity-50 transition-opacity" />
@@ -67,7 +68,9 @@ export default function LoginPage() {
           </span>
         </Link>
 
+        {/* Main Content */}
         <div className="space-y-8">
+          {/* Header */}
           <div className="text-center space-y-3">
             <h1 className="text-4xl font-bold text-gray-900">
               Welcome back
@@ -92,6 +95,7 @@ export default function LoginPage() {
             </div>
           )}
 
+          {/* Sign In Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
               <label htmlFor="email" className="block text-sm font-semibold text-gray-700">
@@ -152,6 +156,7 @@ export default function LoginPage() {
             </Button>
           </form>
 
+          {/* Divider */}
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-gray-100" />
@@ -163,6 +168,7 @@ export default function LoginPage() {
             </div>
           </div>
 
+          {/* Sign Up Link */}
           <div className="text-center">
             <Link 
               href="/signup"
@@ -174,6 +180,7 @@ export default function LoginPage() {
           </div>
         </div>
 
+        {/* Footer Text */}
         <p className="text-center text-sm text-gray-500 mt-12">
           By signing in, you agree to our{' '}
           <Link href="/terms" className="text-gray-700 hover:text-gray-900 transition-colors">
@@ -186,5 +193,17 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   );
 }
