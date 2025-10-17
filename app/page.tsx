@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Sparkles, Brain, Heart, Zap, ArrowRight, Loader2 } from 'lucide-react';
+import { Sparkles, Brain, Heart, Zap, ArrowRight, Loader2, Menu, X } from 'lucide-react';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
@@ -10,6 +10,7 @@ export default function Home() {
   const router = useRouter();
   const [isLoginLoading, setIsLoginLoading] = useState(false);
   const [isSignupLoading, setIsSignupLoading] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleLogin = () => {
     setIsLoginLoading(true);
@@ -24,381 +25,391 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-white">
       {/* Navigation */}
-      <nav className="border-b border-gray-100">
-        <div className="max-w-6xl mx-auto px-4 py-4">
+      <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl">
+        <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              <div className="bg-gradient-to-br from-purple-500 to-blue-500 p-2 rounded-xl shadow-lg">
-                <Sparkles className="w-5 h-5 text-white" />
+            {/* Logo */}
+            <div className="flex items-center gap-3 group cursor-pointer">
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-br from-indigo-600 to-violet-600 rounded-2xl blur-lg opacity-30 group-hover:opacity-50 transition-opacity" />
+                <div className="relative bg-gradient-to-br from-indigo-600 to-violet-600 p-2.5 rounded-2xl transform group-hover:scale-105 transition-transform">
+                  <Sparkles className="w-5 h-5 text-white" strokeWidth={2.5} />
+                </div>
               </div>
-              <span className="text-xl font-bold text-gray-900">Stupify</span>
+              <span className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                Stupify
+              </span>
             </div>
-            <div className="hidden md:flex gap-6 items-center">
-              <a href="#features" className="text-gray-600 hover:text-gray-900 transition">Features</a>
-              <a href="/pricing" className="text-gray-600 hover:text-gray-900 transition">Pricing</a>
-              <Button variant="ghost" className="text-gray-700 hover:cursor-pointer" onClick={handleLogin} disabled={isLoginLoading || isSignupLoading}>
+
+            {/* Desktop Navigation */}
+            <div className="hidden md:flex items-center gap-8">
+              <a href="#features" className="text-gray-600 hover:text-gray-900 transition-colors duration-200 font-medium">
+                Features
+              </a>
+              <a href="/pricing" className="text-gray-600 hover:text-gray-900 transition-colors duration-200 font-medium">
+                Pricing
+              </a>
+              <Button 
+                variant="ghost" 
+                onClick={handleLogin} 
+                disabled={isLoginLoading || isSignupLoading}
+                className="font-semibold"
+              >
                 {isLoginLoading ? (
                   <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Loading...
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Loading
                   </>
                 ) : (
-                  'Login'
+                  'Sign In'
                 )}
               </Button>
               <Button 
-                className="hover:cursor-pointer bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
                 onClick={handleSignup}
                 disabled={isSignupLoading || isLoginLoading}
+                className="font-semibold bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30"
               >
                 {isSignupLoading ? (
                   <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Loading...
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Loading
                   </>
                 ) : (
-                  'Sign Up'
+                  'Get Started'
                 )}
               </Button>
             </div>
+
+            {/* Mobile Menu Button */}
+            <button 
+              className="md:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
           </div>
+
+          {/* Mobile Menu */}
+          {mobileMenuOpen && (
+            <div className="md:hidden pt-4 pb-2 space-y-3">
+              <a href="#features" className="block py-2 text-gray-600 hover:text-gray-900 font-medium">
+                Features
+              </a>
+              <a href="/pricing" className="block py-2 text-gray-600 hover:text-gray-900 font-medium">
+                Pricing
+              </a>
+              <div className="pt-2 space-y-2">
+                <Button variant="ghost" onClick={handleLogin} className="w-full">
+                  Sign In
+                </Button>
+                <Button onClick={handleSignup} className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white">
+                  Get Started
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </nav>
 
-      {/* Hero Section with Blinky */}
-      <div className="max-w-6xl mx-auto px-4 py-20">
-        <div className="grid md:grid-cols-2 gap-12 items-center">
+      {/* Hero Section */}
+      <div className="max-w-7xl mx-auto px-6 pt-20 pb-32">
+        <div className="grid lg:grid-cols-2 gap-16 items-center">
           {/* Left - Text Content */}
-          <div>
-            <div className="inline-flex items-center gap-2 bg-purple-50 px-4 py-2 rounded-full mb-6 border border-purple-200">
-              <span className="text-2xl">💡</span>
-              <span className="text-sm font-semibold text-purple-900">Meet Blinky, your AI friend!</span>
+          <div className="space-y-8">
+            {/* Badge */}
+            <div className="inline-flex items-center gap-2.5 bg-gradient-to-r from-indigo-50 to-violet-50 px-4 py-2.5 rounded-full border border-indigo-100 group hover:border-indigo-200 transition-all cursor-default">
+              <div className="w-2 h-2 bg-gradient-to-r from-indigo-600 to-violet-600 rounded-full animate-pulse" />
+              <span className="text-sm font-semibold bg-gradient-to-r from-indigo-900 to-violet-900 bg-clip-text text-transparent">
+                Meet your AI learning companion
+              </span>
             </div>
 
-            <h1 className="text-5xl md:text-6xl font-bold mb-6 leading-tight text-gray-900">
-              Finally, an AI that
-              <br />
-              <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                speaks human
-              </span>
-            </h1>
+            {/* Headline */}
+            <div className="space-y-4">
+              <h1 className="text-5xl lg:text-7xl font-bold leading-tight tracking-tight">
+                <span className="text-gray-900">Finally, an AI</span>
+                <br />
+                <span className="bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 bg-clip-text text-transparent">
+                  that speaks human
+                </span>
+              </h1>
+              
+              <p className="text-xl lg:text-2xl text-gray-600 leading-relaxed max-w-lg">
+                Clear explanations. No jargon. Just learning that actually clicks.
+              </p>
+            </div>
 
-            <p className="text-xl text-gray-600 mb-8">
-              No jargon. No confusion. Just simple explanations that actually make sense.
-            </p>
-
-            {/* CTA Button */}
-            <div className="flex flex-col sm:flex-row gap-4 items-start">
+            {/* CTA */}
+            <div className="flex flex-col sm:flex-row gap-4 items-start pt-4">
               <Link href="/chat">
                 <Button 
-                  size="lg" 
-                  className=" hover:cursor-pointer bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white text-lg px-8 py-6 h-auto group shadow-2xl hover:shadow-purple-500/50 transition-all hover:scale-105"
+                  size="lg"
+                  className="group shadow-2xl shadow-indigo-500/25 hover:shadow-indigo-500/40 transform hover:-translate-y-0.5 font-semibold bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white"
                 >
-                  Start Asking Questions
-                  <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  Start Learning Free
+                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </Link>
-              <div className="text-sm text-gray-500 mt-3">
-                <div className="font-medium text-gray-700">10 free questions/day</div>
-                <div>No credit card required</div>
+              
+              <div className="flex flex-col text-sm text-gray-500 pt-2 sm:pt-4">
+                <span className="font-semibold text-gray-700">10 questions daily, free</span>
+                <span>No credit card needed</span>
               </div>
             </div>
 
             {/* Social Proof */}
-            <div className="mt-8 flex items-center gap-6">
-              <div className="flex -space-x-2">
+            <div className="flex items-center gap-6 pt-4">
+              <div className="flex -space-x-3">
                 {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-400 to-blue-400 border-2 border-white"/>
+                  <div 
+                    key={i} 
+                    className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-400 via-violet-400 to-purple-400 border-3 border-white ring-2 ring-indigo-100"
+                  />
                 ))}
               </div>
-              <div className="text-sm text-gray-600">
-                <span className="font-semibold text-gray-900">10,000+</span> learners
+              <div className="text-sm">
+                <div className="font-bold text-gray-900">10,000+ learners</div>
+                <div className="text-gray-500">joined this month</div>
               </div>
             </div>
           </div>
 
-          {/* Right - Blinky Mascot */}
-          <div className="flex items-center justify-center">
+          {/* Right - Visual */}
+          <div className="relative lg:pl-8">
+            {/* Floating card with ambient glow */}
             <div className="relative">
-              {/* Floating badge */}
-              <div className="absolute -top-4 -right-4 bg-gradient-to-r from-yellow-400 to-orange-400 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg z-10 animate-bounce">
-                👋 Hi there!
-              </div>
+              <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/20 to-violet-500/20 blur-3xl rounded-full" />
               
-              {/* Blinky SVG */}
-              <svg viewBox="0 0 200 200" className="w-80 h-80 drop-shadow-2xl" xmlns="http://www.w3.org/2000/svg">
-                <defs>
-                  <linearGradient id="bulbGradientHero" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" style={{stopColor:'#a855f7',stopOpacity:1}} />
-                    <stop offset="100%" style={{stopColor:'#3b82f6',stopOpacity:1}} />
-                  </linearGradient>
-                  <linearGradient id="glowGradientHero" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" style={{stopColor:'#fbbf24',stopOpacity:0.8}} />
-                    <stop offset="100%" style={{stopColor:'#f59e0b',stopOpacity:0.6}} />
-                  </linearGradient>
-                </defs>
-                
-                {/* Glow effect */}
-                <circle cx="100" cy="80" r="55" fill="url(#glowGradientHero)" opacity="0.3">
-                  <animate attributeName="r" values="55;60;55" dur="2s" repeatCount="indefinite"/>
-                  <animate attributeName="opacity" values="0.3;0.5;0.3" dur="2s" repeatCount="indefinite"/>
-                </circle>
-                
-                {/* Main lightbulb */}
-                <path d="M 100 30 C 75 30, 60 45, 60 70 C 60 85, 65 95, 70 105 L 70 115 L 130 115 L 130 105 C 135 95, 140 85, 140 70 C 140 45, 125 30, 100 30 Z" 
-                      fill="url(#bulbGradientHero)" stroke="#6366f1" strokeWidth="2"/>
-                
-                {/* Highlight */}
-                <ellipse cx="85" cy="55" rx="15" ry="20" fill="white" opacity="0.4"/>
-                <ellipse cx="90" cy="50" rx="8" ry="10" fill="white" opacity="0.6"/>
-                
-                {/* Screw threads */}
-                <rect x="75" y="115" width="50" height="8" fill="#cbd5e1" rx="2"/>
-                <rect x="75" y="125" width="50" height="8" fill="#94a3b8" rx="2"/>
-                <rect x="75" y="135" width="50" height="8" fill="#cbd5e1" rx="2"/>
-                
-                {/* Base */}
-                <rect x="80" y="145" width="40" height="12" fill="#64748b" rx="3"/>
-                
-                {/* Happy waving face */}
-                <g>
-                  {/* Winking */}
-                  <circle cx="85" cy="75" r="5" fill="#1e293b"/>
-                  <circle cx="87" cy="73" r="2" fill="white"/>
-                  <path d="M 108 75 Q 115 73, 122 75" 
-                        stroke="#1e293b" 
-                        strokeWidth="3" 
-                        fill="none" 
-                        strokeLinecap="round"/>
-                  
-                  {/* Big smile */}
-                  <path d="M 80 90 Q 100 108, 120 90" 
-                        stroke="#1e293b" 
-                        strokeWidth="4" 
-                        fill="none" 
-                        strokeLinecap="round"/>
-                  
-                  {/* Rosy cheeks */}
-                  <circle cx="70" cy="85" r="6" fill="#f472b6" opacity="0.4"/>
-                  <circle cx="130" cy="85" r="6" fill="#f472b6" opacity="0.4"/>
-                </g>
-                
-                {/* Sparkles */}
-                <g>
-                  <path d="M 145 45 L 147 50 L 152 52 L 147 54 L 145 59 L 143 54 L 138 52 L 143 50 Z" fill="#fbbf24">
-                    <animate attributeName="opacity" values="1;0.3;1" dur="1.5s" repeatCount="indefinite"/>
-                  </path>
-                  <path d="M 55 50 L 57 55 L 62 57 L 57 59 L 55 64 L 53 59 L 48 57 L 53 55 Z" fill="#fbbf24">
-                    <animate attributeName="opacity" values="0.3;1;0.3" dur="1.5s" repeatCount="indefinite"/>
-                  </path>
-                  <path d="M 100 25 L 102 30 L 107 32 L 102 34 L 100 39 L 98 34 L 93 32 L 98 30 Z" fill="#fbbf24">
-                    <animate attributeName="opacity" values="1;0.5;1" dur="2s" repeatCount="indefinite"/>
-                  </path>
-                </g>
-                
-                {/* Waving arm */}
-                <g>
-                  <path d="M 60 90 Q 45 85, 35 95" 
-                        stroke="#6366f1" 
-                        strokeWidth="6" 
-                        fill="none" 
-                        strokeLinecap="round">
-                    <animateTransform
-                      attributeName="transform"
-                      type="rotate"
-                      from="0 60 90"
-                      to="15 60 90"
-                      dur="0.5s"
-                      repeatCount="indefinite"
-                      direction="alternate"
-                    />
-                  </path>
-                  <circle cx="35" cy="95" r="5" fill="#6366f1">
-                    <animateTransform
-                      attributeName="transform"
-                      type="rotate"
-                      from="0 60 90"
-                      to="15 60 90"
-                      dur="0.5s"
-                      repeatCount="indefinite"
-                      direction="alternate"
-                    />
-                  </circle>
-                </g>
-              </svg>
-            </div>
-          </div>
-        </div>
-
-        {/* Features Grid */}
-        <div id="features" className="grid md:grid-cols-3 gap-6 mt-32">
-          <div className="bg-white p-8 rounded-2xl border border-gray-100 hover:shadow-xl transition-all group cursor-pointer">
-            <div className="bg-purple-100 w-12 h-12 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-              <Brain className="w-6 h-6 text-purple-600" />
-            </div>
-            <h3 className="text-xl font-bold mb-3 text-gray-900">Choose Your Level</h3>
-            <p className="text-gray-600">
-              Explain like you&apos;re 5, a normal person, or someone with knowledge. You pick!
-            </p>
-          </div>
-
-          <div className="bg-white p-8 rounded-2xl border border-gray-100 hover:shadow-xl transition-all group cursor-pointer">
-            <div className="bg-blue-100 w-12 h-12 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-              <Heart className="w-6 h-6 text-blue-600" />
-            </div>
-            <h3 className="text-xl font-bold mb-3 text-gray-900">Never Feel Stupid</h3>
-            <p className="text-gray-600">
-              Warm, encouraging answers that make learning feel safe and fun.
-            </p>
-          </div>
-
-          <div className="bg-white p-8 rounded-2xl border border-gray-100 hover:shadow-xl transition-all group cursor-pointer">
-            <div className="bg-green-100 w-12 h-12 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-              <Zap className="w-6 h-6 text-green-600" />
-            </div>
-            <h3 className="text-xl font-bold mb-3 text-gray-900">Real Examples</h3>
-            <p className="text-gray-600">
-              Every explanation uses analogies and examples you can actually picture.
-            </p>
-          </div>
-        </div>
-
-        {/* Comparison Section */}
-        <div className="mt-32 bg-gray-50 -mx-4 px-4 py-20 md:rounded-3xl">
-          <div className="max-w-5xl mx-auto">
-            <h2 className="text-4xl font-bold text-center text-gray-900 mb-4">See the difference</h2>
-            <p className="text-center text-gray-600 mb-12">Same question, completely different experience</p>
-            
-            <div className="grid md:grid-cols-2 gap-6">
-              {/* Other AI */}
-              <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
-                    <span className="text-red-600 font-bold">✕</span>
+              <div className="relative bg-white rounded-3xl shadow-2xl shadow-indigo-500/10 border border-indigo-100/50 p-8 space-y-6 backdrop-blur-sm transform hover:scale-[1.02] transition-transform duration-500">
+                {/* User message */}
+                <div className="flex gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 flex-shrink-0" />
+                  <div className="bg-gray-50 rounded-2xl rounded-tl-sm px-5 py-3.5 max-w-xs">
+                    <p className="text-gray-700 font-medium">
+                      What is quantum computing?
+                    </p>
                   </div>
-                  <span className="font-semibold text-gray-900">Other AI</span>
-                </div>
-                
-                <div className="bg-gray-50 p-4 rounded-lg mb-4 border border-gray-100">
-                  <p className="text-sm text-gray-600">
-                    User asks: <span className="font-medium text-gray-900">&quot;What is blockchain?&quot;</span>
-                  </p>
-                </div>
-                
-                <div className="bg-gray-900 text-gray-100 p-4 rounded-lg text-sm leading-relaxed">
-                  &quot;Blockchain is a distributed ledger technology utilizing cryptographic hashing and consensus mechanisms to ensure immutable record-keeping across decentralized nodes...&quot;
-                </div>
-                
-                <div className="mt-4 flex items-center gap-2 text-orange-600">
-                  <span className="text-xl">😕</span>
-                  <span className="text-sm font-medium">Huh?</span>
-                </div>
-              </div>
-              
-              {/* Stupify with Blinky */}
-              <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-2xl p-6 border-2 border-purple-200 shadow-sm relative">
-                {/* Mini Blinky */}
-                <div className="absolute -top-6 -right-6 w-16 h-16">
-                  <svg viewBox="0 0 200 200" className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
-                    <defs>
-                      <linearGradient id="bulbMini" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" style={{stopColor:'#a855f7',stopOpacity:1}} />
-                        <stop offset="100%" style={{stopColor:'#3b82f6',stopOpacity:1}} />
-                      </linearGradient>
-                    </defs>
-                    <path d="M 100 30 C 75 30, 60 45, 60 70 C 60 85, 65 95, 70 105 L 70 115 L 130 115 L 130 105 C 135 95, 140 85, 140 70 C 140 45, 125 30, 100 30 Z" 
-                          fill="url(#bulbMini)" stroke="#6366f1" strokeWidth="2"/>
-                    <rect x="75" y="115" width="50" height="20" fill="#94a3b8" rx="2"/>
-                    <circle cx="85" cy="75" r="5" fill="#1e293b"/>
-                    <circle cx="115" cy="75" r="5" fill="#1e293b"/>
-                    <path d="M 80 90 Q 100 100, 120 90" stroke="#1e293b" strokeWidth="3" fill="none"/>
-                  </svg>
                 </div>
 
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
-                    <span className="text-white font-bold">✓</span>
+                {/* AI response */}
+                <div className="flex gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-600 to-violet-600 flex-shrink-0 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                    <Sparkles className="w-5 h-5 text-white" strokeWidth={2.5} />
                   </div>
-                  <span className="font-semibold text-gray-900">Stupify + Blinky</span>
+                  <div className="bg-gradient-to-br from-indigo-50 to-violet-50 rounded-2xl rounded-tl-sm px-5 py-3.5 flex-1 border border-indigo-100">
+                    <p className="text-gray-700 leading-relaxed">
+                      Think of it like this: Regular computers work with switches that are either on or off. Quantum computers use special switches that can be on, off, or both at the same time...
+                    </p>
+                  </div>
                 </div>
-                
-                <div className="bg-white p-4 rounded-lg mb-4 border border-purple-100">
-                  <p className="text-sm text-gray-600">
-                    User asks: <span className="font-medium text-gray-900">&quot;What is blockchain?&quot;</span>
-                  </p>
-                </div>
-                
-                <div className="bg-white p-4 rounded-lg text-sm leading-relaxed text-gray-700 border border-purple-100">
-                  &quot;Think of blockchain like a notebook that everyone in your class can see and write in - but once something is written, nobody can erase it or change it...&quot;
-                </div>
-                
-                <div className="mt-4 flex items-center gap-2 text-green-600">
-                  <span className="text-xl">😊</span>
-                  <span className="text-sm font-medium">Oh, I get it!</span>
+
+                {/* Typing indicator */}
+                <div className="flex gap-3 opacity-60">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-600 to-violet-600 flex-shrink-0 flex items-center justify-center">
+                    <Sparkles className="w-5 h-5 text-white" strokeWidth={2.5} />
+                  </div>
+                  <div className="bg-gray-100 rounded-2xl rounded-tl-sm px-5 py-3.5">
+                    <div className="flex gap-1.5">
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
+
+            {/* Floating elements */}
+            <div className="absolute -top-6 -right-6 bg-gradient-to-br from-yellow-400 to-orange-400 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg animate-bounce">
+              AI-powered
+            </div>
+            <div className="absolute -bottom-4 -left-4 bg-gradient-to-br from-green-400 to-emerald-400 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg">
+              Always learning
+            </div>
           </div>
         </div>
+      </div>
 
-        {/* Final CTA */}
-        <div className="mt-32">
-          <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-3xl p-12 text-center shadow-2xl">
-            <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
-              Ready to learn with Blinky?
+      {/* Features Grid */}
+      <div id="features" className="max-w-7xl mx-auto px-6 py-24">
+        <div className="text-center mb-16 space-y-4">
+          <h2 className="text-4xl lg:text-5xl font-bold text-gray-900">
+            Learning made simple
+          </h2>
+          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            Designed to help you understand, not just memorize
+          </p>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-8">
+          {[
+            {
+              icon: Brain,
+              title: "Choose your level",
+              description: "From beginner to expert—explanations that match how you learn best",
+              gradient: "from-indigo-500 to-violet-500"
+            },
+            {
+              icon: Heart,
+              title: "Feel confident",
+              description: "Warm, encouraging answers that make every question feel welcome",
+              gradient: "from-violet-500 to-purple-500"
+            },
+            {
+              icon: Zap,
+              title: "Get it instantly",
+              description: "Clear examples and analogies that make complex ideas click",
+              gradient: "from-purple-500 to-pink-500"
+            }
+          ].map((feature, i) => (
+            <div 
+              key={i}
+              className="group relative bg-white rounded-3xl p-8 border border-indigo-100/50 hover:border-indigo-200 transition-all duration-300 hover:shadow-xl hover:shadow-indigo-100/50 hover:-translate-y-1 cursor-default"
+            >
+              <div className={`inline-flex p-4 rounded-2xl bg-gradient-to-br ${feature.gradient} mb-6 shadow-lg shadow-indigo-500/20 group-hover:scale-110 transition-transform`}>
+                <feature.icon className="w-7 h-7 text-white" strokeWidth={2} />
+              </div>
+              <h3 className="text-2xl font-bold mb-3 text-gray-900">
+                {feature.title}
+              </h3>
+              <p className="text-gray-600 leading-relaxed">
+                {feature.description}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Comparison Section */}
+      <div className="max-w-7xl mx-auto px-6 py-24">
+        <div className="bg-gradient-to-br from-gray-50 to-indigo-50/30 rounded-3xl p-12 lg:p-16 border border-indigo-100/50">
+          <div className="text-center mb-12 space-y-4">
+            <h2 className="text-4xl lg:text-5xl font-bold text-gray-900">
+              See the difference
             </h2>
-            <p className="text-xl text-purple-100 mb-8">
-              Join 10,000+ people learning without the confusion
+            <p className="text-xl text-gray-600">
+              Same question, completely different experience
+            </p>
+          </div>
+          
+          <div className="grid lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
+            {/* Other AI */}
+            <div className="bg-white rounded-2xl p-6 border border-indigo-100/50 space-y-4">
+              <div className="flex items-center gap-3 pb-3 border-b border-gray-100">
+                <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center">
+                  <span className="text-red-600 font-bold text-lg">✕</span>
+                </div>
+                <span className="font-semibold text-gray-900">Other AI</span>
+              </div>
+              
+              <div className="bg-gray-50 rounded-xl p-4">
+                <p className="text-sm text-gray-500 mb-1">You ask:</p>
+                <p className="font-semibold text-gray-900">What is blockchain?</p>
+              </div>
+              
+              <div className="bg-gray-900 text-gray-100 rounded-xl p-5 leading-relaxed">
+                Blockchain is a distributed ledger technology utilizing cryptographic hashing and consensus mechanisms to ensure immutable record-keeping across decentralized nodes...
+              </div>
+              
+              <div className="flex items-center gap-2 text-orange-600 pt-2">
+                <span className="text-2xl">😕</span>
+                <span className="font-medium">Wait, what?</span>
+              </div>
+            </div>
+            
+            {/* Stupify */}
+            <div className="bg-gradient-to-br from-indigo-50 to-violet-50 rounded-2xl p-6 border-2 border-indigo-200 space-y-4 relative">
+              <div className="absolute -top-3 -right-3 bg-gradient-to-r from-green-400 to-emerald-400 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg">
+                Better
+              </div>
+
+              <div className="flex items-center gap-3 pb-3 border-b border-indigo-100">
+                <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 to-violet-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                  <Sparkles className="w-5 h-5 text-white" strokeWidth={2.5} />
+                </div>
+                <span className="font-semibold text-gray-900">Stupify</span>
+              </div>
+              
+              <div className="bg-white rounded-xl p-4 border border-indigo-100">
+                <p className="text-sm text-gray-500 mb-1">You ask:</p>
+                <p className="font-semibold text-gray-900">What is blockchain?</p>
+              </div>
+              
+              <div className="bg-white rounded-xl p-5 leading-relaxed text-gray-700 border border-indigo-100">
+                Think of blockchain like a notebook that everyone in your class can see and write in—but once something is written, nobody can erase it or change it...
+              </div>
+              
+              <div className="flex items-center gap-2 text-green-600 pt-2">
+                <span className="text-2xl">✓</span>
+                <span className="font-medium">Oh, I get it!</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Final CTA */}
+      <div className="max-w-7xl mx-auto px-6 py-24">
+        <div className="relative">
+          <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-violet-600 rounded-3xl blur-2xl opacity-20" />
+          <div className="relative bg-gradient-to-r from-indigo-600 to-violet-600 rounded-3xl p-12 lg:p-16 text-center shadow-2xl shadow-indigo-500/30">
+            <h2 className="text-4xl lg:text-5xl font-bold text-white mb-4">
+              Ready to start learning?
+            </h2>
+            <p className="text-xl text-indigo-100 mb-8 max-w-2xl mx-auto">
+              Join 10,000+ people who learn without the confusion
             </p>
             <Link href="/chat">
               <Button 
-                size="lg" 
-                variant="secondary" 
-                className="hover:cursor-pointer text-lg px-10 py-6 h-auto bg-white text-purple-600 hover:bg-gray-50 shadow-xl font-bold hover:scale-105 transition-transform"
+                size="lg"
+                variant="secondary"
+                className="shadow-xl hover:shadow-2xl transform hover:-translate-y-0.5 font-semibold text-lg"
               >
-                Start Learning Now - It&apos;s Free!
+                Get Started Free
               </Button>
             </Link>
+            <p className="text-indigo-200 text-sm mt-4">
+              10 questions daily • No credit card required
+            </p>
           </div>
         </div>
       </div>
 
       {/* Footer */}
-      <footer className="border-t border-gray-100 mt-20 py-12">
-        <div className="max-w-6xl mx-auto px-4">
-          {/* Changed to grid-cols-3 and added justify-items-center to center the columns */}
-          <div className="grid md:grid-cols-3 gap-8 mb-8 justify-items-center md:justify-items-start max-w-3xl mx-auto">
-            <div className="text-center md:text-left">
-              <div className="flex items-center gap-2 mb-4 justify-center md:justify-start">
-                <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
-                  <Sparkles className="w-4 h-4 text-white" />
+      <footer className="mt-24 py-12 bg-gray-50/50">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="grid md:grid-cols-4 gap-12 mb-12">
+            <div className="md:col-span-2">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="bg-gradient-to-br from-indigo-600 to-violet-600 p-2 rounded-xl">
+                  <Sparkles className="w-5 h-5 text-white" strokeWidth={2.5} />
                 </div>
-                <span className="font-bold text-gray-900">Stupify</span>
+                <span className="text-xl font-bold text-gray-900">Stupify</span>
               </div>
-              <p className="text-gray-600 text-sm">
-                AI that speaks human.<br />Finally.
+              <p className="text-gray-600 max-w-md leading-relaxed">
+                Making AI accessible through simple, warm explanations. Finally, an AI that speaks human.
               </p>
             </div>
             
-            <div className="text-center md:text-left">
-              <h3 className="font-semibold text-gray-900 mb-3">Product</h3>
-              <ul className="space-y-2 text-sm text-gray-600">
-                <li><a href="#features" className="hover:text-gray-900 transition">Features</a></li>
-                <li><a href="/pricing" className="hover:text-gray-900 transition">Pricing</a></li>
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-4">Product</h3>
+              <ul className="space-y-3">
+                <li><a href="#features" className="text-gray-600 hover:text-gray-900 transition-colors">Features</a></li>
+                <li><a href="/pricing" className="text-gray-600 hover:text-gray-900 transition-colors">Pricing</a></li>
               </ul>
             </div>
           
-            <div className="text-center md:text-left">
-              <h3 className="font-semibold text-gray-900 mb-3">Legal</h3>
-              <ul className="space-y-2 text-sm text-gray-600">
-                <li><a href="/privacy" className="hover:text-gray-900 transition">Privacy</a></li>
-                <li><a href="/terms" className="hover:text-gray-900 transition">Terms</a></li>
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-4">Legal</h3>
+              <ul className="space-y-3">
+                <li><a href="/privacy" className="text-gray-600 hover:text-gray-900 transition-colors">Privacy</a></li>
+                <li><a href="/terms" className="text-gray-600 hover:text-gray-900 transition-colors">Terms</a></li>
               </ul>
             </div>
           </div>
           
-          <div className="pt-8 border-t border-gray-100 text-center text-sm text-gray-500">
-            © 2025 Stupify. Made with ❤️ by Blinky to make AI accessible to everyone.
+          <div className="pt-8 text-center text-sm text-gray-500">
+            <p>© 2025 Stupify. Making AI accessible to everyone.</p>
           </div>
         </div>
       </footer>
