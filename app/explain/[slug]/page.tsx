@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   
   if (!topic) {
     return {
-      title: 'Topic Not Found | STUPIFY',
+      title: 'Topic Not Found | Stupify',
       description: 'The topic you\'re looking for doesn\'t exist.',
     };
   }
@@ -32,14 +32,14 @@ export async function generateMetadata({ params }: { params: { slug: string } })
     title,
     description,
     keywords: topic.keywords,
-    authors: [{ name: 'STUPIFY' }],
+    authors: [{ name: 'Stupify' }],
     
     // Open Graph
     openGraph: {
       title,
       description,
-      url: `https://stupify.ai/explain/${topic.slug}`,
-      siteName: 'STUPIFY',
+      url: `https://stupify.app/explain/${topic.slug}`,
+      siteName: 'Stupify',
       type: 'article',
       images: [
         {
@@ -62,7 +62,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
     
     // Additional metadata
     alternates: {
-      canonical: `https://stupify.ai/explain/${topic.slug}`,
+      canonical: `https://stupify.app/explain/${topic.slug}`,
     },
     
     // Robots

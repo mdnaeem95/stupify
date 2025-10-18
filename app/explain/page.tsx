@@ -4,7 +4,7 @@ import { getAllTopics, getTopicsByCategory } from '@/lib/topics/topics-db';
 import { Sparkles, ArrowRight, Search } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'Explore Topics | STUPIFY - Learn Anything Simply',
+  title: 'Explore Topics | Stupify - Learn Anything Simply',
   description: 'Browse hundreds of topics explained at 3 levels: 5-year-old, normal, and advanced. From quantum computing to photosynthesis.',
   keywords: ['learn', 'explain', 'education', 'simple explanations', 'AI learning'],
 };
@@ -28,7 +28,7 @@ export default function ExplainIndexPage() {
               <Sparkles className="w-5 h-5 text-white" />
             </div>
             <span className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">
-              STUPIFY
+              Stupify
             </span>
           </Link>
           
@@ -110,10 +110,10 @@ export default function ExplainIndexPage() {
       <div className="container mx-auto px-4 pb-16 max-w-4xl">
         <div className="bg-gradient-to-br from-indigo-600 to-violet-600 rounded-2xl p-12 text-center text-white">
           <h2 className="text-3xl font-bold mb-4">
-            Can't find what you're looking for?
+            Can&apos;t find what you&apos;re looking for?
           </h2>
           <p className="text-xl text-indigo-100 mb-6">
-            Ask STUPIFY anything and get instant, simple answers
+            Ask Stupify anything and get instant, simple answers
           </p>
           <Link 
             href="/chat"
@@ -130,7 +130,7 @@ export default function ExplainIndexPage() {
         <div className="container mx-auto px-4 py-8 max-w-6xl">
           <div className="text-center text-gray-600 text-sm">
             <p className="mb-2">
-              © 2025 STUPIFY. Making AI accessible to everyone.
+              © 2025 Stupify. Making AI accessible to everyone.
             </p>
             <p>
               <Link href="/about" className="hover:text-indigo-600">About</Link>
