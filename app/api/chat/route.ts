@@ -17,7 +17,7 @@ import {
   type AIProvider 
 } from '@/lib/ai-providers';
 
-// ⭐ NEW: Import rate limiting
+// Rate limiting
 import {
   globalLimiter,
   freeUserLimiter,
@@ -28,6 +28,16 @@ import {
   createRateLimitResponse,
 } from '@/lib/rate-limit';
 
+// ⭐ Caching
+import {
+  getCachedResponse,
+} from '@/lib/cache/cache-manager';
+
+import {
+  cacheStreamingResponse,
+  createStreamFromCachedText,
+} from '@/lib/cache/stream-cache-manager';
+
 export const maxDuration = 30;
 
 export async function POST(req: Request) {
@@ -37,17 +47,16 @@ export async function POST(req: Request) {
     console.error('[CHAT] 🚀 Request received');
     
     // ============================================================================
-    // STEP 1: GLOBAL RATE LIMITING (ANTI-ABUSE)
+    // STEP 1: GLOBAL RATE LIMITING
     // ============================================================================
     
     const ip = getClientIp(req);
     console.error('[CHAT] 🌐 Client IP:', ip.substring(0, 8) + '...');
     
-    // Check global rate limit (100 req/min per IP)
     const globalCheck = await checkRateLimit(globalLimiter, ip);
     
     if (!globalCheck.success) {
-      console.warn('[CHAT] ⚠️ Global rate limit exceeded for IP:', ip.substring(0, 8) + '...');
+      console.warn('[CHAT] ⚠️ Global rate limit exceeded');
       return createRateLimitResponse(
         "Too many requests from your IP. Please slow down.",
         globalCheck.limit,
@@ -56,10 +65,7 @@ export async function POST(req: Request) {
       );
     }
     
-    console.error('[CHAT] ✅ Global rate limit passed:', {
-      remaining: globalCheck.remaining,
-      limit: globalCheck.limit
-    });
+    console.error('[CHAT] ✅ Global rate limit passed');
     
     // ============================================================================
     // STEP 2: PARSE REQUEST
@@ -92,7 +98,59 @@ export async function POST(req: Request) {
     const isExtension = source === 'extension';
 
     // ============================================================================
-    // STEP 3: AUTHENTICATE USER
+    // STEP 3: EXTRACT USER QUESTION (FOR CACHING)
+    // ============================================================================
+    
+    let userQuestion = '';
+    
+    if (isExtension) {
+      const lastUserMessage = messages.filter((m: any) => m?.role === 'user').pop();
+      userQuestion = lastUserMessage?.content || '';
+    } else {
+      const userMessages = messages.filter((m: any) => m?.role === 'user');
+      const lastUserMessage = userMessages[userMessages.length - 1];
+      userQuestion = lastUserMessage?.content || '';
+    }
+    
+    console.error('[CHAT] 💬 User question:', userQuestion.substring(0, 50) + '...');
+
+    // ============================================================================
+    // STEP 4: CHECK CACHE (BEFORE EXPENSIVE OPERATIONS)
+    // ============================================================================
+    
+    let cachedResult = null;
+    
+    // Only check cache for non-confused, non-personalized questions
+    if (!confusionRetry && userQuestion) {
+      cachedResult = await getCachedResponse(userQuestion, level);
+      
+      if (cachedResult) {
+        console.error('[CHAT] 🎯 CACHE HIT! Returning cached response');
+        
+        const responseTime = Date.now() - startTime;
+        
+        // Create a simulated stream from cached text
+        const cachedStream = createStreamFromCachedText(cachedResult.response);
+        
+        return new Response(cachedStream, {
+          status: 200,
+          headers: {
+            'Content-Type': 'text/plain; charset=utf-8',
+            'X-Cache-Hit': 'true',
+            'X-AI-Provider': cachedResult.provider,
+            'X-AI-Model': cachedResult.model,
+            'X-Response-Time': responseTime.toString(),
+            'X-Cache-Age': Math.round((Date.now() - cachedResult.cachedAt) / 1000).toString(),
+            'X-Cache-Hit-Count': cachedResult.hitCount.toString(),
+          }
+        });
+      }
+    }
+    
+    console.error('[CHAT] ❌ Cache miss - proceeding to AI call');
+
+    // ============================================================================
+    // STEP 5: AUTHENTICATE USER
     // ============================================================================
     
     let user = null;
@@ -126,10 +184,9 @@ export async function POST(req: Request) {
     }
     
     // ============================================================================
-    // STEP 4: USER-SPECIFIC RATE LIMITING
+    // STEP 6: USER-SPECIFIC RATE LIMITING
     // ============================================================================
     
-    // Determine if user is premium
     let isPremium = false;
     let aiProvider: AIProvider = 'openai';
     let aiModel = 'gpt-4o-mini' as OpenAIModel | ClaudeModel;
@@ -163,19 +220,13 @@ export async function POST(req: Request) {
       console.error('[CHAT] ℹ️ Guest user assigned:', { provider: aiProvider, model: aiModel });
     }
     
-    // Choose appropriate rate limiter based on subscription
     const userLimiter = isPremium ? premiumUserLimiter : freeUserLimiter;
     const identifier = getUserIdentifier(user?.id || null, ip);
     
-    // Check user-specific rate limit
     const userCheck = await checkRateLimit(userLimiter, identifier);
     
     if (!userCheck.success) {
-      console.warn('[CHAT] ⚠️ User rate limit exceeded:', {
-        userId: user?.id?.slice(0, 8) || 'anonymous',
-        isPremium,
-        limit: userCheck.limit,
-      });
+      console.warn('[CHAT] ⚠️ User rate limit exceeded');
       
       const upgradeMessage = isPremium
         ? `Daily limit reached (${userCheck.limit} questions). Please try again tomorrow.`
@@ -189,29 +240,25 @@ export async function POST(req: Request) {
       );
     }
     
-    // Log remaining quota
     console.error('[CHAT] 📊 Rate limit status:', {
-      userId: user?.id?.slice(0, 8) || 'anonymous',
-      isPremium,
       remaining: userCheck.remaining,
       limit: userCheck.limit,
     });
     
     // ============================================================================
-    // STEP 5: BUILD SYSTEM PROMPT
+    // STEP 7: BUILD SYSTEM PROMPT
     // ============================================================================
     
     console.error('[CHAT] 📄 Building system prompt...');
     let systemPrompt = getSystemPromptV2(level);
 
-    // Add confusion retry instructions if needed
     if (confusionRetry && retryInstructions) {
       console.error('[CHAT] 😕 Adding confusion retry instructions');
       systemPrompt += `\n\n[IMPORTANT INSTRUCTION FOR THIS RESPONSE ONLY]: ${retryInstructions}`;
     }
 
     // ============================================================================
-    // STEP 6: PERSONALIZATION (NON-BLOCKING)
+    // STEP 8: PERSONALIZATION
     // ============================================================================
     
     if (user) {
@@ -219,27 +266,15 @@ export async function POST(req: Request) {
         const profile = await getUserProfile(user.id);
         
         if (profile && Array.isArray(profile.knownTopics) && profile.knownTopics.length > 0) {
-          let userQuestion = '';
-          
-          if (isExtension) {
-            const lastUserMessage = messages.filter((m: any) => m?.role === 'user').pop();
-            userQuestion = lastUserMessage?.content || '';
-          } else {
-            const userMessages = messages.filter((m: any) => m?.role === 'user');
-            const lastUserMessage = userMessages[userMessages.length - 1];
-            userQuestion = lastUserMessage?.content || '';
-          }
-          
           if (userQuestion) {
             const topics = extractTopics(userQuestion);
             const currentTopic = topics[0] || '';
             const personalizedAddition = getPersonalizedAnalogyPrompt(profile, currentTopic);
             systemPrompt += personalizedAddition;
-            console.error('[CHAT] 🎯 Added personalization for topics:', topics.slice(0, 3));
+            console.error('[CHAT] 🎯 Added personalization');
           }
         }
 
-        // Run gamification tracking in background (non-blocking)
         Promise.all([
           updateUserStreak(user.id),
           updateDailyStats(user.id, undefined, level, false, false),
@@ -253,7 +288,7 @@ export async function POST(req: Request) {
     }
 
     // ============================================================================
-    // STEP 7: CONVERT MESSAGES & CALL AI
+    // STEP 9: CONVERT MESSAGES & CALL AI
     // ============================================================================
     
     console.error('[CHAT] 🔄 Converting messages...');
@@ -263,15 +298,8 @@ export async function POST(req: Request) {
     } else {
       modelMessages = convertToModelMessages(messages);
     }
-    console.error('[CHAT] ✅ Messages converted:', modelMessages.length);
 
-    // Stream from appropriate AI provider
-    console.error('[CHAT] 🤖 Calling streamAIResponse with:', {
-      provider: aiProvider,
-      model: aiModel,
-      messageCount: modelMessages.length,
-      promptLength: systemPrompt.length
-    });
+    console.error('[CHAT] 🤖 Calling AI (cache miss)');
     
     const result = await streamAIResponse({
       provider: aiProvider,
@@ -283,40 +311,52 @@ export async function POST(req: Request) {
 
     console.error('[CHAT] ✅ Stream result received');
 
+    // ============================================================================
+    // STEP 10: WRAP STREAM WITH CACHE INTERCEPTOR
+    // ============================================================================
+    
+    const originalStream = result.toTextStreamResponse();
+    
+    // Wrap stream to cache the response (only if not a confusion retry)
+    let finalStream = originalStream.body!;
+    
+    if (!confusionRetry && userQuestion) {
+      console.error('[CHAT] 💾 Wrapping stream with cache interceptor');
+      
+      finalStream = await cacheStreamingResponse(
+        finalStream,
+        userQuestion,
+        level,
+        aiModel,
+        aiProvider
+      );
+    }
+
     const responseTime = Date.now() - startTime;
 
     // ============================================================================
-    // STEP 8: RETURN RESPONSE WITH TRACKING HEADERS
+    // STEP 11: RETURN STREAMED RESPONSE
     // ============================================================================
     
-    console.error('[CHAT] 📤 Preparing response format:', isExtension ? 'text' : 'ui');
+    const response = new Response(finalStream, {
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'X-Cache-Hit': 'false',
+        'X-AI-Provider': aiProvider,
+        'X-AI-Model': aiModel,
+        'X-Response-Time': responseTime.toString(),
+        'X-Is-Premium': isPremium.toString(),
+        'X-RateLimit-Limit': userCheck.limit.toString(),
+        'X-RateLimit-Remaining': userCheck.remaining.toString(),
+      }
+    });
+
+    console.error('[CHAT] ✅ Response ready, stream will cache in background');
     
-    const response = isExtension 
-      ? result.toTextStreamResponse() 
-      : result.toUIMessageStreamResponse();
-
-    // Add tracking headers
-    response.headers.set('X-AI-Provider', aiProvider);
-    response.headers.set('X-AI-Model', aiModel);
-    response.headers.set('X-Response-Time', responseTime.toString());
-    response.headers.set('X-Is-Premium', isPremium.toString());
-    
-    // Add rate limit headers (helpful for debugging)
-    response.headers.set('X-RateLimit-Limit', userCheck.limit.toString());
-    response.headers.set('X-RateLimit-Remaining', userCheck.remaining.toString());
-    response.headers.set('X-RateLimit-Reset', userCheck.reset.toString());
-
-    console.error('[CHAT] ✅ Response ready, returning stream');
-
     return response;
 
   } catch (error) {
-    console.error('[CHAT] ❌❌❌ CRITICAL ERROR:', error);
-    console.error('[CHAT] Error stack:', error instanceof Error ? error.stack : 'No stack');
-    console.error('[CHAT] Error details:', {
-      message: error instanceof Error ? error.message : String(error),
-      name: error instanceof Error ? error.name : 'Unknown',
-    });
+    console.error('[CHAT] ❌ CRITICAL ERROR:', error);
     
     return Response.json({ 
       error: 'Error processing chat request',
