@@ -274,7 +274,7 @@ export default function CacheDashboard() {
                   <li className="flex items-start gap-2">
                     <span className="text-blue-600 font-bold">✓</span>
                     <span>
-                      You've saved <strong>${stats.costSavings.amount.toFixed(2)}</strong> in API costs
+                      You&apos;ve saved <strong>${stats.costSavings.amount.toFixed(2)}</strong> in API costs
                     </span>
                   </li>
                   <li className="flex items-start gap-2">

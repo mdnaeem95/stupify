@@ -57,7 +57,7 @@ export function createStreamFromCachedText(text: string): ReadableStream {
     chunks.push(text.substring(i, i + chunkSize));
   }
   
-  let index = 0;
+  const index = 0;
   
   return new ReadableStream({
     async start(controller) {
