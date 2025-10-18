@@ -64,7 +64,7 @@ export default function ChatLayout({
   })
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50">
+    <div className="flex h-screen overflow-hidden bg-white">
       {/* Mobile Menu Button */}
       <Button
         onClick={() => {
@@ -74,10 +74,10 @@ export default function ChatLayout({
           })
           setIsSidebarOpen(!isSidebarOpen)
         }}
-        className={`${isSidebarOpen ? 'hidden ' : ''}md:hidden fixed top-4 left-4 z-50 bg-white border-2 border-gray-300 hover:bg-gray-50 text-gray-700 shadow-lg`}
+        className={`${isSidebarOpen ? 'hidden ' : ''}md:hidden fixed top-4 left-4 z-50 bg-white hover:bg-gray-50 text-gray-700 shadow-lg rounded-xl`}
         size="icon"
       >
-        {isSidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+        {isSidebarOpen ? <X className="w-5 h-5" strokeWidth={2} /> : <Menu className="w-5 h-5" strokeWidth={2} />}
       </Button>
 
       {/* Mobile Backdrop Overlay */}
@@ -88,10 +88,10 @@ export default function ChatLayout({
         />
       )}
 
-      {/* Sidebar - Overlay on mobile, pushes on desktop */}
+      {/* Sidebar - Subtle gray background to differentiate from main content */}
       <aside
         className={`
-          bg-white border-r border-gray-200
+          bg-gray-50
           transition-all duration-300 ease-in-out
           flex-shrink-0
           
@@ -112,8 +112,8 @@ export default function ChatLayout({
         />
       </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-hidden min-w-0">
+      {/* Main Content - Pure white background */}
+      <main className="flex-1 overflow-hidden min-w-0 bg-white">
         {children}
       </main>
     </div>

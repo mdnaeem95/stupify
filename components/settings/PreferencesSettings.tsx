@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Loader2, Baby, MessageSquare, GraduationCap, Bell, Save } from 'lucide-react';
+import { Loader2, Baby, MessageSquare, GraduationCap, Bell, Save, CheckCircle2, XCircle } from 'lucide-react';
 import { getCurrentUser } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/client';
 
@@ -86,7 +86,7 @@ export function PreferencesSettings() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
+        <Loader2 className="w-8 h-8 animate-spin text-indigo-600" strokeWidth={2} />
       </div>
     );
   }
@@ -104,7 +104,7 @@ export function PreferencesSettings() {
       icon: MessageSquare,
       label: 'Normal',
       description: 'Balanced explanations for everyday learning',
-      color: 'from-purple-500 to-blue-500',
+      color: 'from-indigo-500 to-violet-500',
     },
     {
       id: 'advanced' as SimplicityLevel,
@@ -117,29 +117,38 @@ export function PreferencesSettings() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Preferences</h2>
-        <p className="text-gray-600">Customize your learning experience</p>
+      <div className="space-y-2">
+        <h2 className="text-2xl font-bold text-gray-900">Preferences</h2>
+        <p className="text-gray-600 leading-relaxed">Customize your learning experience</p>
       </div>
 
       {/* Success/Error Message */}
       {message && (
-        <div className={`p-4 rounded-lg ${
+        <div className={`flex items-start gap-3 p-4 rounded-xl ${
           message.type === 'success' 
-            ? 'bg-green-50 text-green-800 border border-green-200' 
-            : 'bg-red-50 text-red-800 border border-red-200'
+            ? 'bg-gradient-to-r from-green-50 to-emerald-50' 
+            : 'bg-gradient-to-r from-red-50 to-pink-50'
         }`}>
-          {message.text}
+          {message.type === 'success' ? (
+            <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" strokeWidth={2} />
+          ) : (
+            <XCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" strokeWidth={2} />
+          )}
+          <p className={`text-sm font-medium ${
+            message.type === 'success' ? 'text-green-800' : 'text-red-800'
+          }`}>
+            {message.text}
+          </p>
         </div>
       )}
 
       {/* Default Simplicity Level */}
       <div className="space-y-4">
-        <div>
+        <div className="space-y-2">
           <Label className="text-lg font-semibold text-gray-900">
             Default Simplicity Level
           </Label>
-          <p className="text-sm text-gray-600 mt-1">
+          <p className="text-sm text-gray-600 leading-relaxed">
             Choose how you&apos;d like answers explained by default. You can always change this for individual questions.
           </p>
         </div>
@@ -154,38 +163,40 @@ export function PreferencesSettings() {
                 key={level.id}
                 onClick={() => setPreferredLevel(level.id)}
                 className={`
-                  p-4 rounded-xl border-2 transition-all text-left
+                  group p-5 rounded-2xl transition-all text-left cursor-pointer
                   ${isSelected 
-                    ? 'border-purple-500 bg-purple-50 shadow-md' 
-                    : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                    ? 'bg-gradient-to-br from-indigo-50 to-violet-50 shadow-lg shadow-indigo-500/10' 
+                    : 'bg-gray-50 hover:bg-gray-100 hover:shadow-md'
                   }
                 `}
               >
                 <div className="flex items-start gap-4">
                   <div className={`
-                    w-12 h-12 rounded-lg flex items-center justify-center
-                    bg-gradient-to-br ${level.color}
+                    relative w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0
+                    bg-gradient-to-br ${level.color} shadow-lg
+                    ${isSelected ? 'shadow-indigo-500/20' : 'shadow-gray-500/20'}
+                    ${!isSelected && 'group-hover:scale-105 transition-transform'}
                   `}>
-                    <Icon className="w-6 h-6 text-white" />
+                    <Icon className="w-6 h-6 text-white" strokeWidth={2} />
                   </div>
                   
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
                       <h3 className="font-semibold text-gray-900">{level.label}</h3>
                       {isSelected && (
-                        <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full font-medium">
-                          Selected
-                        </span>
+                        <div className="bg-gradient-to-r from-indigo-600 to-violet-600 text-white px-2.5 py-1 rounded-full text-xs font-bold">
+                          Active
+                        </div>
                       )}
                     </div>
-                    <p className="text-sm text-gray-600 mt-1">{level.description}</p>
+                    <p className="text-sm text-gray-600 leading-relaxed">{level.description}</p>
                   </div>
 
                   <div className={`
-                    w-5 h-5 rounded-full border-2 flex items-center justify-center
+                    w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5
                     ${isSelected 
-                      ? 'border-purple-500 bg-purple-500' 
-                      : 'border-gray-300'
+                      ? 'bg-gradient-to-r from-indigo-600 to-violet-600 shadow-lg shadow-indigo-500/30' 
+                      : 'bg-gray-200'
                     }
                   `}>
                     {isSelected && (
@@ -200,85 +211,91 @@ export function PreferencesSettings() {
       </div>
 
       {/* Email Notifications */}
-      <div className="space-y-4 pt-6 border-t border-gray-200">
-        <div className="flex items-center gap-2">
-          <Bell className="w-5 h-5 text-gray-700" />
-          <Label className="text-lg font-semibold text-gray-900">
-            Email Notifications
-          </Label>
+      <div className="space-y-4 pt-6 border-t border-gray-100">
+        <div className="space-y-2">
+          <div className="flex items-center gap-2.5">
+            <Bell className="w-5 h-5 text-gray-600" strokeWidth={2} />
+            <Label className="text-lg font-semibold text-gray-900">
+              Email Notifications
+            </Label>
+          </div>
+          
+          <p className="text-sm text-gray-600 leading-relaxed">
+            Choose what updates you&apos;d like to receive via email.
+          </p>
         </div>
-        
-        <p className="text-sm text-gray-600">
-          Choose what updates you&apos;d like to receive via email.
-        </p>
 
         <div className="space-y-3">
           {/* General Email Notifications */}
-          <label className="flex items-center justify-between p-4 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
+          <label className="flex items-center justify-between p-4 rounded-xl bg-gray-50 hover:bg-gray-100 cursor-pointer transition-colors">
             <div>
-              <div className="font-medium text-gray-900">All Email Notifications</div>
-              <div className="text-sm text-gray-600">Receive all email updates from Stupify</div>
+              <div className="font-semibold text-gray-900">All Email Notifications</div>
+              <div className="text-sm text-gray-600 leading-relaxed">Receive all email updates from Stupify</div>
             </div>
             <input
               type="checkbox"
               checked={emailNotifications}
               onChange={(e) => setEmailNotifications(e.target.checked)}
-              className="w-5 h-5 text-purple-600 rounded focus:ring-purple-500"
+              className="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500 cursor-pointer"
             />
           </label>
 
           {/* Streak Reminders */}
-          <label className={`flex items-center justify-between p-4 rounded-lg border border-gray-200 cursor-pointer ${
-            emailNotifications ? 'hover:bg-gray-50' : 'opacity-50 cursor-not-allowed'
+          <label className={`flex items-center justify-between p-4 rounded-xl transition-colors ${
+            emailNotifications 
+              ? 'bg-gray-50 hover:bg-gray-100 cursor-pointer' 
+              : 'bg-gray-50 opacity-50 cursor-not-allowed'
           }`}>
             <div>
-              <div className="font-medium text-gray-900">Streak Reminders</div>
-              <div className="text-sm text-gray-600">Get reminded when you&apos;re about to lose your streak</div>
+              <div className="font-semibold text-gray-900">Streak Reminders</div>
+              <div className="text-sm text-gray-600 leading-relaxed">Get reminded when you&apos;re about to lose your streak</div>
             </div>
             <input
               type="checkbox"
               checked={streakReminders}
               onChange={(e) => setStreakReminders(e.target.checked)}
               disabled={!emailNotifications}
-              className="w-5 h-5 text-purple-600 rounded focus:ring-purple-500 disabled:opacity-50"
+              className="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500 disabled:opacity-50 cursor-pointer"
             />
           </label>
 
           {/* Achievement Notifications */}
-          <label className={`flex items-center justify-between p-4 rounded-lg border border-gray-200 cursor-pointer ${
-            emailNotifications ? 'hover:bg-gray-50' : 'opacity-50 cursor-not-allowed'
+          <label className={`flex items-center justify-between p-4 rounded-xl transition-colors ${
+            emailNotifications 
+              ? 'bg-gray-50 hover:bg-gray-100 cursor-pointer' 
+              : 'bg-gray-50 opacity-50 cursor-not-allowed'
           }`}>
             <div>
-              <div className="font-medium text-gray-900">Achievement Unlocks</div>
-              <div className="text-sm text-gray-600">Celebrate when you unlock new achievements</div>
+              <div className="font-semibold text-gray-900">Achievement Unlocks</div>
+              <div className="text-sm text-gray-600 leading-relaxed">Celebrate when you unlock new achievements</div>
             </div>
             <input
               type="checkbox"
               checked={achievementNotifications}
               onChange={(e) => setAchievementNotifications(e.target.checked)}
               disabled={!emailNotifications}
-              className="w-5 h-5 text-purple-600 rounded focus:ring-purple-500 disabled:opacity-50"
+              className="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500 disabled:opacity-50 cursor-pointer"
             />
           </label>
         </div>
       </div>
 
       {/* Save Button */}
-      <div className="pt-6 border-t border-gray-200">
+      <div className="pt-6 border-t border-gray-100">
         <Button
           onClick={handleSavePreferences}
           disabled={isSaving}
-          className="bg-purple-600 hover:bg-purple-700 px-8"
+          className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30 transform hover:-translate-y-0.5 transition-all px-8 cursor-pointer"
           size="lg"
         >
           {isSaving ? (
             <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" strokeWidth={2} />
               Saving...
             </>
           ) : (
             <>
-              <Save className="w-4 h-4 mr-2" />
+              <Save className="w-4 h-4 mr-2" strokeWidth={2} />
               Save Preferences
             </>
           )}

@@ -39,6 +39,7 @@ export function ChatInterface() {
   const [input, setInput] = useState('');
   const [simplicityLevel, setSimplicityLevel] = useState<SimplicityLevel>('normal');
   const [, setIsRetrying] = useState(false);
+
   const [confusionRetry, setConfusionRetry] = useState(false);
   const [retryInstructions, setRetryInstructions] = useState<string | null>(null);
 
@@ -57,11 +58,9 @@ export function ChatInterface() {
   const gamification = useGamificationNotifications();
   const { trackQuestion } = useQuestionTracking();
   
-
-  // ✨ ADD: Voice input hook
+  // Voice input hook
   const voice = useVoiceInput({
     onTranscript: (text) => {
-      // Add transcript to input
       setInput((prev) => {
         const newValue = prev ? `${prev} ${text}` : text;
         return newValue.trim();
@@ -75,7 +74,6 @@ export function ChatInterface() {
     useWebSpeech: true,
   });
   
-  // ✨ ADD: Voice button handler
   const handleVoiceClick = () => {
     if (voice.isRecording) {
       voice.stopRecording();
@@ -240,27 +238,41 @@ export function ChatInterface() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
+    <div className="flex flex-col h-screen bg-white">
+      {/* Ambient Background Glow - Subtle gradient that doesn't overpower */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-gradient-to-br from-indigo-500/5 to-violet-500/5 blur-3xl rounded-full" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-gradient-to-br from-violet-500/5 to-purple-500/5 blur-3xl rounded-full" />
+      </div>
+
       {/* Paywall Modal */}
       {usage.showPaywall && usage.usage && <Paywall limit={usage.usage.limit} />}
 
       {/* Header */}
-      <ChatHeader simplicityLevel={simplicityLevel} onLevelChange={setSimplicityLevel} isMobile={isMobile} />
+      <ChatHeader 
+        simplicityLevel={simplicityLevel} 
+        onLevelChange={setSimplicityLevel} 
+        isMobile={isMobile} 
+      />
 
-      {/* Messages Area */}
-        <div 
-          className="flex-1 overflow-y-auto overscroll-contain"
-          style={{
-            // Add padding when keyboard is visible on mobile
-            paddingBottom: isMobile && isKeyboardVisible ? `${keyboardHeight}px` : '0px',
-          }}
-        >
+      {/* Messages Area - Clean white background */}
+      <div 
+        className="flex-1 overflow-y-auto overscroll-contain relative"
+        style={{
+          paddingBottom: isMobile && isKeyboardVisible ? `${keyboardHeight}px` : '0px',
+        }}
+      >
         <div className="max-w-4xl mx-auto px-6 py-8">
           {conversation.isLoadingConversation ? (
             <div className="flex items-center justify-center py-12">
-              <div className="text-center">
-                <Loader2 className="w-12 h-12 text-purple-500 mx-auto mb-4 animate-spin" />
-                <p className="text-gray-600">Loading conversation...</p>
+              <div className="text-center space-y-4">
+                <div className="relative inline-block">
+                  <div className="absolute inset-0 bg-gradient-to-br from-indigo-600 to-violet-600 rounded-2xl blur-lg opacity-30 animate-pulse" />
+                  <div className="relative bg-gradient-to-br from-indigo-600 to-violet-600 p-4 rounded-2xl">
+                    <Loader2 className="w-8 h-8 text-white animate-spin" strokeWidth={2.5} />
+                  </div>
+                </div>
+                <p className="text-gray-600 font-medium">Loading conversation...</p>
               </div>
             </div>
           ) : messages.length === 0 ? (
@@ -323,7 +335,7 @@ export function ChatInterface() {
         onCancel={() => voice.cancelRecording()}
       />
 
-      {/* NEW: Gamification modals */}
+      {/* Gamification modals */}
       <AchievementUnlockModal
         achievement={gamification.pendingAchievement}
         isOpen={gamification.showAchievementModal}

@@ -1,10 +1,3 @@
-/**
- * RecordingIndicator Component
- * 
- * Fullscreen overlay that appears during voice recording
- * Shows visual feedback, duration, and controls
- */
-
 'use client';
 
 import { Mic, X } from 'lucide-react';
@@ -45,9 +38,8 @@ export function RecordingIndicator({
   };
   
   // Calculate waveform bars based on volume
-  const barCount = isMobile ? 20 : 30;
+  const barCount = isMobile ? 15 : 20;
   const bars = Array.from({ length: barCount }, (_, i) => {
-    // Create variation in bar heights based on volume and position
     const baseHeight = 20 + (volume * 0.6);
     const variation = Math.sin((i + duration) * 0.5) * 10;
     const height = Math.max(10, Math.min(80, baseHeight + variation));
@@ -56,66 +48,66 @@ export function RecordingIndicator({
   
   return (
     <div className={cn(
-      'fixed inset-0 z-50 bg-gradient-to-br from-purple-600/95 to-blue-600/95 backdrop-blur-sm',
+      'fixed inset-0 z-50 bg-white',
       'flex flex-col items-center justify-center',
       'animate-in fade-in duration-200'
     )}>
+      {/* Subtle ambient glow */}
+      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-96 h-96 bg-gradient-to-br from-indigo-500/10 to-violet-500/10 blur-3xl rounded-full" />
+      
       {/* Safe area padding for mobile */}
-      <div className="w-full h-full flex flex-col items-center justify-center p-6 safe-area-inset">
+      <div className="relative w-full h-full flex flex-col items-center justify-center p-6 safe-area-inset">
         
-        {/* Cancel button */}
+        {/* Cancel button - top right */}
         <button
           onClick={onCancel}
           className={cn(
             'absolute top-6 right-6',
-            'w-12 h-12 rounded-full',
-            'bg-white/20 hover:bg-white/30',
+            'w-10 h-10 rounded-xl',
+            'bg-gray-100 hover:bg-gray-200',
             'flex items-center justify-center',
-            'transition-colors'
+            'transition-colors duration-200'
           )}
           aria-label="Cancel recording"
         >
-          <X className="w-6 h-6 text-white" />
+          <X className="w-5 h-5 text-gray-600" strokeWidth={2} />
         </button>
         
         {/* Main content */}
-        <div className="flex flex-col items-center gap-8 max-w-md w-full">
+        <div className="flex flex-col items-center gap-10 max-w-md w-full">
           
-          {/* Microphone icon with pulse */}
+          {/* Microphone icon - simple and clean */}
           <div className="relative">
-            {/* Pulsing circles */}
-            <div className="absolute inset-0 -m-8">
-              <div className="w-32 h-32 rounded-full bg-white/20 animate-ping" />
-            </div>
-            <div className="absolute inset-0 -m-4">
-              <div className="w-24 h-24 rounded-full bg-white/20 animate-pulse" />
+            <div className="absolute inset-0 -m-6">
+              <div className="w-24 h-24 rounded-full bg-red-500/10 animate-pulse" />
             </div>
             
-            {/* Icon */}
-            <div className="relative w-16 h-16 rounded-full bg-white flex items-center justify-center">
-              <Mic className="w-8 h-8 text-red-500" />
+            <div className="relative w-12 h-12 rounded-full bg-gradient-to-br from-red-500 to-red-600 shadow-lg flex items-center justify-center">
+              <Mic className="w-6 h-6 text-white" strokeWidth={2.5} />
             </div>
           </div>
           
-          {/* Duration */}
-          <div className="text-center">
-            <div className="text-6xl font-bold text-white tabular-nums">
+          {/* Duration - large and clear */}
+          <div className="text-center space-y-3">
+            <div className="text-7xl font-bold text-gray-900 tabular-nums tracking-tight">
               {formatDuration(duration)}
             </div>
-            <div className="text-white/80 text-sm mt-2">
-              {method === 'web-speech' ? 'Listening...' : 'Recording...'}
+            <div className="inline-flex items-center gap-2 bg-gray-50 px-4 py-2 rounded-full">
+              <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+              <span className="text-gray-700 text-sm font-medium">
+                {method === 'web-speech' ? 'Listening...' : 'Recording...'}
+              </span>
             </div>
           </div>
           
-          {/* Waveform visualization */}
-          <div className="flex items-center justify-center gap-1 h-20">
+          {/* Waveform - minimal and clean */}
+          <div className="flex items-center justify-center gap-1.5 h-16">
             {bars.map((height, i) => (
               <div
                 key={i}
-                className="w-1 bg-white/60 rounded-full transition-all duration-100"
+                className="w-1 bg-gradient-to-t from-indigo-600 to-violet-600 rounded-full transition-all duration-100"
                 style={{
                   height: `${height}%`,
-                  animationDelay: `${i * 20}ms`,
                 }}
               />
             ))}
@@ -123,38 +115,36 @@ export function RecordingIndicator({
           
           {/* Interim transcript */}
           {interimTranscript && (
-            <div className="w-full max-w-sm bg-white/10 backdrop-blur-sm rounded-2xl p-4 min-h-[60px]">
-              <p className="text-white/90 text-center text-sm">
+            <div className="w-full max-w-sm bg-gray-50 rounded-2xl p-4 min-h-[60px]">
+              <p className="text-gray-700 text-center text-sm leading-relaxed">
                 {interimTranscript}
               </p>
             </div>
           )}
           
-          {/* Instructions */}
-          <div className="text-center space-y-2">
-            <p className="text-white/90 font-medium">
-              {isMobile ? 'Tap to stop' : 'Click to stop'}
-            </p>
-            <p className="text-white/60 text-sm">
+          {/* Stop button - prominent */}
+          <div className="w-full max-w-xs space-y-3">
+            <Button
+              onClick={onStop}
+              className={cn(
+                'w-full h-14 rounded-2xl',
+                'bg-gradient-to-r from-indigo-600 to-violet-600',
+                'hover:from-indigo-700 hover:to-violet-700',
+                'text-white font-semibold text-base',
+                'shadow-lg shadow-indigo-500/25',
+                'hover:shadow-xl hover:shadow-indigo-500/30',
+                'transform hover:-translate-y-0.5',
+                'transition-all duration-200',
+                'active:scale-95'
+              )}
+            >
+              Stop Recording
+            </Button>
+            
+            <p className="text-gray-500 text-sm text-center">
               or wait for automatic pause
             </p>
           </div>
-          
-          {/* Stop button */}
-          <Button
-            onClick={onStop}
-            className={cn(
-              'w-full max-w-xs',
-              'h-14 rounded-full',
-              'bg-white hover:bg-white/90',
-              'text-purple-600 font-semibold text-lg',
-              'shadow-xl',
-              'transition-all duration-200',
-              'active:scale-95'
-            )}
-          >
-            Stop Recording
-          </Button>
         </div>
       </div>
     </div>

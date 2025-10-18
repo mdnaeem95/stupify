@@ -16,23 +16,29 @@ const levels = [
   {
     value: '5yo' as SimplicityLevel,
     label: '5 years old',
-    emoji: '🎈',
     description: 'Super simple words',
-    color: 'text-purple-600',
+    gradient: 'from-indigo-500 to-violet-500',
+    textColor: 'text-indigo-600',
+    bgColor: 'bg-indigo-50',
+    ringColor: 'ring-indigo-200',
   },
   {
     value: 'normal' as SimplicityLevel,
     label: 'Normal person',
-    emoji: '💬',
     description: 'Clear and conversational',
-    color: 'text-blue-600',
+    gradient: 'from-violet-500 to-purple-500',
+    textColor: 'text-violet-600',
+    bgColor: 'bg-violet-50',
+    ringColor: 'ring-violet-200',
   },
   {
     value: 'advanced' as SimplicityLevel,
     label: 'Advanced',
-    emoji: '📚',
     description: 'More depth, still clear',
-    color: 'text-green-600',
+    gradient: 'from-purple-500 to-pink-500',
+    textColor: 'text-purple-600',
+    bgColor: 'bg-purple-50',
+    ringColor: 'ring-purple-200',
   },
 ];
 
@@ -85,16 +91,16 @@ export function CompactLevelSelector({
       <button
         onClick={handleToggle}
         className={cn(
-          'flex items-center gap-2 px-3 py-2 rounded-lg',
-          'border-2 border-gray-200 hover:border-gray-300',
+          'flex items-center gap-2.5 px-4 py-2.5 rounded-xl',
           'bg-white hover:bg-gray-50',
           'transition-all duration-200',
           'min-h-[44px]',
-          isOpen && 'border-purple-400 ring-2 ring-purple-200'
+          'shadow-lg shadow-gray-900/10 hover:shadow-xl hover:shadow-gray-900/15',
+          'ring-1 ring-gray-900/5',
+          isOpen && 'ring-2 ring-indigo-200 shadow-xl'
         )}
       >
-        <span className="text-base">{selectedLevel.emoji}</span>
-        <span className={cn('font-medium text-sm', selectedLevel.color)}>
+        <span className={cn('font-semibold text-sm', selectedLevel.textColor)}>
           {selectedLevel.label}
         </span>
         <ChevronDown 
@@ -116,13 +122,14 @@ export function CompactLevelSelector({
             />
           )}
 
-          {/* Menu - FIXED: Always align to right edge to prevent overflow */}
+          {/* Menu */}
           <div 
             className={cn(
-              'absolute z-50 mt-2 w-64 rounded-xl shadow-lg',
-              'bg-white border-2 border-gray-200',
+              'absolute z-50 mt-2 w-72 rounded-2xl',
+              'bg-white shadow-2xl shadow-gray-900/20',
               'overflow-hidden',
-              'right-0' // Always align to right to prevent overflow
+              'ring-1 ring-gray-900/5',
+              'right-0'
             )}
           >
             {levels.map((level) => {
@@ -133,30 +140,39 @@ export function CompactLevelSelector({
                   key={level.value}
                   onClick={() => handleSelect(level.value)}
                   className={cn(
-                    'w-full px-4 py-3 flex items-start gap-3',
-                    'hover:bg-gray-50 transition-colors',
-                    'text-left border-b border-gray-100 last:border-0',
-                    'min-h-[60px]',
-                    isSelected && 'bg-purple-50'
+                    'w-full px-5 py-4 flex items-center gap-4',
+                    'hover:bg-gray-50 transition-all duration-200',
+                    'text-left',
+                    'min-h-[68px]',
+                    'group',
+                    isSelected && level.bgColor
                   )}
                 >
-                  {/* Emoji + Check */}
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <span className="text-xl">{level.emoji}</span>
-                    {isSelected && (
-                      <Check className="w-4 h-4 text-purple-600" />
+                  {/* Icon + Check */}
+                  <div className="flex items-center justify-center flex-shrink-0">
+                    {isSelected ? (
+                      <div className={cn(
+                        'w-8 h-8 rounded-full flex items-center justify-center',
+                        `bg-gradient-to-br ${level.gradient}`,
+                        'shadow-lg',
+                        `shadow-${level.gradient.split('-')[1]}-500/30`
+                      )}>
+                        <Check className="w-5 h-5 text-white" strokeWidth={3} />
+                      </div>
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-gray-100 group-hover:bg-gray-200 transition-colors" />
                     )}
                   </div>
 
                   {/* Text */}
                   <div className="flex-1 min-w-0">
                     <div className={cn(
-                      'font-semibold text-sm mb-0.5',
-                      isSelected ? level.color : 'text-gray-900'
+                      'font-semibold text-base mb-1',
+                      isSelected ? level.textColor : 'text-gray-900'
                     )}>
-                      {level.label} mode
+                      {level.label}
                     </div>
-                    <div className="text-xs text-gray-500">
+                    <div className="text-sm text-gray-500 leading-relaxed">
                       {level.description}
                     </div>
                   </div>

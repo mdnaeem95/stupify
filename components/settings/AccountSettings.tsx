@@ -1,10 +1,11 @@
+/* eslint-disable  @typescript-eslint/no-explicit-any */
 'use client';
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, Mail, User, Key, Trash2, AlertTriangle } from 'lucide-react';
+import { Loader2, Mail, User, Key, Trash2, AlertTriangle, CheckCircle2, XCircle } from 'lucide-react';
 import { getCurrentUser } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/client';
 import {
@@ -24,6 +25,7 @@ export function AccountSettings() {
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSendingReset, setIsSendingReset] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -52,30 +54,59 @@ export function AccountSettings() {
     
     try {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
       
-      if (!user) throw new Error('Not authenticated');
+      if (authError) {
+        console.error('Auth error:', authError);
+        throw new Error('Not authenticated');
+      }
+      
+      if (!user) {
+        throw new Error('No user found');
+      }
 
-      const { error } = await supabase
+      console.log('Updating profile for user:', user.id);
+      console.log('New name:', fullName);
+
+      // Update the profile - removed updated_at since it should auto-update via trigger
+      const { data, error } = await supabase
         .from('profiles')
         .update({ 
-          full_name: fullName,
-          updated_at: new Date().toISOString()
+          full_name: fullName.trim()
         })
-        .eq('id', user.id);
+        .eq('id', user.id)
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
+
+      console.log('Update result:', data);
 
       setMessage({ type: 'success', text: 'Name updated successfully!' });
-    } catch (error) {
+      
+      // Clear message after 3 seconds
+      setTimeout(() => setMessage(null), 3000);
+    } catch (error: any) {
       console.error('Failed to update name:', error);
-      setMessage({ type: 'error', text: 'Failed to update name. Please try again.' });
+      
+      // More detailed error message
+      let errorMessage = 'Failed to update name. Please try again.';
+      if (error.message) {
+        errorMessage += ` (${error.message})`;
+      }
+      
+      setMessage({ type: 'error', text: errorMessage });
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleChangePassword = async () => {
+    setMessage(null);
+    setIsSendingReset(true);
+    
     try {
       const supabase = createClient();
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
@@ -88,12 +119,17 @@ export function AccountSettings() {
         type: 'success', 
         text: 'Password reset email sent! Check your inbox.' 
       });
-    } catch (error) {
+      
+      // Clear message after 5 seconds
+      setTimeout(() => setMessage(null), 5000);
+    } catch (error: any) {
       console.error('Failed to send reset email:', error);
       setMessage({ 
         type: 'error', 
-        text: 'Failed to send reset email. Please try again.' 
+        text: error.message || 'Failed to send reset email. Please try again.' 
       });
+    } finally {
+      setIsSendingReset(false);
     }
   };
 
@@ -111,16 +147,19 @@ export function AccountSettings() {
         method: 'DELETE',
       });
 
-      if (!response.ok) throw new Error('Failed to delete account');
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to delete account');
+      }
 
       // Sign out and redirect
       await supabase.auth.signOut();
       window.location.href = '/';
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to delete account:', error);
       setMessage({ 
         type: 'error', 
-        text: 'Failed to delete account. Please contact support.' 
+        text: error.message || 'Failed to delete account. Please contact support.' 
       });
       setIsDeleting(false);
     }
@@ -129,33 +168,42 @@ export function AccountSettings() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
+        <Loader2 className="w-8 h-8 animate-spin text-indigo-600" strokeWidth={2} />
       </div>
     );
   }
 
   return (
     <div className="space-y-8">
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Account Information</h2>
-        <p className="text-gray-600">Manage your personal information and account settings</p>
+      <div className="space-y-2">
+        <h2 className="text-2xl font-bold text-gray-900">Account Information</h2>
+        <p className="text-gray-600 leading-relaxed">Manage your personal information and account settings</p>
       </div>
 
       {/* Success/Error Message */}
       {message && (
-        <div className={`p-4 rounded-lg ${
+        <div className={`flex items-start gap-3 p-4 rounded-xl ${
           message.type === 'success' 
-            ? 'bg-green-50 text-green-800 border border-green-200' 
-            : 'bg-red-50 text-red-800 border border-red-200'
+            ? 'bg-gradient-to-r from-green-50 to-emerald-50' 
+            : 'bg-gradient-to-r from-red-50 to-pink-50'
         }`}>
-          {message.text}
+          {message.type === 'success' ? (
+            <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" strokeWidth={2} />
+          ) : (
+            <XCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" strokeWidth={2} />
+          )}
+          <p className={`text-sm font-medium ${
+            message.type === 'success' ? 'text-green-800' : 'text-red-800'
+          }`}>
+            {message.text}
+          </p>
         </div>
       )}
 
       {/* Full Name */}
       <div className="space-y-3">
-        <Label htmlFor="fullName" className="flex items-center gap-2 text-gray-700">
-          <User className="w-4 h-4" />
+        <Label htmlFor="fullName" className="flex items-center gap-2 text-gray-700 font-semibold">
+          <User className="w-4 h-4 text-gray-500" strokeWidth={2} />
           Full Name
         </Label>
         <div className="flex gap-3">
@@ -165,16 +213,16 @@ export function AccountSettings() {
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
             placeholder="Enter your full name"
-            className="flex-1"
+            className="flex-1 text-gray-600"
           />
           <Button 
             onClick={handleSaveName}
             disabled={isSaving || !fullName.trim()}
-            className="bg-purple-600 hover:bg-purple-700"
+            className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30 transform hover:-translate-y-0.5 transition-all"
           >
             {isSaving ? (
               <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" strokeWidth={2} />
                 Saving...
               </>
             ) : (
@@ -186,8 +234,8 @@ export function AccountSettings() {
 
       {/* Email (Read-only) */}
       <div className="space-y-3">
-        <Label htmlFor="email" className="flex items-center gap-2 text-gray-700">
-          <Mail className="w-4 h-4" />
+        <Label htmlFor="email" className="flex items-center gap-2 text-gray-700 font-semibold">
+          <Mail className="w-4 h-4 text-gray-500" strokeWidth={2} />
           Email Address
         </Label>
         <Input
@@ -195,62 +243,91 @@ export function AccountSettings() {
           type="email"
           value={email}
           disabled
-          className="bg-gray-50 cursor-not-allowed"
+          className="bg-gray-50 cursor-not-allowed text-gray-600"
         />
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-gray-500 leading-relaxed">
           Email cannot be changed. Contact support if you need to update it.
         </p>
       </div>
 
       {/* Change Password */}
-      <div className="space-y-3 pt-6 border-t border-gray-200">
-        <Label className="flex items-center gap-2 text-gray-700">
-          <Key className="w-4 h-4" />
-          Password
-        </Label>
-        <p className="text-sm text-gray-600 mb-3">
-          We&apos;ll send a password reset link to your email address.
-        </p>
+      <div className="space-y-4 pt-6 border-t border-gray-100">
+        <div className="space-y-2">
+          <Label className="flex items-center gap-2 text-gray-700 font-semibold">
+            <Key className="w-4 h-4 text-gray-500" strokeWidth={2} />
+            Password
+          </Label>
+          <p className="text-sm text-gray-600 leading-relaxed">
+            We&apos;ll send a password reset link to your email address.
+          </p>
+        </div>
         <Button 
           variant="outline" 
           onClick={handleChangePassword}
-          className="border-gray-300"
+          disabled={isSendingReset}
+          className="hover:bg-gray-50 transition-colors"
         >
-          Send Password Reset Email
+          {isSendingReset ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" strokeWidth={2} />
+              Sending Email...
+            </>
+          ) : (
+            'Send Password Reset Email'
+          )}
         </Button>
       </div>
 
       {/* Delete Account */}
-      <div className="space-y-3 pt-6 border-t border-gray-200">
-        <div className="flex items-center gap-2 text-red-600">
-          <AlertTriangle className="w-5 h-5" />
-          <h3 className="text-lg font-semibold">Danger Zone</h3>
+      <div className="space-y-4 pt-6 border-t border-gray-100">
+        <div className="flex items-center gap-2.5">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-pink-500 flex items-center justify-center shadow-lg shadow-red-500/20">
+            <AlertTriangle className="w-5 h-5 text-white" strokeWidth={2.5} />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-gray-900">Danger Zone</h3>
+            <p className="text-sm text-gray-600">Permanent account deletion</p>
+          </div>
         </div>
-        <p className="text-sm text-gray-600">
+        
+        <p className="text-sm text-gray-600 leading-relaxed">
           Once you delete your account, there is no going back. This will permanently delete:
         </p>
-        <ul className="text-sm text-gray-600 list-disc pl-5 space-y-1">
-          <li>All your conversations and questions</li>
-          <li>Your subscription and billing history</li>
-          <li>Your achievements and streak data</li>
-          <li>Your saved explanations and shared cards</li>
+        
+        <ul className="text-sm text-gray-700 space-y-2 pl-1">
+          <li className="flex items-start gap-2">
+            <span className="text-red-500 mt-1">•</span>
+            <span>All your conversations and questions</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="text-red-500 mt-1">•</span>
+            <span>Your subscription and billing history</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="text-red-500 mt-1">•</span>
+            <span>Your achievements and streak data</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="text-red-500 mt-1">•</span>
+            <span>Your saved explanations and shared cards</span>
+          </li>
         </ul>
         
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button 
               variant="destructive"
-              className="mt-4 bg-red-600 hover:bg-red-700"
+              className="mt-4 bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 shadow-lg shadow-red-500/25 hover:shadow-xl hover:shadow-red-500/30"
               disabled={isDeleting}
             >
-              <Trash2 className="w-4 h-4 mr-2" />
+              <Trash2 className="w-4 h-4 mr-2" strokeWidth={2} />
               Delete My Account
             </Button>
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-              <AlertDialogDescription>
+              <AlertDialogDescription className="leading-relaxed">
                 This action cannot be undone. This will permanently delete your account
                 and remove all your data from our servers.
               </AlertDialogDescription>
@@ -259,11 +336,11 @@ export function AccountSettings() {
               <AlertDialogCancel>Cancel</AlertDialogCancel>
               <AlertDialogAction
                 onClick={handleDeleteAccount}
-                className="bg-red-600 hover:bg-red-700"
+                className="bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700"
               >
                 {isDeleting ? (
                   <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" strokeWidth={2} />
                     Deleting...
                   </>
                 ) : (

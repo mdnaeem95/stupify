@@ -68,24 +68,30 @@ export function ChatMessages({
           );
         })}
 
-        {/* Loading Animation */}
+        {/* Loading Animation - Redesigned */}
         {isLoading && (
-          <div className="flex gap-2 md:gap-3 mb-4">
-            <div className="flex-shrink-0 w-7 h-7 md:w-8 md:h-8 rounded-full bg-purple-600 flex items-center justify-center">
-              <Loader2 className="w-4 h-4 md:w-5 md:h-5 text-white animate-spin" />
+          <div className="flex gap-3 mb-6">
+            {/* Avatar with gradient glow */}
+            <div className="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-indigo-600 to-violet-600 rounded-full blur-md opacity-30" />
+              <div className="relative bg-gradient-to-br from-indigo-600 to-violet-600 w-9 h-9 rounded-full flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                <Loader2 className="w-5 h-5 text-white animate-spin" strokeWidth={2.5} />
+              </div>
             </div>
-            <div className="flex-1 max-w-[80%] px-3 md:px-4 py-2 md:py-3 rounded-2xl bg-white border border-gray-200 rounded-tl-none shadow-sm">
-              <div className="flex gap-1">
+
+            {/* Loading bubble */}
+            <div className="flex-1 max-w-[80%] px-5 py-3.5 rounded-2xl bg-gradient-to-br from-indigo-50 to-violet-50 rounded-tl-sm border border-indigo-100">
+              <div className="flex gap-1.5">
                 <span
-                  className="w-1.5 h-1.5 md:w-2 md:h-2 bg-purple-500 rounded-full animate-bounce"
+                  className="w-2 h-2 bg-gradient-to-r from-indigo-600 to-violet-600 rounded-full animate-bounce"
                   style={{ animationDelay: '0ms' }}
                 />
                 <span
-                  className="w-1.5 h-1.5 md:w-2 md:h-2 bg-purple-500 rounded-full animate-bounce"
+                  className="w-2 h-2 bg-gradient-to-r from-indigo-600 to-violet-600 rounded-full animate-bounce"
                   style={{ animationDelay: '150ms' }}
                 />
                 <span
-                  className="w-1.5 h-1.5 md:w-2 md:h-2 bg-purple-500 rounded-full animate-bounce"
+                  className="w-2 h-2 bg-gradient-to-r from-indigo-600 to-violet-600 rounded-full animate-bounce"
                   style={{ animationDelay: '300ms' }}
                 />
               </div>

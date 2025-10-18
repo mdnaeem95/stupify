@@ -74,15 +74,15 @@ export function MilestoneCelebration({ milestone, isOpen, onClose }: MilestoneCe
       {/* Modal */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
         <div 
-          className="bg-white rounded-3xl shadow-2xl max-w-lg w-full p-10 relative pointer-events-auto animate-bounceIn"
+          className="bg-white rounded-3xl shadow-2xl shadow-orange-500/20 max-w-lg w-full p-10 relative pointer-events-auto animate-bounceIn"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Close button */}
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition"
+            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
           >
-            <X className="w-5 h-5" />
+            <X className="w-5 h-5" strokeWidth={2} />
           </button>
 
           {/* Content */}
@@ -92,10 +92,10 @@ export function MilestoneCelebration({ milestone, isOpen, onClose }: MilestoneCe
               <Mascot expression="celebrating" size={180} />
               {/* Floating fire icons */}
               <div className="absolute -left-8 top-8 animate-float">
-                <Flame className="w-12 h-12 text-orange-500" />
+                <Flame className="w-12 h-12 text-orange-500" strokeWidth={2} />
               </div>
               <div className="absolute -right-8 top-8 animate-float-delayed">
-                <Flame className="w-12 h-12 text-red-500" />
+                <Flame className="w-12 h-12 text-red-500" strokeWidth={2} />
               </div>
             </div>
 
@@ -104,30 +104,36 @@ export function MilestoneCelebration({ milestone, isOpen, onClose }: MilestoneCe
               <h2 className={`text-4xl font-black mb-3 bg-gradient-to-r ${color} bg-clip-text text-transparent`}>
                 {title}
               </h2>
-              <p className="text-xl text-gray-700 font-medium">{message}</p>
+              <p className="text-xl text-gray-700 font-semibold leading-relaxed">{message}</p>
             </div>
 
             {/* Stats bar */}
-            <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-2xl p-6 border border-orange-200">
+            <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-2xl p-6">
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <p className="text-3xl font-bold text-orange-600">{milestone}</p>
-                  <p className="text-xs text-gray-600">Days</p>
+                  <p className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
+                    {milestone}
+                  </p>
+                  <p className="text-xs text-gray-600 font-medium mt-1">Days</p>
                 </div>
                 <div>
-                  <p className="text-3xl font-bold text-orange-600">{milestone * 2}</p>
-                  <p className="text-xs text-gray-600">Avg Questions</p>
+                  <p className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
+                    {milestone * 2}
+                  </p>
+                  <p className="text-xs text-gray-600 font-medium mt-1">Avg Questions</p>
                 </div>
                 <div>
-                  <p className="text-3xl font-bold text-orange-600">{Math.floor(milestone / 3)}</p>
-                  <p className="text-xs text-gray-600">Topics</p>
+                  <p className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
+                    {Math.floor(milestone / 3)}
+                  </p>
+                  <p className="text-xs text-gray-600 font-medium mt-1">Topics</p>
                 </div>
               </div>
             </div>
 
             {/* Encouragement */}
             <div className="text-center">
-              <p className="text-sm text-gray-600 mb-4">
+              <p className="text-sm text-gray-700 font-medium leading-relaxed">
                 {milestone === 3 && "Three days in a row! The hardest part is over. Keep going! 💪"}
                 {milestone === 7 && "You've proven this is a habit. See you tomorrow! 🎯"}
                 {milestone === 30 && "Research shows it takes 30 days to form a habit. You did it! 🏆"}
@@ -139,7 +145,7 @@ export function MilestoneCelebration({ milestone, isOpen, onClose }: MilestoneCe
             {/* Action button */}
             <Button
               onClick={onClose}
-              className={`w-full bg-gradient-to-r ${color} hover:opacity-90 text-white text-lg py-6 rounded-xl font-bold shadow-lg`}
+              className={`w-full bg-gradient-to-r ${color} hover:opacity-90 text-white text-lg py-6 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all cursor-pointer`}
             >
               Let&apos;s Keep Learning! 🚀
             </Button>
@@ -199,7 +205,7 @@ function Fireworks() {
   return (
     <div className="fixed inset-0 z-40 pointer-events-none overflow-hidden">
       {Array.from({ length: 30 }).map((_, i) => {
-        const colors = ['#fbbf24', '#f59e0b', '#f97316', '#ef4444'];
+        const colors = ['#f59e0b', '#f97316', '#ef4444', '#dc2626'];
         return (
           <div
             key={i}

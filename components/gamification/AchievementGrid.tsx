@@ -89,15 +89,15 @@ export function AchievementGrid({ showUnlockedOnly = false }: AchievementGridPro
           <Mascot expression="proud" size={120} />
         </div>
         <h2 className="text-3xl font-bold text-gray-900 mb-2">Your Achievements</h2>
-        <p className="text-gray-600 mb-4">
+        <p className="text-gray-600 mb-6 leading-relaxed">
           {achievements.stats.unlocked} of {achievements.stats.total} unlocked ({achievements.stats.percentage}%)
         </p>
 
         {/* Progress bar */}
         <div className="max-w-md mx-auto">
-          <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+          <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
             <div 
-              className="bg-gradient-to-r from-purple-500 to-blue-500 h-full rounded-full transition-all duration-500"
+              className="bg-gradient-to-r from-indigo-600 to-violet-600 h-full rounded-full transition-all duration-500 shadow-sm"
               style={{ width: `${achievements.stats.percentage}%` }}
             />
           </div>
@@ -108,10 +108,10 @@ export function AchievementGrid({ showUnlockedOnly = false }: AchievementGridPro
       <div className="flex flex-wrap justify-center gap-3">
         <button
           onClick={() => setSelectedCategory(null)}
-          className={`px-4 py-2 rounded-full font-medium transition ${
+          className={`px-5 py-2.5 rounded-full font-semibold transition-all cursor-pointer ${
             selectedCategory === null
-              ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg'
-              : 'bg-white text-gray-700 border border-gray-300 hover:border-purple-300'
+              ? 'bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-lg shadow-indigo-500/30 transform hover:-translate-y-0.5'
+              : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
           }`}
         >
           All
@@ -124,10 +124,10 @@ export function AchievementGrid({ showUnlockedOnly = false }: AchievementGridPro
             <button
               key={cat.key}
               onClick={() => setSelectedCategory(cat.key)}
-              className={`px-4 py-2 rounded-full font-medium transition ${
+              className={`px-5 py-2.5 rounded-full font-semibold transition-all cursor-pointer ${
                 selectedCategory === cat.key
-                  ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg'
-                  : 'bg-white text-gray-700 border border-gray-300 hover:border-purple-300'
+                  ? 'bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-lg shadow-indigo-500/30 transform hover:-translate-y-0.5'
+                  : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
               }`}
             >
               {cat.icon} {cat.label} ({unlocked}/{count})
@@ -158,25 +158,25 @@ function AchievementCard({ achievement }: { achievement: Achievement }) {
 
   // Category colors
   const categoryColors = {
-    streak: 'from-orange-100 to-red-100 border-orange-200',
-    learning: 'from-purple-100 to-blue-100 border-purple-200',
-    social: 'from-blue-100 to-cyan-100 border-blue-200',
-    exploration: 'from-green-100 to-emerald-100 border-green-200',
+    streak: 'from-orange-50 to-red-50',
+    learning: 'from-indigo-50 to-violet-50',
+    social: 'from-blue-50 to-cyan-50',
+    exploration: 'from-green-50 to-emerald-50',
   };
 
   const bgColor = categoryColors[achievement.category];
 
   return (
     <div
-      className={`relative bg-gradient-to-br ${bgColor} rounded-2xl p-6 border shadow-sm hover:shadow-md transition-all ${
-        isLocked ? 'opacity-60' : 'opacity-100'
+      className={`relative bg-gradient-to-br ${bgColor} rounded-2xl p-6 hover:shadow-lg hover:shadow-gray-200/50 transition-all ${
+        isLocked ? 'opacity-50' : 'opacity-100'
       }`}
     >
       {/* Locked overlay */}
       {isLocked && (
         <div className="absolute top-4 right-4">
-          <div className="bg-gray-500 rounded-full p-2">
-            <Lock className="w-4 h-4 text-white" />
+          <div className="bg-gray-400 rounded-full p-2 shadow-sm">
+            <Lock className="w-4 h-4 text-white" strokeWidth={2} />
           </div>
         </div>
       )}
@@ -184,8 +184,8 @@ function AchievementCard({ achievement }: { achievement: Achievement }) {
       {/* Unlocked checkmark */}
       {!isLocked && (
         <div className="absolute top-4 right-4">
-          <div className="bg-green-500 rounded-full p-2 shadow-lg">
-            <Check className="w-4 h-4 text-white" />
+          <div className="bg-gradient-to-r from-green-400 to-emerald-400 rounded-full p-2 shadow-lg shadow-green-500/30">
+            <Check className="w-4 h-4 text-white" strokeWidth={2.5} />
           </div>
         </div>
       )}
@@ -196,21 +196,21 @@ function AchievementCard({ achievement }: { achievement: Achievement }) {
       </div>
 
       {/* Achievement info */}
-      <h3 className={`text-xl font-bold mb-2 ${isLocked ? 'text-gray-600' : 'text-gray-900'}`}>
+      <h3 className={`text-xl font-bold mb-2 ${isLocked ? 'text-gray-500' : 'text-gray-900'}`}>
         {achievement.name}
       </h3>
-      <p className={`text-sm mb-3 ${isLocked ? 'text-gray-500' : 'text-gray-700'}`}>
+      <p className={`text-sm mb-4 leading-relaxed ${isLocked ? 'text-gray-400' : 'text-gray-600'}`}>
         {achievement.description}
       </p>
 
       {/* Category badge */}
       <div className="flex items-center justify-between">
-        <span className="text-xs font-medium text-gray-600 capitalize px-3 py-1 bg-white/50 rounded-full">
+        <span className="text-xs font-semibold text-gray-700 capitalize px-3 py-1.5 bg-white/60 backdrop-blur-sm rounded-full">
           {achievement.category}
         </span>
 
         {!isLocked && achievement.unlockedAt && (
-          <span className="text-xs text-gray-500">
+          <span className="text-xs text-gray-500 font-medium">
             {new Date(achievement.unlockedAt).toLocaleDateString()}
           </span>
         )}
@@ -250,18 +250,18 @@ export function AchievementsCompact() {
   if (recentAchievements.length === 0) return null;
 
   return (
-    <div className="space-y-2">
-      <p className="text-xs font-semibold text-gray-500 uppercase">Recent Achievements</p>
+    <div className="space-y-3">
+      <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Recent Achievements</p>
       <div className="space-y-2">
         {recentAchievements.map((achievement) => (
           <div 
             key={achievement.id}
-            className="flex items-center gap-3 p-2 bg-white rounded-lg border border-gray-200 hover:border-purple-300 transition"
+            className="flex items-center gap-3 p-3 bg-white rounded-xl hover:bg-gray-50 transition-colors cursor-pointer"
           >
             <span className="text-2xl">{achievement.icon}</span>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 truncate">{achievement.name}</p>
-              <p className="text-xs text-gray-500 truncate">{achievement.description}</p>
+              <p className="text-sm font-semibold text-gray-900 truncate">{achievement.name}</p>
+              <p className="text-xs text-gray-600 truncate leading-relaxed">{achievement.description}</p>
             </div>
           </div>
         ))}
