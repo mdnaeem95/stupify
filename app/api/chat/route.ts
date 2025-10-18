@@ -17,6 +17,17 @@ import {
   type AIProvider 
 } from '@/lib/ai-providers';
 
+// ⭐ NEW: Import rate limiting
+import {
+  globalLimiter,
+  freeUserLimiter,
+  premiumUserLimiter,
+  getClientIp,
+  getUserIdentifier,
+  checkRateLimit,
+  createRateLimitResponse,
+} from '@/lib/rate-limit';
+
 export const maxDuration = 30;
 
 export async function POST(req: Request) {
@@ -24,6 +35,35 @@ export async function POST(req: Request) {
   
   try {
     console.error('[CHAT] 🚀 Request received');
+    
+    // ============================================================================
+    // STEP 1: GLOBAL RATE LIMITING (ANTI-ABUSE)
+    // ============================================================================
+    
+    const ip = getClientIp(req);
+    console.error('[CHAT] 🌐 Client IP:', ip.substring(0, 8) + '...');
+    
+    // Check global rate limit (100 req/min per IP)
+    const globalCheck = await checkRateLimit(globalLimiter, ip);
+    
+    if (!globalCheck.success) {
+      console.warn('[CHAT] ⚠️ Global rate limit exceeded for IP:', ip.substring(0, 8) + '...');
+      return createRateLimitResponse(
+        "Too many requests from your IP. Please slow down.",
+        globalCheck.limit,
+        globalCheck.remaining,
+        globalCheck.reset
+      );
+    }
+    
+    console.error('[CHAT] ✅ Global rate limit passed:', {
+      remaining: globalCheck.remaining,
+      limit: globalCheck.limit
+    });
+    
+    // ============================================================================
+    // STEP 2: PARSE REQUEST
+    // ============================================================================
     
     const body = await req.json();
     const { 
@@ -51,7 +91,10 @@ export async function POST(req: Request) {
     const level = (simplicityLevel || 'normal') as SimplicityLevel;
     const isExtension = source === 'extension';
 
-    // Get authenticated user
+    // ============================================================================
+    // STEP 3: AUTHENTICATE USER
+    // ============================================================================
+    
     let user = null;
     let supabaseClient = null;
     
@@ -82,7 +125,11 @@ export async function POST(req: Request) {
       console.error('[CHAT] ⚠️ Auth error:', authError);
     }
     
-    // A/B TEST: Determine AI provider and model
+    // ============================================================================
+    // STEP 4: USER-SPECIFIC RATE LIMITING
+    // ============================================================================
+    
+    // Determine if user is premium
     let isPremium = false;
     let aiProvider: AIProvider = 'openai';
     let aiModel = 'gpt-4o-mini' as OpenAIModel | ClaudeModel;
@@ -116,7 +163,44 @@ export async function POST(req: Request) {
       console.error('[CHAT] ℹ️ Guest user assigned:', { provider: aiProvider, model: aiModel });
     }
     
-    // Get system prompt
+    // Choose appropriate rate limiter based on subscription
+    const userLimiter = isPremium ? premiumUserLimiter : freeUserLimiter;
+    const identifier = getUserIdentifier(user?.id || null, ip);
+    
+    // Check user-specific rate limit
+    const userCheck = await checkRateLimit(userLimiter, identifier);
+    
+    if (!userCheck.success) {
+      console.warn('[CHAT] ⚠️ User rate limit exceeded:', {
+        userId: user?.id?.slice(0, 8) || 'anonymous',
+        isPremium,
+        limit: userCheck.limit,
+      });
+      
+      const upgradeMessage = isPremium
+        ? `Daily limit reached (${userCheck.limit} questions). Please try again tomorrow.`
+        : `Daily limit reached (${userCheck.limit} questions). Upgrade to Premium for 1000/day!`;
+      
+      return createRateLimitResponse(
+        upgradeMessage,
+        userCheck.limit,
+        userCheck.remaining,
+        userCheck.reset
+      );
+    }
+    
+    // Log remaining quota
+    console.error('[CHAT] 📊 Rate limit status:', {
+      userId: user?.id?.slice(0, 8) || 'anonymous',
+      isPremium,
+      remaining: userCheck.remaining,
+      limit: userCheck.limit,
+    });
+    
+    // ============================================================================
+    // STEP 5: BUILD SYSTEM PROMPT
+    // ============================================================================
+    
     console.error('[CHAT] 📄 Building system prompt...');
     let systemPrompt = getSystemPromptV2(level);
 
@@ -126,7 +210,10 @@ export async function POST(req: Request) {
       systemPrompt += `\n\n[IMPORTANT INSTRUCTION FOR THIS RESPONSE ONLY]: ${retryInstructions}`;
     }
 
-    // Add personalization if user is logged in
+    // ============================================================================
+    // STEP 6: PERSONALIZATION (NON-BLOCKING)
+    // ============================================================================
+    
     if (user) {
       try {
         const profile = await getUserProfile(user.id);
@@ -152,7 +239,7 @@ export async function POST(req: Request) {
           }
         }
 
-        // Run gamification tracking in background
+        // Run gamification tracking in background (non-blocking)
         Promise.all([
           updateUserStreak(user.id),
           updateDailyStats(user.id, undefined, level, false, false),
@@ -165,7 +252,10 @@ export async function POST(req: Request) {
       }
     }
 
-    // Convert messages based on source
+    // ============================================================================
+    // STEP 7: CONVERT MESSAGES & CALL AI
+    // ============================================================================
+    
     console.error('[CHAT] 🔄 Converting messages...');
     let modelMessages;
     if (isExtension) {
@@ -195,7 +285,10 @@ export async function POST(req: Request) {
 
     const responseTime = Date.now() - startTime;
 
-    // Return appropriate format
+    // ============================================================================
+    // STEP 8: RETURN RESPONSE WITH TRACKING HEADERS
+    // ============================================================================
+    
     console.error('[CHAT] 📤 Preparing response format:', isExtension ? 'text' : 'ui');
     
     const response = isExtension 
@@ -207,6 +300,11 @@ export async function POST(req: Request) {
     response.headers.set('X-AI-Model', aiModel);
     response.headers.set('X-Response-Time', responseTime.toString());
     response.headers.set('X-Is-Premium', isPremium.toString());
+    
+    // Add rate limit headers (helpful for debugging)
+    response.headers.set('X-RateLimit-Limit', userCheck.limit.toString());
+    response.headers.set('X-RateLimit-Remaining', userCheck.remaining.toString());
+    response.headers.set('X-RateLimit-Reset', userCheck.reset.toString());
 
     console.error('[CHAT] ✅ Response ready, returning stream');
 

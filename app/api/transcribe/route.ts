@@ -1,50 +1,101 @@
-/* eslint-disable  @typescript-eslint/no-explicit-any */
-/**
- * Transcribe API Route
- * 
- * Handles audio transcription using OpenAI Whisper API
- * This is the fallback method when Web Speech API is unavailable
- */
-
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import OpenAI from 'openai';
+import { OpenAI } from 'openai';
+
+// ⭐ NEW: Import rate limiting
+import {
+  voiceLimiter,
+  globalLimiter,
+  getClientIp,
+  getUserIdentifier,
+  checkRateLimit,
+  createRateLimitResponse,
+} from '@/lib/rate-limit';
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: process.env.OPENAI_API_KEY!,
 });
 
-// Maximum file size: 25MB (Whisper API limit)
-const MAX_FILE_SIZE = 25 * 1024 * 1024;
-
-// Supported audio formats
+// Supported audio formats for Whisper API
 const SUPPORTED_FORMATS = [
-  'audio/flac',
-  'audio/m4a',
-  'audio/mp3',
+  'audio/webm',
   'audio/mp4',
   'audio/mpeg',
   'audio/mpga',
-  'audio/oga',
-  'audio/ogg',
+  'audio/m4a',
   'audio/wav',
-  'audio/webm',
+  'audio/flac',
 ];
+
+const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB (Whisper API limit)
 
 export async function POST(request: NextRequest) {
   try {
-    // Check authentication
+    // ============================================================================
+    // STEP 1: GLOBAL RATE LIMITING (ANTI-ABUSE)
+    // ============================================================================
+    
+    const ip = getClientIp(request);
+    
+    // Check global rate limit first
+    const globalCheck = await checkRateLimit(globalLimiter, ip);
+    
+    if (!globalCheck.success) {
+      console.warn(`⚠️ Global rate limit exceeded for IP: ${ip}`);
+      return createRateLimitResponse(
+        "Too many requests from your IP. Please slow down.",
+        globalCheck.limit,
+        globalCheck.remaining,
+        globalCheck.reset
+      );
+    }
+    
+    // ============================================================================
+    // STEP 2: AUTHENTICATE USER
+    // ============================================================================
+    
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     
     if (authError || !user) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
+        { success: false, error: 'Unauthorized. Please sign in.' },
         { status: 401 }
       );
     }
     
-    // Parse form data
+    // ============================================================================
+    // STEP 3: VOICE-SPECIFIC RATE LIMITING
+    // ============================================================================
+    
+    // Voice transcription is expensive - limit to 50/hour per user
+    const identifier = getUserIdentifier(user.id, ip);
+    const voiceCheck = await checkRateLimit(voiceLimiter, identifier);
+    
+    if (!voiceCheck.success) {
+      console.warn(`⚠️ Voice rate limit exceeded:`, {
+        userId: user.id,
+        limit: voiceCheck.limit,
+      });
+      
+      return createRateLimitResponse(
+        `Voice transcription limit reached (${voiceCheck.limit}/hour). Please try again later.`,
+        voiceCheck.limit,
+        voiceCheck.remaining,
+        voiceCheck.reset
+      );
+    }
+    
+    console.log(`🎤 Voice quota:`, {
+      userId: user.id,
+      remaining: voiceCheck.remaining,
+      limit: voiceCheck.limit,
+    });
+    
+    // ============================================================================
+    // STEP 4: PARSE REQUEST
+    // ============================================================================
+    
     const formData = await request.formData();
     const audioFile = formData.get('audio') as File | null;
     const language = formData.get('language') as string | null;
@@ -56,10 +107,17 @@ export async function POST(request: NextRequest) {
       );
     }
     
+    // ============================================================================
+    // STEP 5: VALIDATE FILE
+    // ============================================================================
+    
     // Validate file size
     if (audioFile.size > MAX_FILE_SIZE) {
       return NextResponse.json(
-        { success: false, error: 'File too large. Maximum size is 25MB.' },
+        { 
+          success: false, 
+          error: `File too large: ${(audioFile.size / 1024 / 1024).toFixed(2)}MB. Maximum size is 25MB.` 
+        },
         { status: 400 }
       );
     }
@@ -78,20 +136,22 @@ export async function POST(request: NextRequest) {
     console.log('📝 Transcribing audio:', {
       userId: user.id,
       fileName: audioFile.name,
-      fileSize: audioFile.size,
+      fileSize: `${(audioFile.size / 1024).toFixed(2)}KB`,
       fileType: audioFile.type,
       language: language || 'auto-detect',
     });
     
-    // Call Whisper API
+    // ============================================================================
+    // STEP 6: CALL WHISPER API
+    // ============================================================================
+    
     const startTime = Date.now();
     
     const transcription = await openai.audio.transcriptions.create({
       file: audioFile,
       model: 'whisper-1',
-      language: language || undefined, // Let Whisper auto-detect if not specified
+      language: language || undefined,
       response_format: 'json',
-      // Note: temperature, prompt are optional parameters for fine-tuning
     });
     
     const duration = Date.now() - startTime;
@@ -102,7 +162,10 @@ export async function POST(request: NextRequest) {
       duration: `${duration}ms`,
     });
     
-    // Track usage (optional - for analytics)
+    // ============================================================================
+    // STEP 7: TRACK USAGE (OPTIONAL - FOR ANALYTICS)
+    // ============================================================================
+    
     try {
       await supabase.from('voice_transcriptions').insert({
         user_id: user.id,
@@ -114,10 +177,13 @@ export async function POST(request: NextRequest) {
       });
     } catch (trackingError) {
       // Don't fail the request if tracking fails
-      console.warn('Failed to track transcription:', trackingError);
+      console.warn('⚠️ Failed to track transcription:', trackingError);
     }
     
-    // Return transcript
+    // ============================================================================
+    // STEP 8: RETURN TRANSCRIPT
+    // ============================================================================
+    
     return NextResponse.json({
       success: true,
       transcript: transcription.text,
