@@ -114,7 +114,25 @@ export function ChatInterface() {
     },
   });
 
-  const isLoading = status === 'streaming' || status === 'submitted';
+  const getIsLoading = () => {
+    if (status === 'submitted') {
+      return true; // Waiting for response to start
+    }
+    
+    if (status === 'streaming') {
+      // Check if the last assistant message has content
+      const lastMessage = messages[messages.length - 1];
+      if (lastMessage && lastMessage.role === 'assistant') {
+        const content = extractMessageText(lastMessage);
+        return content.length === 0; // Only show if empty
+      }
+      return true; // No assistant message yet
+    }
+    
+    return false;
+  };
+
+  const isLoading = getIsLoading();
 
   // Auto-scroll to bottom
   useEffect(() => {

@@ -31,12 +31,8 @@ import {
 // ⭐ Caching
 import {
   getCachedResponse,
+  setCachedResponse,
 } from '@/lib/cache/cache-manager';
-
-import {
-  cacheStreamingResponse,
-  createStreamFromCachedText,
-} from '@/lib/cache/stream-cache-manager';
 
 export const maxDuration = 30;
 
@@ -118,7 +114,7 @@ export async function POST(req: Request) {
     // STEP 4: CHECK CACHE (BEFORE EXPENSIVE OPERATIONS)
     // ============================================================================
     
-    let cachedResult = null;
+    let cachedResult: any = null;
     
     // Only check cache for non-confused, non-personalized questions
     if (!confusionRetry && userQuestion) {
@@ -129,21 +125,46 @@ export async function POST(req: Request) {
         
         const responseTime = Date.now() - startTime;
         
-        // Create a simulated stream from cached text
-        const cachedStream = createStreamFromCachedText(cachedResult.response);
-        
-        return new Response(cachedStream, {
-          status: 200,
-          headers: {
-            'Content-Type': 'text/plain; charset=utf-8',
-            'X-Cache-Hit': 'true',
-            'X-AI-Provider': cachedResult.provider,
-            'X-AI-Model': cachedResult.model,
-            'X-Response-Time': responseTime.toString(),
-            'X-Cache-Age': Math.round((Date.now() - cachedResult.cachedAt) / 1000).toString(),
-            'X-Cache-Hit-Count': cachedResult.hitCount.toString(),
-          }
-        });
+        // ⭐ IMPORTANT: Return in UI Message format for web, text for extension
+        if (isExtension) {
+          return new Response(cachedResult.response, {
+            status: 200,
+            headers: {
+              'Content-Type': 'text/plain; charset=utf-8',
+              'X-Cache-Hit': 'true',
+              'X-AI-Provider': cachedResult.provider,
+              'X-AI-Model': cachedResult.model,
+              'X-Response-Time': responseTime.toString(),
+              'X-Cache-Age': Math.round((Date.now() - cachedResult.cachedAt) / 1000).toString(),
+              'X-Cache-Hit-Count': cachedResult.hitCount.toString(),
+            }
+          });
+        } else {
+          // Web UI needs AI SDK format
+          // Create a minimal UI message stream
+          const encoder = new TextEncoder();
+          const stream = new ReadableStream({
+            start(controller) {
+              // Send the cached response in AI SDK format
+              const uiMessage = `0:${JSON.stringify(cachedResult.response)}\n`;
+              controller.enqueue(encoder.encode(uiMessage));
+              controller.close();
+            }
+          });
+          
+          return new Response(stream, {
+            status: 200,
+            headers: {
+              'Content-Type': 'text/plain; charset=utf-8',
+              'X-Cache-Hit': 'true',
+              'X-AI-Provider': cachedResult.provider,
+              'X-AI-Model': cachedResult.model,
+              'X-Response-Time': responseTime.toString(),
+              'X-Cache-Age': Math.round((Date.now() - cachedResult.cachedAt) / 1000).toString(),
+              'X-Cache-Hit-Count': cachedResult.hitCount.toString(),
+            }
+          });
+        }
       }
     }
     
@@ -312,47 +333,109 @@ export async function POST(req: Request) {
     console.error('[CHAT] ✅ Stream result received');
 
     // ============================================================================
-    // STEP 10: WRAP STREAM WITH CACHE INTERCEPTOR
+    // STEP 10: CACHE THE RESPONSE IN BACKGROUND
     // ============================================================================
     
-    const originalStream = result.toTextStreamResponse();
+    // For caching, we'll collect the full response after streaming
+    // We'll do this by tee-ing the stream
+    const textResponse = isExtension 
+      ? result.toTextStreamResponse()
+      : result.toUIMessageStreamResponse();
     
-    // Wrap stream to cache the response (only if not a confusion retry)
-    let finalStream = originalStream.body!;
-    
-    if (!confusionRetry && userQuestion) {
-      console.error('[CHAT] 💾 Wrapping stream with cache interceptor');
+    // Clone the response body to read it for caching
+    if (!confusionRetry && userQuestion && textResponse.body) {
+      const [stream1, stream2] = textResponse.body.tee();
       
-      finalStream = await cacheStreamingResponse(
-        finalStream,
-        userQuestion,
-        level,
-        aiModel,
-        aiProvider
-      );
+      // Read stream1 in background to cache
+      (async () => {
+        try {
+          const reader = stream1.getReader();
+          const decoder = new TextDecoder();
+          let fullResponse = '';
+          
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            
+            const chunk = decoder.decode(value, { stream: true });
+            
+            // For UI message stream, extract just the text content
+            if (!isExtension) {
+              // AI SDK format is like: 0:"text content"\n
+              // We need to parse it to get the actual text
+              const lines = chunk.split('\n');
+              for (const line of lines) {
+                if (line.startsWith('0:')) {
+                  try {
+                    const content = JSON.parse(line.substring(2));
+                    fullResponse += content;
+                  } catch (e) {
+                    // If parsing fails, just append the raw chunk
+                    fullResponse += chunk;
+                  }
+                }
+              }
+            } else {
+              fullResponse += chunk;
+            }
+          }
+          
+          // Cache the complete response
+          if (fullResponse) {
+            console.error('[CHAT] 💾 Caching response:', {
+              questionLength: userQuestion.length,
+              responseLength: fullResponse.length,
+              provider: aiProvider,
+              model: aiModel
+            });
+            
+            await setCachedResponse(
+              userQuestion,
+              level,
+              fullResponse,
+              aiModel,
+              aiProvider
+            );
+          }
+        } catch (error) {
+          console.error('[CHAT] ⚠️ Error caching response:', error);
+          // Don't fail the request
+        }
+      })();
+      
+      // Return stream2 to the client
+      const responseTime = Date.now() - startTime;
+      
+      const response = new Response(stream2, {
+        headers: {
+          'Content-Type': 'text/plain; charset=utf-8',
+          'X-Cache-Hit': 'false',
+          'X-AI-Provider': aiProvider,
+          'X-AI-Model': aiModel,
+          'X-Response-Time': responseTime.toString(),
+          'X-Is-Premium': isPremium.toString(),
+          'X-RateLimit-Limit': userCheck.limit.toString(),
+          'X-RateLimit-Remaining': userCheck.remaining.toString(),
+        }
+      });
+
+      console.error('[CHAT] ✅ Response ready, caching in background');
+      return response;
     }
 
+    // If not caching (confusion retry or no question), just return the stream
     const responseTime = Date.now() - startTime;
-
-    // ============================================================================
-    // STEP 11: RETURN STREAMED RESPONSE
-    // ============================================================================
     
-    const response = new Response(finalStream, {
-      headers: {
-        'Content-Type': 'text/plain; charset=utf-8',
-        'X-Cache-Hit': 'false',
-        'X-AI-Provider': aiProvider,
-        'X-AI-Model': aiModel,
-        'X-Response-Time': responseTime.toString(),
-        'X-Is-Premium': isPremium.toString(),
-        'X-RateLimit-Limit': userCheck.limit.toString(),
-        'X-RateLimit-Remaining': userCheck.remaining.toString(),
-      }
-    });
+    const response = textResponse;
+    response.headers.set('X-Cache-Hit', 'false');
+    response.headers.set('X-AI-Provider', aiProvider);
+    response.headers.set('X-AI-Model', aiModel);
+    response.headers.set('X-Response-Time', responseTime.toString());
+    response.headers.set('X-Is-Premium', isPremium.toString());
+    response.headers.set('X-RateLimit-Limit', userCheck.limit.toString());
+    response.headers.set('X-RateLimit-Remaining', userCheck.remaining.toString());
 
-    console.error('[CHAT] ✅ Response ready, stream will cache in background');
-    
+    console.error('[CHAT] ✅ Response ready (no caching)');
     return response;
 
   } catch (error) {
