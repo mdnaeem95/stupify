@@ -6,7 +6,8 @@ import { TopicLandingPage } from '@/components/seo/TopicLandingPage';
 
 // ⭐ Generate static params for all topics (for static generation)
 export async function generateStaticParams() {
-  const topics = await getAllTopics(); // Now async
+  // Use static client (no cookies) during build time
+  const topics = await getAllTopics(true);
   
   return topics.map((topic) => ({
     slug: topic.slug,
@@ -15,7 +16,8 @@ export async function generateStaticParams() {
 
 // ⭐ Generate metadata for SEO (now async)
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  const topic = await getTopicBySlug(params.slug); // Now async
+  // Use static client during build
+  const topic = await getTopicBySlug(params.slug, true);
   
   if (!topic) {
     return {
@@ -87,13 +89,14 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 
 // ⭐ Main page component (now async)
 export default async function ExplainTopicPage({ params }: { params: { slug: string } }) {
-  const topic = await getTopicBySlug(params.slug); // Now async
+  // At runtime (when user visits), use regular client
+  const topic = await getTopicBySlug(params.slug, false);
   
   if (!topic) {
     notFound();
   }
   
-  const relatedTopics = await getRelatedTopics(params.slug); // Now async
+  const relatedTopics = await getRelatedTopics(params.slug, false);
   
   return (
     <>

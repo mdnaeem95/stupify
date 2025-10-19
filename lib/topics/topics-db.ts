@@ -2,12 +2,27 @@
 // Now reads from Supabase database instead of hardcoded data
 
 import { createClient } from '@/lib/supabase/server';
+import { createClient as createServerClient } from '@supabase/supabase-js';
 import { Topic } from './types';
 
 // Cache topics in memory for better performance
 let topicsCache: Map<string, Topic> | null = null;
 let cacheTime: number = 0;
 const CACHE_DURATION = 60 * 60 * 1000; // 1 hour
+
+// Helper: Create a static Supabase client (no cookies, for build time)
+function createStaticClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+  
+  return createServerClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+    },
+  });
+}
 
 // Helper: Convert database row to Topic type
 function dbRowToTopic(row: any): Topic {
@@ -30,8 +45,9 @@ function dbRowToTopic(row: any): Topic {
 }
 
 // Helper: Load topics from database into cache
-async function loadTopicsCache(): Promise<Map<string, Topic>> {
-  const supabase = await createClient();
+async function loadTopicsCache(useStaticClient = false): Promise<Map<string, Topic>> {
+  // Use static client during build, regular client at runtime
+  const supabase = useStaticClient ? createStaticClient() : await createClient();
   
   const { data, error } = await supabase
     .from('topics')
@@ -52,11 +68,11 @@ async function loadTopicsCache(): Promise<Map<string, Topic>> {
 }
 
 // Helper: Get cache (refresh if expired)
-async function getCache(): Promise<Map<string, Topic>> {
+async function getCache(useStaticClient = false): Promise<Map<string, Topic>> {
   const now = Date.now();
   
   if (!topicsCache || now - cacheTime > CACHE_DURATION) {
-    topicsCache = await loadTopicsCache();
+    topicsCache = await loadTopicsCache(useStaticClient);
     cacheTime = now;
     console.log(`[Topics Cache] Loaded ${topicsCache.size} topics`);
   }
@@ -64,39 +80,39 @@ async function getCache(): Promise<Map<string, Topic>> {
   return topicsCache;
 }
 
-// Get all topics
-export async function getAllTopics(): Promise<Topic[]> {
-  const cache = await getCache();
+// ⭐ Get all topics (use static client during build)
+export async function getAllTopics(useStaticClient = false): Promise<Topic[]> {
+  const cache = await getCache(useStaticClient);
   return Array.from(cache.values());
 }
 
 // Get topic by slug
-export async function getTopicBySlug(slug: string): Promise<Topic | null> {
-  const cache = await getCache();
+export async function getTopicBySlug(slug: string, useStaticClient = false): Promise<Topic | null> {
+  const cache = await getCache(useStaticClient);
   return cache.get(slug) || null;
 }
 
 // Get topics by category
-export async function getTopicsByCategory(category: string): Promise<Topic[]> {
-  const allTopics = await getAllTopics();
+export async function getTopicsByCategory(category: string, useStaticClient = false): Promise<Topic[]> {
+  const allTopics = await getAllTopics(useStaticClient);
   return allTopics.filter(topic => topic.category === category);
 }
 
 // Get related topics
-export async function getRelatedTopics(slug: string): Promise<Topic[]> {
-  const topic = await getTopicBySlug(slug);
+export async function getRelatedTopics(slug: string, useStaticClient = false): Promise<Topic[]> {
+  const topic = await getTopicBySlug(slug, useStaticClient);
   if (!topic) return [];
   
-  const cache = await getCache();
+  const cache = await getCache(useStaticClient);
   return topic.relatedTopics
     .map(relatedSlug => cache.get(relatedSlug))
     .filter((t): t is Topic => t !== null);
 }
 
 // Search topics (full-text search in memory)
-export async function searchTopics(query: string): Promise<Topic[]> {
+export async function searchTopics(query: string, useStaticClient = false): Promise<Topic[]> {
   const lowerQuery = query.toLowerCase();
-  const allTopics = await getAllTopics();
+  const allTopics = await getAllTopics(useStaticClient);
   
   return allTopics.filter(topic => 
     topic.title.toLowerCase().includes(lowerQuery) ||
@@ -112,7 +128,7 @@ export async function searchTopicsBySemantic(
 ): Promise<Array<{ topic: Topic; similarity: number }>> {
   // This requires generating an embedding for the query
   // and searching in the database
-  const supabase = await createClient();
+  const supabase = createStaticClient();
   
   // TODO: Generate embedding for query using OpenAI
   // const embedding = await generateEmbedding(query);
