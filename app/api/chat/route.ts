@@ -1,6 +1,6 @@
 /* eslint-disable  @typescript-eslint/no-explicit-any */
 import { convertToModelMessages } from 'ai';
-import { getSystemPromptV2, SimplicityLevel } from '@/lib/prompts-v2';
+import { getSystemPromptV3, SimplicityLevel } from '@/lib/prompts-v3';
 import { createClient } from '@/lib/supabase/server';
 import { createClientWithToken } from '@/lib/supabase/server-api';
 import { getUserProfile } from '@/lib/get-user-profile';
@@ -271,7 +271,7 @@ export async function POST(req: Request) {
     // ============================================================================
     
     console.error('[CHAT] 📄 Building system prompt...');
-    let systemPrompt = getSystemPromptV2(level);
+    let systemPrompt = getSystemPromptV3(level);
 
     if (confusionRetry && retryInstructions) {
       console.error('[CHAT] 😕 Adding confusion retry instructions');
