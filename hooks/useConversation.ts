@@ -1,6 +1,13 @@
 /* eslint-disable  @typescript-eslint/no-explicit-any */
 import { useState, useRef, useCallback } from 'react';
-import { createConversation, saveMessage, loadConversation, generateConversationTitle, updateConversationTitle } from '@/lib/conversations';
+import { 
+  createConversation, 
+  saveMessage, 
+  loadConversation, 
+  generateConversationTitle, 
+  updateConversationTitle,
+  canCreateConversation // NEW: Import limit checker
+} from '@/lib/conversations';
 import { SimplicityLevel } from '@/lib/prompts';
 import { convertToUIMessages, dispatchCustomEvent } from '@/lib/utils';
 
@@ -11,15 +18,45 @@ export function useConversation() {
   const conversationIdRef = useRef<string | null>(null);
   const isFirstMessageRef = useRef(true);
 
-  // Update both state and ref
+  // UNCHANGED: Update both state and ref
   const updateConversationId = useCallback((newId: string | null) => {
     console.log('🔄 Updating conversation ID', { from: conversationId, to: newId });
     setConversationId(newId);
     conversationIdRef.current = newId;
   }, [conversationId]);
 
-  // Create new conversation
+  // UPDATED: Create new conversation (now checks limits)
   const createNew = useCallback(async (initialMessage: string) => {
+    console.log('🆕 Creating new conversation', { initialMessage });
+
+    // NEW: Check if user can create a conversation
+    const check = await canCreateConversation();
+
+    if (!check.canCreate) {
+      console.error('❌ Cannot create conversation:', check.reason);
+      
+      // Show user-friendly message based on tier
+      if (check.limit !== null && check.currentCount !== undefined) {
+        const tier = check.tier || 'free';
+        const upgradeMessage = tier === 'free' 
+          ? `\n\nUpgrade to save more conversations:\n• Starter: 50 conversations ($4.99/month)\n• Premium: Unlimited conversations ($9.99/month)`
+          : `\n\nUpgrade to Premium for unlimited conversations ($9.99/month)`;
+        
+        alert(
+          `You've reached your ${check.limit} conversation limit.${upgradeMessage}`
+        );
+      }
+      
+      return null;
+    }
+
+    console.log('✅ Conversation limit check passed', {
+      currentCount: check.currentCount,
+      limit: check.limit,
+      tier: check.tier,
+      remaining: check.limit ? check.limit - (check.currentCount || 0) : 'unlimited'
+    });
+
     setIsSaving(true);
     const newConvId = await createConversation('New Chat');
 
@@ -33,6 +70,12 @@ export function useConversation() {
         await updateConversationTitle(newConvId, title);
         dispatchCustomEvent('refreshSidebar');
       }, 1000);
+
+      console.log('✅ Conversation created successfully', { 
+        conversationId: newConvId,
+        tier: check.tier,
+        remaining: check.limit ? check.limit - (check.currentCount || 0) - 1 : 'unlimited'
+      });
     } else {
       console.error('❌ Failed to create conversation!');
       setIsSaving(false);
@@ -43,7 +86,7 @@ export function useConversation() {
     return newConvId;
   }, [updateConversationId]);
 
-  // Load existing conversation
+  // UNCHANGED: Load existing conversation
   const load = useCallback(async (convId: string, setMessages: (messages: any[]) => void) => {
     if (convId === conversationId) {
       console.log('⏭️ Already on this conversation, skipping');
@@ -70,7 +113,7 @@ export function useConversation() {
     }
   }, [conversationId, updateConversationId]);
 
-  // Save message to database
+  // UNCHANGED: Save message to database
   const save = useCallback(async (
     role: 'user' | 'assistant',
     content: string,
@@ -92,7 +135,7 @@ export function useConversation() {
     return saved;
   }, []);
 
-  // Start new chat
+  // UNCHANGED: Start new chat
   const reset = useCallback(() => {
     console.log('🆕 Starting new chat');
     updateConversationId(null);
