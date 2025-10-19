@@ -4,18 +4,18 @@ import { getTopicBySlug, getRelatedTopics, getAllTopics } from '@/lib/topics/top
 import { generatePageTitle, generateMetaDescription, generateStructuredData } from '@/lib/topics/types';
 import { TopicLandingPage } from '@/components/seo/TopicLandingPage';
 
-// Generate static params for all topics (for static generation)
+// ⭐ Generate static params for all topics (for static generation)
 export async function generateStaticParams() {
-  const topics = getAllTopics();
+  const topics = await getAllTopics(); // Now async
   
   return topics.map((topic) => ({
     slug: topic.slug,
   }));
 }
 
-// Generate metadata for SEO
+// ⭐ Generate metadata for SEO (now async)
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  const topic = getTopicBySlug(params.slug);
+  const topic = await getTopicBySlug(params.slug); // Now async
   
   if (!topic) {
     return {
@@ -43,7 +43,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
       type: 'article',
       images: [
         {
-          url: `/og/${topic.slug}.png`, // We'll generate these
+          url: `/og/${topic.slug}.png`,
           width: 1200,
           height: 630,
           alt: `${topic.title} explained simply`,
@@ -85,15 +85,15 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   };
 }
 
-// Main page component
-export default function ExplainTopicPage({ params }: { params: { slug: string } }) {
-  const topic = getTopicBySlug(params.slug);
+// ⭐ Main page component (now async)
+export default async function ExplainTopicPage({ params }: { params: { slug: string } }) {
+  const topic = await getTopicBySlug(params.slug); // Now async
   
   if (!topic) {
     notFound();
   }
   
-  const relatedTopics = getRelatedTopics(params.slug);
+  const relatedTopics = await getRelatedTopics(params.slug); // Now async
   
   return (
     <>

@@ -9,19 +9,25 @@ export const metadata: Metadata = {
   keywords: ['learn', 'explain', 'education', 'simple explanations', 'AI learning'],
 };
 
-export default function ExplainIndexPage() {
-  const allTopics = getAllTopics();
+export default async function ExplainIndexPage() {
+  // ⭐ Now async - fetches from database
+  const allTopics = await getAllTopics();
   const categories = ['Technology', 'Science', 'Business', 'Finance', 'Health', 'Math', 'Philosophy', 'History'] as const;
   
-  const topicsByCategory = categories.map(category => ({
-    name: category,
-    topics: getTopicsByCategory(category),
-  })).filter(cat => cat.topics.length > 0);
+  // ⭐ Map with Promise.all for parallel fetching
+  const categoryTopics = await Promise.all(
+    categories.map(async (category) => ({
+      name: category,
+      topics: await getTopicsByCategory(category),
+    }))
+  );
+  
+  const topicsByCategory = categoryTopics.filter(cat => cat.topics.length > 0);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
       {/* Header */}
-      <header className="border-b border-gray-100 bg-white/80 backdrop-blur-sm sticky top-0 z-50">
+      <header className="bg-white/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between max-w-6xl">
           <Link href="/" className="flex items-center gap-2">
             <div className="w-8 h-8 bg-gradient-to-br from-indigo-600 to-violet-600 rounded-lg flex items-center justify-center">
@@ -57,7 +63,7 @@ export default function ExplainIndexPage() {
             <input
               type="text"
               placeholder="Search topics..."
-              className="w-full pl-12 pr-4 py-4 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:outline-none text-lg"
+              className="w-full text-gray-900 pl-12 pr-4 py-4 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:outline-none text-lg"
             />
           </div>
         </div>
