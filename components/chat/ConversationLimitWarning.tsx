@@ -25,17 +25,16 @@ export function ConversationLimitWarning() {
       return; // Don't show if they can't create at all
     }
 
-    // Show warning if close to limit
-    if (check.limit !== null && check.currentCount !== undefined) {
-      const percentUsed = (check.currentCount / check?.limit!) * 100;
-      
-      if (percentUsed >= 80) {
+    if (check.limit != null && check.currentCount != null) {
+    const percentUsed = (check.currentCount / check.limit) * 100;
+
+    if (percentUsed >= 80) {
         setShow(true);
         setLimitInfo({
-          currentCount: check.currentCount,
-          limit: check.limit!,
+        currentCount: check.currentCount,
+        limit: check.limit,
         });
-      }
+    }
     }
   };
 
