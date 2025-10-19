@@ -13,7 +13,7 @@ const CACHE_DURATION = 60 * 60 * 1000; // 1 hour
 // Helper: Create a static Supabase client (no cookies, for build time)
 function createStaticClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_PUBLISHABLE_KEY!;
   
   return createServerClient(supabaseUrl, supabaseAnonKey, {
     auth: {
