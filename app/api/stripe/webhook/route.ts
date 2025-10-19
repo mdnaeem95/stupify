@@ -1,183 +1,196 @@
-import { NextRequest, NextResponse } from 'next/server';
+/* eslint-disable  @typescript-eslint/no-explicit-any */
+import { NextResponse } from 'next/server';
+import { headers } from 'next/headers';
 import Stripe from 'stripe';
+import { stripe } from '@/lib/stripe';
 import { createClient } from '@/lib/supabase/server';
-
-// ⭐ NEW: Import rate limiting
-import {
-  webhookLimiter,
-  getClientIp,
-  checkRateLimit,
-  createRateLimitResponse,
-} from '@/lib/rate-limit';
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-02-24.acacia',
-});
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
-export async function POST(request: NextRequest) {
+export async function POST(req: Request) {
   try {
-    // ============================================================================
-    // STEP 1: RATE LIMITING (PREVENT REPLAY ATTACKS)
-    // ============================================================================
-    
-    const ip = getClientIp(request);
-    
-    // Stripe webhooks should be low-volume
-    // 100/minute is generous but prevents abuse
-    const webhookCheck = await checkRateLimit(webhookLimiter, ip);
-    
-    if (!webhookCheck.success) {
-      console.warn(`⚠️ Webhook rate limit exceeded from IP: ${ip}`);
-      return createRateLimitResponse(
-        "Too many webhook requests. Possible attack detected.",
-        webhookCheck.limit,
-        webhookCheck.remaining,
-        webhookCheck.reset
-      );
-    }
-    
-    // ============================================================================
-    // STEP 2: VERIFY STRIPE SIGNATURE
-    // ============================================================================
-    
-    const body = await request.text();
-    const signature = request.headers.get('stripe-signature');
-    
+    const body = await req.text();
+    const headersList = await headers();
+    const signature = headersList.get('stripe-signature');
+
     if (!signature) {
-      console.error('❌ Missing Stripe signature');
-      return NextResponse.json(
-        { error: 'Missing signature' },
-        { status: 400 }
-      );
+      console.error('❌ Webhook: No signature found');
+      return NextResponse.json({ error: 'No signature' }, { status: 400 });
     }
-    
+
+    // Verify webhook signature
     let event: Stripe.Event;
-    
     try {
       event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
-    } catch (err) {
-      console.error('❌ Webhook signature verification failed:', err);
-      return NextResponse.json(
-        { error: 'Invalid signature' },
-        { status: 400 }
-      );
+    } catch (err: any) {
+      console.error('❌ Webhook signature verification failed:', err.message);
+      return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
     }
-    
-    console.log('✅ Stripe webhook received:', event.type);
-    
-    // ============================================================================
-    // STEP 3: HANDLE WEBHOOK EVENTS
-    // ============================================================================
-    
+
+    console.log('✅ Webhook received:', event.type);
+
+    // Use service role client to bypass RLS
     const supabase = await createClient();
-    
+
+    // Handle different event types
     switch (event.type) {
+      // Checkout completed - user just subscribed
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
-        
-        console.log('💳 Checkout completed:', {
-          customerId: session.customer,
-          email: session.customer_email,
-        });
-        
-        // Update user profile to premium
-        if (session.customer && session.customer_email) {
-          const { error } = await supabase
-            .from('profiles')
-            .update({
-              subscription_status: 'premium',
-              stripe_customer_id: session.customer as string,
-              updated_at: new Date().toISOString(),
-            })
-            .eq('email', session.customer_email);
-          
-          if (error) {
-            console.error('❌ Failed to update profile:', error);
-          } else {
-            console.log('✅ User upgraded to premium:', session.customer_email);
-          }
+        console.log('💳 Checkout completed:', session.id);
+
+        const userId = session.metadata?.supabase_user_id;
+        const tier = session.metadata?.subscription_tier as 'starter' | 'premium' | undefined;
+
+        if (!userId) {
+          console.error('❌ No user ID in session metadata');
+          break;
         }
-        break;
-      }
-      
-      case 'customer.subscription.created':
-      case 'customer.subscription.updated': {
-        const subscription = event.data.object as Stripe.Subscription;
-        
-        console.log('📋 Subscription updated:', {
-          customerId: subscription.customer,
-          status: subscription.status,
-        });
-        
-        // Update subscription status
-        const status = subscription.status === 'active' ? 'premium' : 'free';
-        
+
+        if (!tier || (tier !== 'starter' && tier !== 'premium')) {
+          console.error('❌ Invalid or missing tier in session metadata:', tier);
+          break;
+        }
+
+        console.log('✅ Upgrading user to', tier, '- User ID:', userId);
+
+        // Update user's subscription status
         const { error } = await supabase
           .from('profiles')
-          .update({
-            subscription_status: status,
-            updated_at: new Date().toISOString(),
+          .update({ 
+            subscription_status: tier,
+            stripe_customer_id: session.customer as string,
           })
-          .eq('stripe_customer_id', subscription.customer as string);
-        
+          .eq('id', userId);
+
         if (error) {
-          console.error('❌ Failed to update subscription:', error);
+          console.error('❌ Failed to update profile:', error);
         } else {
-          console.log(`✅ Subscription updated to ${status}`);
+          console.log('✅ User upgraded to', tier, '- User ID:', userId);
         }
         break;
       }
-      
+
+      // Subscription updated (tier change, renewal, etc.)
+      case 'customer.subscription.updated': {
+        const subscription = event.data.object as Stripe.Subscription;
+        console.log('🔄 Subscription updated:', subscription.id);
+
+        const customerId = subscription.customer as string;
+        const tier = subscription.metadata?.subscription_tier as 'starter' | 'premium' | undefined;
+        
+        // Check if subscription is active
+        const isActive = ['active', 'trialing'].includes(subscription.status);
+
+        // Find user by customer ID
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('stripe_customer_id', customerId)
+          .single();
+
+        if (!profile) {
+          console.error('❌ No profile found for customer:', customerId);
+          break;
+        }
+
+        // Determine the correct tier
+        let newTier: 'free' | 'starter' | 'premium' = 'free';
+        
+        if (isActive && tier) {
+          newTier = tier;
+        } else if (isActive) {
+          // Fallback: if no tier in metadata, check price
+          const priceId = subscription.items.data[0]?.price.id;
+          
+          if (priceId === process.env.NEXT_PUBLIC_STRIPE_STARTER_PRICE_ID) {
+            newTier = 'starter';
+          } else if (priceId === process.env.NEXT_PUBLIC_STRIPE_PREMIUM_PRICE_ID) {
+            newTier = 'premium';
+          }
+        }
+
+        console.log('✅ Updating subscription status:', {
+          userId: profile.id,
+          tier: newTier,
+          isActive,
+        });
+
+        // Update user's subscription status
+        const { error } = await supabase
+          .from('profiles')
+          .update({ subscription_status: newTier })
+          .eq('id', profile.id);
+
+        if (error) {
+          console.error('❌ Failed to update profile:', error);
+        } else {
+          console.log('✅ Subscription updated for user:', profile.id, '- New tier:', newTier);
+        }
+        break;
+      }
+
+      // Subscription deleted/cancelled
       case 'customer.subscription.deleted': {
         const subscription = event.data.object as Stripe.Subscription;
-        
-        console.log('❌ Subscription cancelled:', {
-          customerId: subscription.customer,
-        });
-        
+        console.log('❌ Subscription deleted:', subscription.id);
+
+        const customerId = subscription.customer as string;
+
+        // Find user by customer ID
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('stripe_customer_id', customerId)
+          .single();
+
+        if (!profile) {
+          console.error('❌ No profile found for customer:', customerId);
+          break;
+        }
+
         // Downgrade to free
         const { error } = await supabase
           .from('profiles')
-          .update({
-            subscription_status: 'free',
-            updated_at: new Date().toISOString(),
-          })
-          .eq('stripe_customer_id', subscription.customer as string);
-        
+          .update({ subscription_status: 'free' })
+          .eq('id', profile.id);
+
         if (error) {
-          console.error('❌ Failed to downgrade user:', error);
+          console.error('❌ Failed to update profile:', error);
         } else {
-          console.log('✅ User downgraded to free');
+          console.log('✅ User downgraded to free:', profile.id);
         }
         break;
       }
-      
+
+      // Payment failed
       case 'invoice.payment_failed': {
         const invoice = event.data.object as Stripe.Invoice;
-        
-        console.warn('⚠️ Payment failed:', {
-          customerId: invoice.customer,
-          amount: invoice.amount_due,
-        });
-        
-        // Optionally: Send email notification to user
-        // Optionally: Downgrade after multiple failures
+        console.warn('⚠️ Payment failed for invoice:', invoice.id);
+
+        const customerId = invoice.customer as string;
+
+        // Find user by customer ID
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id, email')
+          .eq('stripe_customer_id', customerId)
+          .single();
+
+        if (profile) {
+          console.log('⚠️ Payment failed for user:', profile.email);
+          // TODO: Send email notification
+        }
         break;
       }
-      
+
       default:
-        console.log(`ℹ️ Unhandled event type: ${event.type}`);
+        console.log('ℹ️ Unhandled event type:', event.type);
     }
-    
-    // ============================================================================
-    // STEP 4: RETURN SUCCESS
-    // ============================================================================
-    
+
     return NextResponse.json({ received: true });
-    
-  } catch (error) {
+
+  } catch (error: any) {
     console.error('❌ Webhook handler error:', error);
     return NextResponse.json(
       { error: 'Webhook handler failed' },
