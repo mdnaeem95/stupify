@@ -68,7 +68,7 @@ export function UsageBadge({
   
   // Determine color based on remaining questions
   let bgColor = 'bg-green-100 text-green-800 border-green-300';
-  let icon = <Sparkles className="w-4 h-4" />;
+  const icon = <Sparkles className="w-4 h-4" />;
   
   if (percentage >= 80) {
     bgColor = 'bg-red-100 text-red-800 border-red-300';
