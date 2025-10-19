@@ -2,19 +2,20 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Check, Crown, Sparkles, Zap, Shield, X, ArrowLeft } from 'lucide-react';
+import { Check, Crown, Sparkles, Zap, Shield, X, ArrowLeft, Rocket } from 'lucide-react';
 import Link from 'next/link';
 
 export default function PricingPage() {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState<string | null>(null);
 
-  const handleUpgrade = async () => {
-    setIsLoading(true);
+  const handleUpgrade = async (tier: 'starter' | 'premium') => {
+    setIsLoading(tier);
     
     try {
       const response = await fetch('/api/stripe/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tier }),
       });
 
       const data = await response.json();
@@ -27,7 +28,7 @@ export default function PricingPage() {
     } catch (error) {
       console.error('Checkout error:', error);
       alert('Failed to start checkout. Please try again.');
-      setIsLoading(false);
+      setIsLoading(null);
     }
   };
 
@@ -51,21 +52,21 @@ export default function PricingPage() {
         </div>
 
         <h1 className="text-5xl lg:text-6xl font-bold mb-6 leading-tight tracking-tight">
-          <span className="text-gray-900">Unlimited questions,</span>
+          <span className="text-gray-900">Learn at your pace,</span>
           <br />
           <span className="bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 bg-clip-text text-transparent">
-            zero confusion
+            pay for what you need
           </span>
         </h1>
 
         <p className="text-xl lg:text-2xl text-gray-600 leading-relaxed max-w-2xl mx-auto">
-          Get unlimited access to AI that actually explains things simply. No jargon, no limits.
+          From casual learner to knowledge enthusiast, we have a plan that fits your curiosity.
         </p>
       </div>
 
       {/* Pricing Cards */}
-      <div className="max-w-5xl mx-auto px-6 pb-24">
-        <div className="grid lg:grid-cols-2 gap-8">
+      <div className="max-w-6xl mx-auto px-6 pb-24">
+        <div className="grid lg:grid-cols-3 gap-8">
           {/* Free Plan */}
           <div className="bg-white rounded-3xl p-8 shadow-xl shadow-gray-900/10 hover:shadow-2xl hover:shadow-gray-900/15 transition-all duration-300 ring-1 ring-gray-900/5">
             <div className="text-center mb-8">
@@ -82,7 +83,7 @@ export default function PricingPage() {
                   <Check className="w-4 h-4 text-white" strokeWidth={3} />
                 </div>
                 <span className="text-gray-700 leading-relaxed">
-                  <strong className="text-gray-900 font-semibold">10 questions per day</strong> — Perfect for trying out
+                  <strong className="text-gray-900 font-semibold">5 questions per day</strong>
                 </span>
               </li>
               <li className="flex items-start gap-3">
@@ -90,7 +91,7 @@ export default function PricingPage() {
                   <Check className="w-4 h-4 text-white" strokeWidth={3} />
                 </div>
                 <span className="text-gray-700 leading-relaxed">
-                  <strong className="text-gray-900 font-semibold">3 simplicity levels</strong> — From 5yo to advanced
+                  <strong className="text-gray-900 font-semibold">All 3 simplicity levels</strong>
                 </span>
               </li>
               <li className="flex items-start gap-3">
@@ -98,7 +99,15 @@ export default function PricingPage() {
                   <Check className="w-4 h-4 text-white" strokeWidth={3} />
                 </div>
                 <span className="text-gray-700 leading-relaxed">
-                  <strong className="text-gray-900 font-semibold">Save conversations</strong> — Access your chat history
+                  <strong className="text-gray-900 font-semibold">Save up to 3 conversations</strong>
+                </span>
+              </li>
+              <li className="flex items-start gap-3">
+                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-green-400 to-emerald-400 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Check className="w-4 h-4 text-white" strokeWidth={3} />
+                </div>
+                <span className="text-gray-700 leading-relaxed">
+                  <strong className="text-gray-900 font-semibold">7-day history</strong>
                 </span>
               </li>
               <li className="flex items-start gap-3">
@@ -106,7 +115,7 @@ export default function PricingPage() {
                   <X className="w-4 h-4 text-gray-400" strokeWidth={3} />
                 </div>
                 <span className="text-gray-500 leading-relaxed">
-                  Daily limit resets at midnight
+                  Voice input
                 </span>
               </li>
               <li className="flex items-start gap-3">
@@ -114,7 +123,7 @@ export default function PricingPage() {
                   <X className="w-4 h-4 text-gray-400" strokeWidth={3} />
                 </div>
                 <span className="text-gray-500 leading-relaxed">
-                  No priority support
+                  Shareable cards
                 </span>
               </li>
             </ul>
@@ -130,10 +139,86 @@ export default function PricingPage() {
             </Link>
           </div>
 
+          {/* Starter Plan */}
+          <div className="bg-white rounded-3xl p-8 shadow-xl shadow-blue-500/20 hover:shadow-2xl hover:shadow-blue-500/30 transition-all duration-300 ring-2 ring-blue-200">
+            <div className="text-center mb-8">
+              <div className="flex items-center justify-center gap-2 mb-3">
+                <Zap className="w-7 h-7 text-blue-600" />
+                <h3 className="text-2xl font-bold text-gray-900">Starter</h3>
+              </div>
+              <div className="mb-4">
+                <span className="text-6xl font-bold text-gray-900">$4.99</span>
+                <span className="text-xl font-normal text-gray-500 ml-2">/month</span>
+              </div>
+              <p className="text-gray-600 leading-relaxed">Perfect for students & casual learners</p>
+            </div>
+
+            <ul className="space-y-4 mb-8">
+              <li className="flex items-start gap-3">
+                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Check className="w-4 h-4 text-white" strokeWidth={3} />
+                </div>
+                <span className="text-gray-700 leading-relaxed">
+                  <strong className="text-gray-900 font-semibold">100 questions per month</strong>
+                </span>
+              </li>
+              <li className="flex items-start gap-3">
+                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Check className="w-4 h-4 text-white" strokeWidth={3} />
+                </div>
+                <span className="text-gray-700 leading-relaxed">
+                  <strong className="text-gray-900 font-semibold">All 3 simplicity levels</strong>
+                </span>
+              </li>
+              <li className="flex items-start gap-3">
+                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Check className="w-4 h-4 text-white" strokeWidth={3} />
+                </div>
+                <span className="text-gray-700 leading-relaxed">
+                  <strong className="text-gray-900 font-semibold">Save up to 50 conversations</strong>
+                </span>
+              </li>
+              <li className="flex items-start gap-3">
+                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Check className="w-4 h-4 text-white" strokeWidth={3} />
+                </div>
+                <span className="text-gray-700 leading-relaxed">
+                  <strong className="text-gray-900 font-semibold">30-day history</strong>
+                </span>
+              </li>
+              <li className="flex items-start gap-3">
+                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Check className="w-4 h-4 text-white" strokeWidth={3} />
+                </div>
+                <span className="text-gray-700 leading-relaxed">
+                  <strong className="text-gray-900 font-semibold">Voice input</strong>
+                </span>
+              </li>
+              <li className="flex items-start gap-3">
+                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Check className="w-4 h-4 text-white" strokeWidth={3} />
+                </div>
+                <span className="text-gray-700 leading-relaxed">
+                  <strong className="text-gray-900 font-semibold">Shareable cards</strong>
+                </span>
+              </li>
+            </ul>
+
+            <Button 
+              size="lg" 
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white text-lg font-bold h-14 hover:scale-105 transition-transform"
+              onClick={() => handleUpgrade('starter')}
+              disabled={isLoading !== null}
+            >
+              {isLoading === 'starter' ? 'Loading...' : 'Choose Starter'}
+            </Button>
+          </div>
+
           {/* Premium Plan */}
           <div className="relative bg-gradient-to-br from-indigo-600 to-violet-600 rounded-3xl p-8 shadow-2xl shadow-indigo-500/30 hover:shadow-indigo-500/40 hover:scale-[1.02] transition-all duration-300">
             {/* Popular Badge */}
-            <div className="absolute -top-3 -right-3 bg-gradient-to-r from-yellow-400 to-orange-400 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg">
+            <div className="absolute -top-3 -right-3 bg-gradient-to-r from-yellow-400 to-orange-400 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg flex items-center gap-1.5">
+              <Sparkles className="w-4 h-4" />
               MOST POPULAR
             </div>
 
@@ -143,10 +228,10 @@ export default function PricingPage() {
                 <h3 className="text-2xl font-bold">Premium</h3>
               </div>
               <div className="mb-4">
-                <span className="text-6xl font-bold">$4.99</span>
+                <span className="text-6xl font-bold">$9.99</span>
                 <span className="text-xl font-normal text-indigo-100 ml-2">/month</span>
               </div>
-              <p className="text-indigo-100 leading-relaxed">Unlimited learning, unlimited questions</p>
+              <p className="text-indigo-100 leading-relaxed">For the endlessly curious</p>
             </div>
 
             <ul className="space-y-4 mb-8 text-white">
@@ -155,7 +240,15 @@ export default function PricingPage() {
                   <Sparkles className="w-4 h-4 text-yellow-300" strokeWidth={2.5} />
                 </div>
                 <span className="text-white leading-relaxed">
-                  <strong className="font-semibold">Unlimited questions</strong> — Ask as much as you want, anytime
+                  <strong className="font-semibold">✨ UNLIMITED questions</strong>
+                </span>
+              </li>
+              <li className="flex items-start gap-3">
+                <div className="w-6 h-6 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Rocket className="w-4 h-4 text-yellow-300" strokeWidth={2.5} />
+                </div>
+                <span className="text-white leading-relaxed">
+                  <strong className="font-semibold">GPT-4o AI model</strong> — Best answers
                 </span>
               </li>
               <li className="flex items-start gap-3">
@@ -163,7 +256,7 @@ export default function PricingPage() {
                   <Zap className="w-4 h-4 text-yellow-300" strokeWidth={2.5} />
                 </div>
                 <span className="text-white leading-relaxed">
-                  <strong className="font-semibold">Priority AI responses</strong> — Faster answers during peak times
+                  <strong className="font-semibold">Priority responses</strong> — Faster answers
                 </span>
               </li>
               <li className="flex items-start gap-3">
@@ -171,15 +264,15 @@ export default function PricingPage() {
                   <Crown className="w-4 h-4 text-yellow-300" strokeWidth={2.5} />
                 </div>
                 <span className="text-white leading-relaxed">
-                  <strong className="font-semibold">Unlimited chat history</strong> — Never lose a conversation
+                  <strong className="font-semibold">Unlimited conversations</strong>
                 </span>
               </li>
               <li className="flex items-start gap-3">
                 <div className="w-6 h-6 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <Shield className="w-4 h-4 text-yellow-300" strokeWidth={2.5} />
+                  <Crown className="w-4 h-4 text-yellow-300" strokeWidth={2.5} />
                 </div>
                 <span className="text-white leading-relaxed">
-                  <strong className="font-semibold">Priority support</strong> — Get help when you need it
+                  <strong className="font-semibold">Permanent history</strong> — Never lose anything
                 </span>
               </li>
               <li className="flex items-start gap-3">
@@ -187,7 +280,15 @@ export default function PricingPage() {
                   <Check className="w-4 h-4 text-yellow-300" strokeWidth={3} />
                 </div>
                 <span className="text-white leading-relaxed">
-                  <strong className="font-semibold">Cancel anytime</strong> — No questions asked
+                  <strong className="font-semibold">Voice input & shareable cards</strong>
+                </span>
+              </li>
+              <li className="flex items-start gap-3">
+                <div className="w-6 h-6 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Shield className="w-4 h-4 text-yellow-300" strokeWidth={2.5} />
+                </div>
+                <span className="text-white leading-relaxed">
+                  <strong className="font-semibold">Priority support</strong>
                 </span>
               </li>
             </ul>
@@ -195,16 +296,23 @@ export default function PricingPage() {
             <Button 
               size="lg" 
               className="w-full bg-white text-indigo-600 hover:bg-gray-50 text-lg font-bold h-14 shadow-xl hover:scale-105 transition-transform"
-              onClick={handleUpgrade}
-              disabled={isLoading}
+              onClick={() => handleUpgrade('premium')}
+              disabled={isLoading !== null}
             >
-              {isLoading ? 'Loading...' : 'Upgrade to Premium'}
+              {isLoading === 'premium' ? 'Loading...' : 'Choose Premium'}
             </Button>
 
             <p className="text-white text-center text-sm mt-4">
               Join hundreds of learners loving Stupify
             </p>
           </div>
+        </div>
+
+        {/* Comparison Note */}
+        <div className="mt-12 text-center">
+          <p className="text-gray-600 text-lg">
+            <strong className="text-gray-900">Not sure which plan?</strong> Start with Starter and upgrade anytime!
+          </p>
         </div>
 
         {/* Money Back Guarantee */}
@@ -231,16 +339,20 @@ export default function PricingPage() {
           <div className="space-y-6">
             {[
               {
+                question: "What's the difference between Starter and Premium?",
+                answer: "Starter gives you 100 questions per month (perfect for homework and occasional learning), while Premium gives you UNLIMITED questions plus better AI (GPT-4o) and permanent conversation history."
+              },
+              {
+                question: "Can I upgrade from Starter to Premium?",
+                answer: "Absolutely! You can upgrade anytime from your account settings. You'll be charged the difference for the remaining days of your billing period."
+              },
+              {
                 question: "Can I cancel anytime?",
-                answer: "Absolutely! Cancel your subscription anytime from your account settings. No hidden fees, no questions asked. You'll keep access until the end of your billing period."
+                answer: "Yes! Cancel your subscription anytime from your account settings. No hidden fees, no questions asked. You'll keep access until the end of your billing period."
               },
               {
                 question: "What happens to my conversations if I downgrade?",
-                answer: "All your conversations stay saved! You just go back to the 10 questions/day limit. You can still view all your old chats anytime."
-              },
-              {
-                question: "Is this really unlimited?",
-                answer: "Yes! Premium users can ask as many questions as they want. No daily limits, no hourly caps, no tricks. Just unlimited learning."
+                answer: "All your conversations stay saved! You just go back to the limits of your new plan. You can still view all your old chats anytime."
               },
               {
                 question: "How does the 30-day guarantee work?",
@@ -248,7 +360,7 @@ export default function PricingPage() {
               },
               {
                 question: "Can I try before I buy?",
-                answer: "Yes! Everyone gets 10 free questions per day. No credit card required to start. Try Stupify out and upgrade when you're ready for unlimited access."
+                answer: "Yes! Everyone gets 5 free questions per day. No credit card required to start. Try Stupify out and upgrade when you're ready."
               }
             ].map((faq, i) => (
               <div key={i} className="bg-white p-8 rounded-2xl shadow-lg shadow-gray-200/50 hover:shadow-xl hover:shadow-indigo-100/50 transition-all duration-300">
@@ -269,16 +381,26 @@ export default function PricingPage() {
               Ready to learn without limits?
             </h2>
             <p className="text-xl lg:text-2xl mb-10 text-indigo-100 leading-relaxed">
-              Join Stupify Premium and never hit a question limit again.
+              Choose the plan that fits your learning style.
             </p>
-            <Button 
-              size="lg" 
-              className="bg-white text-indigo-600 hover:bg-gray-50 text-lg font-bold px-12 h-16 hover:scale-105 transition-transform shadow-2xl"
-              onClick={handleUpgrade}
-              disabled={isLoading}
-            >
-              {isLoading ? 'Loading...' : 'Start Premium Now — $4.99/month'}
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button 
+                size="lg" 
+                className="bg-white text-blue-600 hover:bg-gray-50 text-lg font-bold px-12 h-16 hover:scale-105 transition-transform shadow-2xl"
+                onClick={() => handleUpgrade('starter')}
+                disabled={isLoading !== null}
+              >
+                {isLoading === 'starter' ? 'Loading...' : 'Start with Starter — $4.99'}
+              </Button>
+              <Button 
+                size="lg" 
+                className="bg-white text-indigo-600 hover:bg-gray-50 text-lg font-bold px-12 h-16 hover:scale-105 transition-transform shadow-2xl"
+                onClick={() => handleUpgrade('premium')}
+                disabled={isLoading !== null}
+              >
+                {isLoading === 'premium' ? 'Loading...' : 'Go Premium — $9.99'}
+              </Button>
+            </div>
           </div>
         </div>
       </div>

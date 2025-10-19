@@ -264,7 +264,13 @@ export function ChatInterface() {
       </div>
 
       {/* Paywall Modal */}
-      {usage.showPaywall && usage.usage && <Paywall limit={usage.usage.limit} />}
+      {usage.showPaywall && usage.usage && (
+        <Paywall 
+          tier={usage.usage.tier}
+          limit={usage.usage.limit}
+          limitType={usage.usage.tier === 'free' ? 'daily' : 'monthly'}
+        />
+      )}
 
       {/* Header */}
       <ChatHeader 

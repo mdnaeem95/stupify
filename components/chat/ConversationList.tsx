@@ -27,7 +27,7 @@ export function ConversationList({
   const [usage, setUsage] = useState<UsageData | null>(null);
 
   useEffect(() => {
-    console.log('🔄 ConversationList: Refresh triggered', { refreshTrigger })
+    console.log('🔄 ConversationList: Refresh triggered', { refreshTrigger });
     loadConversations();
     loadUsage();
   }, [refreshTrigger]);
@@ -38,7 +38,7 @@ export function ConversationList({
   };
 
   const loadConversations = async () => {
-    console.log('📋 ConversationList: Starting to load conversations')
+    console.log('📋 ConversationList: Starting to load conversations');
     setIsLoading(true);
     setError(null);
     
@@ -46,11 +46,11 @@ export function ConversationList({
       const convos = await getUserConversations();
       console.log('✅ ConversationList: Loaded conversations', { 
         count: convos.length,
-        conversations: convos.map(c => ({ id: c.id, title: c.title }))
-      })
+        conversations: convos.map(c => ({ id: c.id, title: c.title })),
+      });
       setConversations(convos);
     } catch (err) {
-      console.error('❌ ConversationList: Error loading conversations', err)
+      console.error('❌ ConversationList: Error loading conversations', err);
       setError('Failed to load conversations. Please refresh the page.');
     } finally {
       setIsLoading(false);
@@ -60,32 +60,32 @@ export function ConversationList({
   const handleDelete = async (conversationId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     
-    console.log('🗑️ ConversationList: Delete requested', { conversationId })
+    console.log('🗑️ ConversationList: Delete requested', { conversationId });
     
     if (!confirm('Delete this conversation?')) {
-      console.log('❌ ConversationList: Delete cancelled by user')
-      return
+      console.log('❌ ConversationList: Delete cancelled by user');
+      return;
     }
     
-    console.log('🗑️ ConversationList: Deleting conversation...')
+    console.log('🗑️ ConversationList: Deleting conversation...');
     const success = await deleteConversation(conversationId);
     
     if (success) {
-      console.log('✅ ConversationList: Conversation deleted successfully')
+      console.log('✅ ConversationList: Conversation deleted successfully');
       setConversations(conversations.filter(c => c.id !== conversationId));
       
       if (currentConversationId === conversationId) {
-        console.log('🆕 ConversationList: Current conversation deleted, creating new chat')
+        console.log('🆕 ConversationList: Current conversation deleted, creating new chat');
         onNewChat();
       }
     } else {
-      console.error('❌ ConversationList: Failed to delete conversation')
+      console.error('❌ ConversationList: Failed to delete conversation');
       setError('Failed to delete conversation. Please try again.');
     }
   };
 
   if (isLoading) {
-    console.log('⏳ ConversationList: Showing loading state')
+    console.log('⏳ ConversationList: Showing loading state');
     return (
       <div className="flex flex-col h-full bg-gray-50">
         <div className="p-4">
@@ -102,7 +102,7 @@ export function ConversationList({
   }
 
   if (error) {
-    console.error('⚠️ ConversationList: Showing error state', { error })
+    console.error('⚠️ ConversationList: Showing error state', { error });
     return (
       <div className="flex flex-col h-full bg-gray-50">
         <div className="p-4">
@@ -128,8 +128,8 @@ export function ConversationList({
 
   console.log('📋 ConversationList: Rendering', { 
     conversationCount: conversations.length,
-    currentConversationId 
-  })
+    currentConversationId,
+  });
 
   return (
     <div className="flex flex-col h-full bg-gray-50">
@@ -148,8 +148,8 @@ export function ConversationList({
         </div>
         <Button
           onClick={() => {
-            console.log('🆕 ConversationList: New Chat button clicked')
-            onNewChat()
+            console.log('🆕 ConversationList: New Chat button clicked');
+            onNewChat();
           }}
           className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-semibold shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30 transition-all duration-200 rounded-xl h-11 text-sm"
         >
@@ -183,9 +183,9 @@ export function ConversationList({
                 onClick={() => {
                   console.log('🎯 ConversationList: Conversation selected', { 
                     conversationId: conversation.id,
-                    title: conversation.title 
-                  })
-                  onSelectConversation(conversation.id)
+                    title: conversation.title,
+                  });
+                  onSelectConversation(conversation.id);
                 }}
                 className={`group relative rounded-xl transition-all duration-200 cursor-pointer ${
                   currentConversationId === conversation.id
@@ -233,9 +233,11 @@ export function ConversationList({
           {usage && (
             <div className="flex justify-center">
               <UsageBadge 
-                remaining={usage.remaining} 
-                limit={usage.limit} 
-                isPremium={usage.isPremium}
+                tier={usage.tier}
+                dailyRemaining={usage.dailyRemaining}
+                dailyLimit={usage.dailyLimit}
+                monthlyRemaining={usage.monthlyRemaining}
+                monthlyLimit={usage.monthlyLimit}
               />
             </div>
           )}
