@@ -42,7 +42,7 @@ export function UsageBadge({
     
     // Determine color based on remaining questions
     let bgColor = 'bg-blue-100 text-blue-800 border-blue-300';
-    let icon = <Zap className="w-4 h-4" />;
+    const icon = <Zap className="w-4 h-4" />;
     
     if (percentage >= 90) {
       bgColor = 'bg-red-100 text-red-800 border-red-300';
