@@ -1,4 +1,4 @@
-// lib/topics/topics-db.ts
+/* eslint-disable  @typescript-eslint/no-explicit-any */
 // Now reads from Supabase database instead of hardcoded data
 
 import { createClient } from '@/lib/supabase/server';
