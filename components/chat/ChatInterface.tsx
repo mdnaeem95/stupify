@@ -1,3 +1,4 @@
+// components/chat/ChatInterface.tsx
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
@@ -8,6 +9,7 @@ import { Loader2 } from 'lucide-react';
 import { SimplicityLevel } from '@/lib/prompts';
 import { detectConfusion, getRetryInstructions } from '@/lib/confusion-detector';
 import { Paywall } from '@/components/usage/Paywall';
+import { createClient } from '@/lib/supabase/client';
 
 // Custom Hooks
 import { useConversation } from '../../hooks/useConversation';
@@ -39,6 +41,7 @@ export function ChatInterface() {
   const [input, setInput] = useState('');
   const [simplicityLevel, setSimplicityLevel] = useState<SimplicityLevel>('normal');
   const [, setIsRetrying] = useState(false);
+  const [userTier, setUserTier] = useState<'free' | 'starter' | 'premium'>('free'); // NEW
 
   const [confusionRetry, setConfusionRetry] = useState(false);
   const [retryInstructions, setRetryInstructions] = useState<string | null>(null);
@@ -82,13 +85,48 @@ export function ChatInterface() {
     }
   };
 
+  // NEW: Fetch user tier on mount
+  useEffect(() => {
+    const fetchUserTier = async () => {
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) return;
+
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('subscription_tier')
+          .eq('id', user.id)
+          .single();
+
+        if (profile?.subscription_tier) {
+          setUserTier(profile.subscription_tier as 'free' | 'starter' | 'premium');
+        }
+      } catch (error) {
+        console.error('Failed to fetch user tier:', error);
+      }
+    };
+
+    fetchUserTier();
+
+    const handleSubscriptionChange = () => {
+      fetchUserTier();
+    };
+
+    window.addEventListener('subscriptionUpdated', handleSubscriptionChange);
+
+    return () => {
+      window.removeEventListener('subscriptionUpdated', handleSubscriptionChange);
+    };
+  }, []);
+
   // AI SDK v5 useChat
   const { messages, sendMessage, status, setMessages } = useChat({
     transport: new DefaultChatTransport({
       api: '/api/chat',
       body: () => ({
         simplicityLevel,
-        // ✅ Include confusion state in the body
         confusionRetry,
         retryInstructions,
       }),
@@ -116,17 +154,16 @@ export function ChatInterface() {
 
   const getIsLoading = () => {
     if (status === 'submitted') {
-      return true; // Waiting for response to start
+      return true;
     }
     
     if (status === 'streaming') {
-      // Check if the last assistant message has content
       const lastMessage = messages[messages.length - 1];
       if (lastMessage && lastMessage.role === 'assistant') {
         const content = extractMessageText(lastMessage);
-        return content.length === 0; // Only show if empty
+        return content.length === 0;
       }
-      return true; // No assistant message yet
+      return true;
     }
     
     return false;
@@ -207,7 +244,7 @@ export function ChatInterface() {
     const canAsk = await usage.checkCanAsk();
     if (!canAsk) return;
 
-    // ✅ Detect confusion
+    // Detect confusion
     const confusionSignal = detectConfusion(userMessage, lastUserQuestionRef.current);
 
     if (confusionSignal.isConfused && confusionSignal.confidence > 0.7) {
@@ -215,17 +252,14 @@ export function ChatInterface() {
 
       const { newLevel, instructions } = getRetryInstructions(confusionSignal, simplicityLevel);
 
-      // Update level if needed
       if (newLevel !== simplicityLevel) {
         setSimplicityLevel(newLevel);
       }
 
-      // Set confusion state - this will be included in the next request via body()
       setConfusionRetry(true);
       setRetryInstructions(instructions);
       setIsRetrying(true);
     } else {
-      // Normal message - clear any previous confusion state
       setConfusionRetry(false);
       setRetryInstructions(null);
       setIsRetrying(false);
@@ -257,7 +291,7 @@ export function ChatInterface() {
 
   return (
     <div className="flex flex-col h-screen bg-white">
-      {/* Ambient Background Glow - Subtle gradient that doesn't overpower */}
+      {/* Ambient Background Glow */}
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-gradient-to-br from-indigo-500/5 to-violet-500/5 blur-3xl rounded-full" />
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-gradient-to-br from-violet-500/5 to-purple-500/5 blur-3xl rounded-full" />
@@ -279,7 +313,7 @@ export function ChatInterface() {
         isMobile={isMobile} 
       />
 
-      {/* Messages Area - Clean white background */}
+      {/* Messages Area */}
       <div 
         className="flex-1 overflow-y-auto overscroll-contain relative"
         style={{
@@ -331,7 +365,7 @@ export function ChatInterface() {
         />
       )}
 
-      {/* Input Area */}
+      {/* Input Area - UPDATED to pass userTier */}
       <ChatInput
         input={input}
         onInputChange={setInput}
@@ -347,6 +381,7 @@ export function ChatInterface() {
         triggerHaptic={triggerHaptic}
         voiceState={voice}
         onVoiceClick={handleVoiceClick}
+        userTier={userTier} // NEW: Pass user tier
       />
 
       <RecordingIndicator
