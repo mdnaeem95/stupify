@@ -348,6 +348,7 @@ export function ChatInterface() {
               simplicityLevel={simplicityLevel}
               isMobile={isMobile}
               triggerHaptic={triggerHaptic}
+              userTier={userTier}
             />
           )}
         </div>

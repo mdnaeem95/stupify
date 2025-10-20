@@ -18,6 +18,7 @@ interface ChatMessagesProps {
   simplicityLevel: SimplicityLevel;
   isMobile?: boolean;
   triggerHaptic?: (type?: 'light' | 'medium' | 'heavy') => void;
+  userTier?: 'free' | 'starter' | 'premium';
 }
 
 export function ChatMessages({
@@ -31,7 +32,8 @@ export function ChatMessages({
   conversationId,
   simplicityLevel,
   isMobile,
-  triggerHaptic
+  triggerHaptic,
+  userTier = 'free'
 }: ChatMessagesProps) {
   return (
     <>
@@ -64,6 +66,7 @@ export function ChatMessages({
               previousUserMessage={previousUserMessage}
               isMobile={isMobile}
               triggerHaptic={triggerHaptic}
+              userTier={userTier}
             />
           );
         })}

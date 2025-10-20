@@ -1,10 +1,12 @@
+// components/chat/MessageBubble.tsx
 'use client';
 
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
-import { Sparkles, User, Share2 } from 'lucide-react';
+import { Sparkles, User, Share2, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ShareModal } from '@/components/shareable/ShareModal';
+import { ShareUpgradeModal } from '@/components/shareable/ShareUpgradeModal';
 import { AnalogyRating } from './AnalogyRatings';
 import { SimplicityLevel } from '@/lib/prompts-v2';
 
@@ -18,6 +20,7 @@ interface MessageBubbleProps {
   onRate?: (messageId: string, rating: 'up' | 'down') => void;
   isMobile?: boolean;
   triggerHaptic?: (type?: 'light' | 'medium' | 'heavy') => void;
+  userTier?: 'free' | 'starter' | 'premium'; // NEW
 }
 
 export function MessageBubble({ 
@@ -29,15 +32,27 @@ export function MessageBubble({
   previousUserMessage,
   onRate,
   isMobile,
-  triggerHaptic
+  triggerHaptic,
+  userTier = 'free', // NEW
 }: MessageBubbleProps) {
   const isUser = role === 'user';
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false); // NEW
   const [isSaving, setIsSaving] = useState(false);
   const [savedExplanationId, setSavedExplanationId] = useState<string | null>(null);
 
+  // Check if sharing is locked
+  const isShareLocked = userTier === 'free'; // NEW
+
   const handleShareClick = async () => {
     if (!previousUserMessage || !messageId) return;
+    
+    // Show upgrade modal for free users
+    if (isShareLocked) {
+      setShowUpgradeModal(true);
+      if (isMobile && triggerHaptic) triggerHaptic('medium');
+      return;
+    }
     
     setIsSaving(true);
     try {
@@ -115,26 +130,50 @@ export function MessageBubble({
             `}>
               {/* Share Button */}
               {previousUserMessage && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    handleShareClick();
-                    if (isMobile && triggerHaptic) triggerHaptic('light');
-                  }}
-                  disabled={isSaving}
-                  className={`text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 transition-colors font-medium min-h-[44px] min-w-[44px] ${isMobile ? 'w-full justify-center' : ''}`}
-                >
-                  <Share2 className="w-4 h-4 mr-2" strokeWidth={2} />
-                  {isSaving ? 'Saving...' : 'Share'}
-                </Button>
+                <div className="relative group/share">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      handleShareClick();
+                      if (isMobile && triggerHaptic) triggerHaptic('light');
+                    }}
+                    disabled={isSaving}
+                    className={cn(
+                      'transition-colors font-medium min-h-[44px] min-w-[44px]',
+                      isMobile ? 'w-full justify-center' : '',
+                      isShareLocked 
+                        ? 'text-gray-400 hover:text-gray-600 hover:bg-gray-50' 
+                        : 'text-gray-600 hover:text-indigo-600 hover:bg-indigo-50'
+                    )}
+                  >
+                    {isShareLocked ? (
+                      <>
+                        <Lock className="w-4 h-4 mr-2" strokeWidth={2} />
+                        Share (Upgrade)
+                      </>
+                    ) : (
+                      <>
+                        <Share2 className="w-4 h-4 mr-2" strokeWidth={2} />
+                        {isSaving ? 'Saving...' : 'Share'}
+                      </>
+                    )}
+                  </Button>
+                  
+                  {/* Tooltip for locked state - desktop only */}
+                  {isShareLocked && !isMobile && (
+                    <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-xs font-medium px-3 py-2 rounded-xl whitespace-nowrap opacity-0 group-hover/share:opacity-100 transition-opacity pointer-events-none shadow-xl z-10">
+                      🔒 Upgrade to share
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           )}
         </div>
       </div>
 
-      {/* AnalogyRating - Keep existing functionality */}
+      {/* AnalogyRating */}
       {role === 'assistant' && messageId && onRate && (
         <div className={isMobile ? 'w-full' : ''}>
           <AnalogyRating
@@ -148,8 +187,8 @@ export function MessageBubble({
         </div>
       )}
 
-      {/* Share Modal */}
-      {showShareModal && previousUserMessage && (
+      {/* Share Modal - for paid users */}
+      {showShareModal && previousUserMessage && !isShareLocked && (
         <ShareModal
           isOpen={showShareModal}
           onClose={() => setShowShareModal(false)}
@@ -159,6 +198,12 @@ export function MessageBubble({
           explanationId={savedExplanationId || undefined}
         />
       )}
+
+      {/* Share Upgrade Modal - for free users */}
+      <ShareUpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+      />
     </>
   );
 }
