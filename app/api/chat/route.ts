@@ -3,19 +3,15 @@ import { convertToModelMessages } from 'ai';
 import { getSystemPromptV3, SimplicityLevel } from '@/lib/prompts-v3';
 import { createClient } from '@/lib/supabase/server';
 import { createClientWithToken } from '@/lib/supabase/server-api';
-import { getUserProfile } from '@/lib/get-user-profile';
-import { extractTopics, getPersonalizedAnalogyPrompt } from '@/lib/user-profiler';
 import { updateUserStreak } from '@/lib/gamification/streak-tracker';
 import { updateDailyStats } from '@/lib/gamification/learning-stats';
 import { checkAllAchievements } from '@/lib/gamification/achievement-checker';
-import { 
-  ClaudeModel,
-  getABTestProvider, 
-  getModelForTier, 
-  OpenAIModel, 
-  streamAIResponse,
-  type AIProvider 
-} from '@/lib/ai-providers';
+import { ClaudeModel, getABTestProvider, getModelForTier, OpenAIModel, streamAIResponse, type AIProvider } from '@/lib/ai-providers';
+
+import { extractTopics } from '@/lib/personalization/topic-extractor';
+import { getPersonalizationContext, isNewUser } from '@/lib/personalization/context-injector';
+import { createPersonalizedPrompt } from '@/lib/personalization/personalized-prompts';
+import { updateKnowledgeGraph } from '@/lib/personalization/knowledge-updater';
 
 // Rate limiting
 import {
@@ -28,11 +24,9 @@ import {
   createRateLimitResponse,
 } from '@/lib/rate-limit';
 
-// ⭐ Caching
-import {
-  getCachedResponse,
-  setCachedResponse,
-} from '@/lib/cache/cache-manager';
+// Caching
+import { getCachedResponse, setCachedResponse } from '@/lib/cache/cache-manager';
+import { extractMessageText } from '@/lib/utils';
 
 export const maxDuration = 30;
 
@@ -73,7 +67,8 @@ export async function POST(req: Request) {
       simplicityLevel, 
       source,
       confusionRetry = false,
-      retryInstructions = null
+      retryInstructions = null,
+      conversationId = null // ⭐ NEW: Get conversation ID from request
     } = body;
     
     console.error('[CHAT] 📝 Parsed body:', {
@@ -94,18 +89,18 @@ export async function POST(req: Request) {
     const isExtension = source === 'extension';
 
     // ============================================================================
-    // STEP 3: EXTRACT USER QUESTION (FOR CACHING)
+    // STEP 3: EXTRACT USER QUESTION (FOR CACHING & PERSONALIZATION)
     // ============================================================================
     
     let userQuestion = '';
-    
+
     if (isExtension) {
       const lastUserMessage = messages.filter((m: any) => m?.role === 'user').pop();
       userQuestion = lastUserMessage?.content || '';
     } else {
       const userMessages = messages.filter((m: any) => m?.role === 'user');
       const lastUserMessage = userMessages[userMessages.length - 1];
-      userQuestion = lastUserMessage?.content || '';
+      userQuestion = extractMessageText(lastUserMessage);
     }
     
     console.error('[CHAT] 💬 User question:', userQuestion.substring(0, 50) + '...');
@@ -125,7 +120,6 @@ export async function POST(req: Request) {
         
         const responseTime = Date.now() - startTime;
         
-        // ⭐ IMPORTANT: Return in UI Message format for web, text for extension
         if (isExtension) {
           return new Response(cachedResult.response, {
             status: 200,
@@ -140,12 +134,9 @@ export async function POST(req: Request) {
             }
           });
         } else {
-          // Web UI needs AI SDK format
-          // Create a minimal UI message stream
           const encoder = new TextEncoder();
           const stream = new ReadableStream({
             start(controller) {
-              // Send the cached response in AI SDK format
               const uiMessage = `0:${JSON.stringify(cachedResult.response)}\n`;
               controller.enqueue(encoder.encode(uiMessage));
               controller.close();
@@ -173,10 +164,10 @@ export async function POST(req: Request) {
     // ============================================================================
     // STEP 5: AUTHENTICATE USER
     // ============================================================================
-    
+
     let user = null;
     let supabaseClient = null;
-    
+
     try {
       console.error('[CHAT] 🔐 Attempting authentication...');
       
@@ -203,6 +194,18 @@ export async function POST(req: Request) {
     } catch (authError) {
       console.error('[CHAT] ⚠️ Auth error:', authError);
     }
+
+    // ⭐ ADD THIS DEBUG BLOCK HERE
+    console.error('[CHAT] 🔍 PRE-PERSONALIZATION DEBUG:', {
+      hasUser: !!user,
+      userId: user?.id?.slice(0, 8),
+      userEmail: user?.email,
+      hasQuestion: !!userQuestion,
+      questionLength: userQuestion?.length,
+      questionPreview: userQuestion?.substring(0, 100),
+      isExtension,
+      messageCount: messages?.length,
+    });
     
     // ============================================================================
     // STEP 6: USER-SPECIFIC RATE LIMITING
@@ -267,7 +270,7 @@ export async function POST(req: Request) {
     });
     
     // ============================================================================
-    // STEP 7: BUILD SYSTEM PROMPT
+    // STEP 7: BUILD BASE SYSTEM PROMPT
     // ============================================================================
     
     console.error('[CHAT] 📄 Building system prompt...');
@@ -279,23 +282,56 @@ export async function POST(req: Request) {
     }
 
     // ============================================================================
-    // STEP 8: PERSONALIZATION
+    // STEP 8: ⭐ NEW PERSONALIZATION ENGINE
     // ============================================================================
     
-    if (user) {
-      try {
-        const profile = await getUserProfile(user.id);
-        
-        if (profile && Array.isArray(profile.knownTopics) && profile.knownTopics.length > 0) {
-          if (userQuestion) {
-            const topics = extractTopics(userQuestion);
-            const currentTopic = topics[0] || '';
-            const personalizedAddition = getPersonalizedAnalogyPrompt(profile, currentTopic);
-            systemPrompt += personalizedAddition;
-            console.error('[CHAT] 🎯 Added personalization');
-          }
-        }
+    console.error('[CHAT] 🔍 PERSONALIZATION GATE CHECK:', { 
+      hasUser: !!user, 
+      hasQuestion: !!userQuestion,
+      willRunPersonalization: !!(user && userQuestion),
+      questionLength: userQuestion?.length,
+      questionPreview: userQuestion?.substring(0, 50)
+    });
 
+    let extractedTopics: string[] = [];
+    
+    if (user && userQuestion) {
+      try {
+        console.error('[CHAT] 🎯 Starting personalization engine...');
+        
+        // 1. Extract topics from question
+        const topicResult = await extractTopics(userQuestion);
+        extractedTopics = topicResult.topics;
+        
+        console.error('[CHAT] 📚 Extracted topics:', {
+          topics: extractedTopics,
+          confidence: topicResult.confidence,
+          fallback: topicResult.fallbackUsed
+        });
+        
+        // 2. Check if new user
+        const userIsNew = await isNewUser(user.id);
+        
+        // 3. Get personalization context
+        const context = await getPersonalizationContext(user.id, extractedTopics);
+        
+        console.error('[CHAT] 🧠 Personalization context loaded:', {
+          knownTopics: context.knownTopics.length,
+          hasLearningStyle: !!context.learningStyle,
+          struggles: context.recentStruggles.length,
+          memories: context.crossConversationMemories.length,
+          totalQuestions: context.stats.totalQuestions
+        });
+        
+        // 4. Create personalized prompt
+        if (context.knownTopics.length > 0 || context.learningStyle) {
+          systemPrompt = createPersonalizedPrompt(systemPrompt, context, level);
+          console.error('[CHAT] ✨ Personalized prompt injected');
+        } else {
+          console.error('[CHAT] ℹ️ No personalization data available');
+        }
+        
+        // 5. Run gamification in background (non-blocking)
         Promise.all([
           updateUserStreak(user.id),
           updateDailyStats(user.id, undefined, level, false, false),
@@ -303,8 +339,10 @@ export async function POST(req: Request) {
         ]).catch((gamError) => {
           console.error('[CHAT] ⚠️ Gamification error:', gamError);
         });
-      } catch (profileError) {
-        console.error('[CHAT] ⚠️ Personalization error:', profileError);
+        
+      } catch (personalizationError) {
+        console.error('[CHAT] ⚠️ Personalization error:', personalizationError);
+        // Continue without personalization
       }
     }
 
@@ -333,16 +371,36 @@ export async function POST(req: Request) {
     console.error('[CHAT] ✅ Stream result received');
 
     // ============================================================================
-    // STEP 10: CACHE THE RESPONSE IN BACKGROUND
+    // STEP 10: ⭐ UPDATE KNOWLEDGE GRAPH IN BACKGROUND
     // ============================================================================
     
-    // For caching, we'll collect the full response after streaming
-    // We'll do this by tee-ing the stream
+    if (user && extractedTopics.length > 0 && userQuestion) {
+      // Get conversation ID from messages or create placeholder
+      const conversationId = 'temp-' + Date.now(); // You'll replace this with actual conversation ID
+      
+      // Update knowledge graph in background (non-blocking)
+      updateKnowledgeGraph({
+        userId: user.id,
+        topics: extractedTopics,
+        conversationId: conversationId,
+        question: userQuestion,
+        wasConfused: confusionRetry,
+        analogyHelpful: false, // Will be updated later via rating endpoint
+      }).catch((error) => {
+        console.error('[CHAT] ⚠️ Knowledge graph update error:', error);
+      });
+      
+      console.error('[CHAT] 📊 Knowledge graph update queued');
+    }
+
+    // ============================================================================
+    // STEP 11: CACHE THE RESPONSE IN BACKGROUND
+    // ============================================================================
+    
     const textResponse = isExtension 
       ? result.toTextStreamResponse()
       : result.toUIMessageStreamResponse();
     
-    // Clone the response body to read it for caching
     if (!confusionRetry && userQuestion && textResponse.body) {
       const [stream1, stream2] = textResponse.body.tee();
       
@@ -359,10 +417,7 @@ export async function POST(req: Request) {
             
             const chunk = decoder.decode(value, { stream: true });
             
-            // For UI message stream, extract just the text content
             if (!isExtension) {
-              // AI SDK format is like: 0:"text content"\n
-              // We need to parse it to get the actual text
               const lines = chunk.split('\n');
               for (const line of lines) {
                 if (line.startsWith('0:')) {
@@ -370,7 +425,6 @@ export async function POST(req: Request) {
                     const content = JSON.parse(line.substring(2));
                     fullResponse += content;
                   } catch (e) {
-                    // If parsing fails, just append the raw chunk
                     fullResponse += chunk;
                   }
                 }
@@ -380,7 +434,6 @@ export async function POST(req: Request) {
             }
           }
           
-          // Cache the complete response
           if (fullResponse) {
             console.error('[CHAT] 💾 Caching response:', {
               questionLength: userQuestion.length,
@@ -399,11 +452,9 @@ export async function POST(req: Request) {
           }
         } catch (error) {
           console.error('[CHAT] ⚠️ Error caching response:', error);
-          // Don't fail the request
         }
       })();
       
-      // Return stream2 to the client
       const responseTime = Date.now() - startTime;
       
       const response = new Response(stream2, {
@@ -416,6 +467,7 @@ export async function POST(req: Request) {
           'X-Is-Premium': isPremium.toString(),
           'X-RateLimit-Limit': userCheck.limit.toString(),
           'X-RateLimit-Remaining': userCheck.remaining.toString(),
+          'X-Personalized': (extractedTopics.length > 0).toString(),
         }
       });
 
@@ -423,7 +475,7 @@ export async function POST(req: Request) {
       return response;
     }
 
-    // If not caching (confusion retry or no question), just return the stream
+    // If not caching, just return the stream
     const responseTime = Date.now() - startTime;
     
     const response = textResponse;
@@ -434,6 +486,7 @@ export async function POST(req: Request) {
     response.headers.set('X-Is-Premium', isPremium.toString());
     response.headers.set('X-RateLimit-Limit', userCheck.limit.toString());
     response.headers.set('X-RateLimit-Remaining', userCheck.remaining.toString());
+    response.headers.set('X-Personalized', (extractedTopics.length > 0).toString());
 
     console.error('[CHAT] ✅ Response ready (no caching)');
     return response;

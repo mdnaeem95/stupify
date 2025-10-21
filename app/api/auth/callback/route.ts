@@ -5,24 +5,28 @@ export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get('code');
 
+  console.log('🔐 Auth callback received:', { code: code ? '✅' : '❌' });
+
   if (code) {
     const supabase = await createClient();
     
     // Exchange the code for a session
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
     
     if (!error) {
-      // Sign the user out after email verification
-      // They need to sign in with their password
-      await supabase.auth.signOut();
+      console.log('✅ Email verified for:', data.user?.email);
       
-      // Redirect to login page with success message
+      // ✅ Keep them logged in and redirect to chat
       return NextResponse.redirect(
-        new URL(`/login?verified=true`, requestUrl.origin)
+        new URL('/chat', requestUrl.origin)
       );
     }
+    
+    console.error('❌ Code exchange failed:', error);
   }
 
   // If there's an error or no code, redirect to login
-  return NextResponse.redirect(new URL('/login?error=verification_failed', requestUrl.origin));
+  return NextResponse.redirect(
+    new URL('/login?error=verification_failed', requestUrl.origin)
+  );
 }

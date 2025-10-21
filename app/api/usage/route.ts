@@ -3,19 +3,13 @@ import { convertToModelMessages } from 'ai';
 import { getSystemPromptV3, SimplicityLevel } from '@/lib/prompts-v3';
 import { createClient } from '@/lib/supabase/server';
 import { createClientWithToken } from '@/lib/supabase/server-api';
-import { getUserProfile } from '@/lib/get-user-profile';
-import { extractTopics, getPersonalizedAnalogyPrompt } from '@/lib/user-profiler';
 import { updateUserStreak } from '@/lib/gamification/streak-tracker';
 import { updateDailyStats } from '@/lib/gamification/learning-stats';
 import { checkAllAchievements } from '@/lib/gamification/achievement-checker';
-import { 
-  ClaudeModel,
-  getABTestProvider, 
-  getModelForTier, 
-  OpenAIModel, 
-  streamAIResponse,
-  type AIProvider 
-} from '@/lib/ai-providers';
+import { ClaudeModel, getABTestProvider, getModelForTier, OpenAIModel, streamAIResponse, type AIProvider } from '@/lib/ai-providers';
+import { extractTopics } from '@/lib/personalization/topic-extractor';
+import { getPersonalizationContext, isNewUser } from '@/lib/personalization/context-injector';
+import { createPersonalizedPrompt } from '@/lib/personalization/personalized-prompts';
 
 // Three-tier pricing
 import { 
@@ -79,14 +73,16 @@ export async function POST(req: Request) {
       simplicityLevel, 
       source,
       confusionRetry = false,
-      retryInstructions = null
+      retryInstructions = null,
+      conversationId = null
     } = body;
     
     console.error('[CHAT] 📝 Parsed body:', {
       messageCount: messages?.length,
       level: simplicityLevel,
       source,
-      confusionRetry
+      confusionRetry,
+      conversationId 
     });
     
     if (!messages || !Array.isArray(messages)) {
@@ -360,23 +356,48 @@ export async function POST(req: Request) {
     }
 
     // ============================================================================
-    // STEP 10: PERSONALIZATION
+    // STEP 10: ⭐ NEW PERSONALIZATION ENGINE
     // ============================================================================
-    
-    if (user) {
-      try {
-        const profile = await getUserProfile(user.id);
-        
-        if (profile && Array.isArray(profile.knownTopics) && profile.knownTopics.length > 0) {
-          if (userQuestion) {
-            const topics = extractTopics(userQuestion);
-            const currentTopic = topics[0] || '';
-            const personalizedAddition = getPersonalizedAnalogyPrompt(profile, currentTopic);
-            systemPrompt += personalizedAddition;
-            console.error('[CHAT] 🎯 Added personalization');
-          }
-        }
 
+    let extractedTopics: string[] = [];
+
+    if (user && userQuestion) {
+      try {
+        console.error('[CHAT] 🎯 Starting personalization engine...');
+        
+        // 1. Extract topics from question
+        const topicResult = await extractTopics(userQuestion);
+        extractedTopics = topicResult.topics;
+        
+        console.error('[CHAT] 📚 Extracted topics:', {
+          topics: extractedTopics,
+          confidence: topicResult.confidence,
+          fallback: topicResult.fallbackUsed
+        });
+        
+        // 2. Check if new user
+        const userIsNew = await isNewUser(user.id);
+        
+        // 3. Get personalization context
+        const context = await getPersonalizationContext(user.id, extractedTopics);
+        
+        console.error('[CHAT] 🧠 Personalization context loaded:', {
+          knownTopics: context.knownTopics.length,
+          hasLearningStyle: !!context.learningStyle,
+          struggles: context.recentStruggles.length,
+          memories: context.crossConversationMemories.length,
+          totalQuestions: context.stats.totalQuestions
+        });
+        
+        // 4. Create personalized prompt
+        if (context.knownTopics.length > 0 || context.learningStyle) {
+          systemPrompt = createPersonalizedPrompt(systemPrompt, context, level);
+          console.error('[CHAT] ✨ Personalized prompt injected');
+        } else {
+          console.error('[CHAT] ℹ️ No personalization data available');
+        }
+        
+        // 5. Run gamification in background (non-blocking)
         Promise.all([
           updateUserStreak(user.id),
           updateDailyStats(user.id, undefined, level, false, false),
@@ -384,8 +405,10 @@ export async function POST(req: Request) {
         ]).catch((gamError) => {
           console.error('[CHAT] ⚠️ Gamification error:', gamError);
         });
-      } catch (profileError) {
-        console.error('[CHAT] ⚠️ Personalization error:', profileError);
+        
+      } catch (personalizationError) {
+        console.error('[CHAT] ⚠️ Personalization error:', personalizationError);
+        // Continue without personalization
       }
     }
 

@@ -57,12 +57,12 @@ export async function GET(request: NextRequest) {
     
     const { data: usageData } = await supabase
       .from('daily_usage')
-      .select('question_count')
+      .select('question_count') // ✅ CORRECT - matches database schema
       .eq('user_id', user.id)
       .eq('date', today)
       .single();
     
-    const chatUsed = usageData?.question_count || 0;
+    const chatUsed = usageData?.question_count || 0; // ✅ CORRECT
     
     // Voice usage would need a separate tracking table
     // For now, we'll return estimated values

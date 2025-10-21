@@ -60,8 +60,7 @@ export function ChatInterface() {
   const { triggerHaptic } = useHapticFeedback();
   const gamification = useGamificationNotifications();
   const { trackQuestion } = useQuestionTracking();
-  
-  // Voice input hook
+
   const voice = useVoiceInput({
     onTranscript: (text) => {
       setInput((prev) => {
@@ -85,7 +84,6 @@ export function ChatInterface() {
     }
   };
 
-  // NEW: Fetch user tier on mount
   useEffect(() => {
     const fetchUserTier = async () => {
       try {
@@ -126,6 +124,7 @@ export function ChatInterface() {
     transport: new DefaultChatTransport({
       api: '/api/chat',
       body: () => ({
+        conversationId: conversation.conversationIdRef.current,
         simplicityLevel,
         confusionRetry,
         retryInstructions,

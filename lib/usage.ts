@@ -108,12 +108,12 @@ export async function getUserUsage(): Promise<UsageData> {
   
   const { data: usage } = await supabase
     .from('daily_usage')
-    .select('questions_asked')
+    .select('question_count') // ⭐ FIXED: was questions_asked
     .eq('user_id', user.id)
     .eq('date', today)
     .single();
 
-  const dailyUsed = usage?.questions_asked || 0;
+  const dailyUsed = usage?.question_count || 0; // ⭐ FIXED: was questions_asked
 
   // Calculate based on tier
   if (tier === 'premium') {
@@ -226,7 +226,7 @@ export async function incrementUsage(): Promise<boolean> {
   // 1. Increment daily usage (for all tiers, for analytics)
   const { data: existing } = await supabase
     .from('daily_usage')
-    .select('id, questions_asked')
+    .select('id, question_count') // ⭐ FIXED: was questions_asked
     .eq('user_id', user.id)
     .eq('date', today)
     .single();
@@ -234,7 +234,7 @@ export async function incrementUsage(): Promise<boolean> {
   if (existing) {
     const { error } = await supabase
       .from('daily_usage')
-      .update({ questions_asked: existing.questions_asked + 1 })
+      .update({ question_count: existing.question_count + 1 }) // ⭐ FIXED
       .eq('id', existing.id);
 
     if (error) {
@@ -247,7 +247,7 @@ export async function incrementUsage(): Promise<boolean> {
       .insert({
         user_id: user.id,
         date: today,
-        questions_asked: 1,
+        question_count: 1, // ⭐ FIXED: was questions_asked
       });
 
     if (error) {
