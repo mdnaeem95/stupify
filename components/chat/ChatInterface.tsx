@@ -38,7 +38,7 @@ import { extractMessageText } from '@/lib/utils';
 import { useCompanion, useCompanionMessages, useCompanionXP } from '@/hooks/companion';
 import { LevelUpModal } from '../companion/LevelUpModal';
 import { CompanionCard } from '../companion/CompanionCard';
-// import { CompanionBubble } from '../companion/CompanionBubble';
+import { CompanionBubble } from '../companion/CompanionBubble';
 
 export function ChatInterface() {
   // Local state
@@ -68,7 +68,7 @@ export function ChatInterface() {
   // Companion hooks
   const { companion, progress, isLoading: companionLoading, updateCompanion, refetch: refetchCompanion } = useCompanion();
   const { awardQuestionXP, lastLevelUp, clearLastLevelUp } = useCompanionXP();
-  const { messages: companionMessages, markAsRead, markAllAsRead } = useCompanionMessages();
+  const { messages: companionMessages, unreadCount, markAsRead, markAllAsRead } = useCompanionMessages();
 
   const voice = useVoiceInput({
     onTranscript: (text) => {
@@ -419,11 +419,11 @@ export function ChatInterface() {
         {/* Companion Bubble */}
       {companion && progress && !companionLoading && (
         <>
-          {/* <CompanionBubble
+          <CompanionBubble
             companion={companion}
             unreadCount={unreadCount}
             onClick={() => setIsCompanionCardOpen(true)}
-          /> */}
+          />
 
           {/* Companion Card Modal */}
           <CompanionCard

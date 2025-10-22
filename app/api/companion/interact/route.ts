@@ -1,19 +1,23 @@
 // ============================================================================
 // STUPIFY AI COMPANION FEATURE - INTERACT API ROUTE
 // Created: October 22, 2025
-// Version: 1.0
-// Route: POST/GET /api/companion/interact
+// Updated: October 22, 2025 (Phase 2 - GPT Integration)
+// Version: 2.0
+// Route: POST/GET/PATCH /api/companion/interact
 // Description: Generate companion messages and retrieve message history
 // ============================================================================
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { CompanionMessageType, GenerateMessagePayload } from '@/lib/companion/types';
+import { CompanionMessageType, GenerateMessagePayload, type Companion } from '@/lib/companion/types';
 import { CompanionDB, CompanionManager } from '@/lib/companion/server';
+import { generateMessage, generateGreeting, generateEncouragement, generateMilestone } from '@/lib/companion/gpt-message-generator';
+import { type MessageContext, type MessageTrigger, getTimeOfDay } from '@/lib/companion/personality-prompts';
+import { type PersonalityTraits } from '@/lib/companion/archetypes';
 
 /**
  * POST /api/companion/interact
- * Generate a companion message
+ * Generate a companion message using GPT-4o-mini
  * 
  * Body:
  * {
@@ -23,13 +27,15 @@ import { CompanionDB, CompanionManager } from '@/lib/companion/server';
  * }
  * 
  * Response:
- * - 200: { success: true, message: CompanionMessage }
+ * - 200: { success: true, message: CompanionMessage, generated_by: 'gpt' | 'template', latency: number }
  * - 400: { success: false, error: 'Invalid request' }
  * - 401: { success: false, error: 'Unauthorized' }
  * - 404: { success: false, error: 'Companion not found' }
  * - 500: { success: false, error: 'Internal server error' }
  */
 export async function POST(request: NextRequest) {
+  const startTime = Date.now();
+  
   try {
     // Authenticate user
     const supabase = await createClient();
@@ -84,50 +90,162 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate message based on type
-    let result;
+    console.log(`[COMPANION] 🎭 Generating ${body.message_type} message for ${companion.name}`);
+    console.log(`[COMPANION] Archetype: ${companion.archetype}, Level: ${companion.level}`);
 
-    switch (body.message_type) {
-      case 'greeting':
-        result = await CompanionManager.generateGreetingMessage(companion);
-        break;
+    // Get user profile for additional context
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('full_name')
+      .eq('id', user.id)
+      .single();
 
-      case 'encouragement':
-        // Check proactive threshold from context
-        const proactiveThreshold = body.context?.proactive_threshold || 0;
-        result = await CompanionManager.generateEncouragementMessage(
-          companion,
-          body.context,
-          proactiveThreshold
-        );
+    const userName = profile?.full_name || undefined;
 
-        // If null, we shouldn't send proactive message
-        if (!result) {
-          return NextResponse.json({
-            success: true,
-            message: null,
-            reason: 'Proactive message threshold reached',
-          });
+    // Parse personality traits (stored as JSONB)
+    const traits: PersonalityTraits = typeof companion.personality_traits === 'string'
+      ? JSON.parse(companion.personality_traits)
+      : companion.personality_traits;
+
+    // Generate message using GPT-4o-mini based on type
+    let messageContent: string;
+    let generatedBy: 'gpt' | 'template' = 'gpt';
+    let gptLatency = 0;
+
+    try {
+      switch (body.message_type) {
+        case 'greeting': {
+          const result = await generateGreeting(
+            companion.archetype,
+            traits,
+            companion.name,
+            userName,
+            companion.level
+          );
+          messageContent = result;
+          gptLatency = Date.now() - startTime;
+          break;
         }
-        break;
 
-      default:
-        // For other message types, use generic createMessage
-        result = {
-          success: true,
-          message: await CompanionManager.createMessage(
-            companion.id,
-            body.message_type,
-            undefined,
-            body.context,
-            body.was_proactive || false
-          ),
-        };
+        case 'encouragement': {
+          // Build context from body
+          const currentTopic = body.context?.current_topic;
+          const recentTopics = body.context?.recent_topics || [];
+          
+          const result = await generateEncouragement(
+            companion.archetype,
+            traits,
+            companion.name,
+            {
+              currentTopic,
+              userLevel: companion.level,
+              totalQuestions: companion.total_interactions,
+              currentStreak: body.context?.current_streak || 0,
+              recentTopics,
+            }
+          );
+          messageContent = result;
+          gptLatency = Date.now() - startTime;
+          break;
+        }
+
+        case 'milestone':
+        case 'celebration': {
+          const result = await generateMilestone(
+            companion.archetype,
+            traits,
+            companion.name,
+            {
+              type: body.message_type === 'milestone' ? 'level_up' : 'achievement',
+              newLevel: body.context?.new_level || companion.level,
+              achievementName: body.context?.achievement_name,
+              totalQuestions: companion.total_interactions,
+              unlockedFeatures: body.context?.unlocked_features,
+            }
+          );
+          messageContent = result;
+          gptLatency = Date.now() - startTime;
+          break;
+        }
+
+        case 'curiosity':
+        case 'suggestion':
+        case 'reminder': {
+          // For other types, use generic message generation
+          const trigger: MessageTrigger = mapMessageTypeToTrigger(body.message_type);
+          
+          const messageContext: MessageContext = {
+            userId: user.id,
+            companionName: companion.name,
+            userName,
+            level: companion.level,
+            totalXP: companion.total_xp,
+            totalQuestions: companion.total_interactions,
+            currentStreak: body.context?.current_streak || 0,
+            trigger,
+            favoriteTopics: body.context?.favorite_topics || [],
+            recentTopics: body.context?.recent_topics || [],
+            currentTopic: body.context?.current_topic,
+            timeOfDay: getTimeOfDay(),
+            lastInteractionAt: companion.last_interaction_at 
+              ? new Date(companion.last_interaction_at) 
+              : undefined,
+            reason: body.context?.reason,
+          };
+          
+          const result = await generateMessage({
+            archetype: companion.archetype,
+            traits,
+            context: messageContext,
+          });
+          
+          messageContent = result.message;
+          generatedBy = result.model === 'template-fallback' ? 'template' : 'gpt';
+          gptLatency = result.latency;
+          break;
+        }
+
+        default:
+          throw new Error(`Unhandled message type: ${body.message_type}`);
+      }
+
+      console.log(`[COMPANION] ✅ Generated via ${generatedBy} in ${gptLatency}ms`);
+      console.log(`[COMPANION] Message: "${messageContent.substring(0, 50)}..."`);
+
+    } catch (gptError) {
+      console.error('[COMPANION] ❌ GPT generation failed:', gptError);
+      
+      // Fallback to simple template if GPT fails completely
+      generatedBy = 'template';
+      messageContent = getFallbackMessage(companion, body.message_type);
+      console.log('[COMPANION] 🔄 Using fallback template message');
     }
 
-    return NextResponse.json(result);
+    // Save message to database
+    const savedMessage = await CompanionManager.createMessage(
+      companion.id,
+      body.message_type,
+      messageContent,
+      {
+        ...body.context,
+        generated_by: generatedBy,
+        gpt_latency_ms: gptLatency,
+      },
+      body.was_proactive || false
+    );
+
+    const totalLatency = Date.now() - startTime;
+
+    return NextResponse.json({
+      success: true,
+      message: savedMessage,
+      generated_by: generatedBy,
+      latency: totalLatency,
+      gpt_latency: gptLatency,
+    });
+
   } catch (error) {
-    console.error('Error generating companion message:', error);
+    console.error('[COMPANION] ❌ Error generating companion message:', error);
     return NextResponse.json(
       { 
         success: false, 
@@ -309,4 +427,42 @@ export async function PATCH(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+/**
+ * Map CompanionMessageType to MessageTrigger
+ */
+function mapMessageTypeToTrigger(messageType: CompanionMessageType): MessageTrigger {
+  const mapping: Record<CompanionMessageType, MessageTrigger> = {
+    greeting: 'greeting',
+    encouragement: 'encouragement',
+    milestone: 'milestone',
+    reminder: 'streak_reminder',
+    celebration: 'celebration',
+    curiosity: 'curiosity',
+    suggestion: 'topic_suggestion',
+  };
+  
+  return mapping[messageType] || 'encouragement';
+}
+
+/**
+ * Get ultra-safe fallback message (last resort)
+ */
+function getFallbackMessage(companion: Companion, messageType: CompanionMessageType): string {
+  const fallbacks: Record<CompanionMessageType, string> = {
+    greeting: `Hey there! I'm ${companion.name}, ready to learn with you!`,
+    encouragement: `Great question! Keep that curiosity going!`,
+    milestone: `Congrats on reaching level ${companion.level}!`,
+    reminder: `Your learning streak is looking good!`,
+    celebration: `Amazing achievement! You earned this!`,
+    curiosity: `What are you curious about today?`,
+    suggestion: `Want to explore something new?`,
+  };
+  
+  return fallbacks[messageType] || `Hey! Keep up the great learning!`;
 }

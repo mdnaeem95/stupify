@@ -5,17 +5,19 @@ import { AccountSettings } from '@/components/settings/AccountSettings';
 import { SubscriptionSettings } from '@/components/settings/SubscriptionSettings';
 import { PreferencesSettings } from '@/components/settings/PreferencesSettings';
 import { UsageSettings } from '@/components/settings/UsageSettings';
+import { CompanionSettingsWrapper } from '@/components/settings/CompanionSettingsWrapper';
 import { Button } from '@/components/ui/button';
-import { User, CreditCard, Settings as SettingsIcon, BarChart3, ArrowLeft } from 'lucide-react';
+import { User, CreditCard, Settings as SettingsIcon, BarChart3, ArrowLeft, Heart } from 'lucide-react';
 import Link from 'next/link';
 
-type TabType = 'account' | 'subscription' | 'preferences' | 'usage';
+type TabType = 'account' | 'companion' | 'subscription' | 'preferences' | 'usage';
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<TabType>('account');
 
   const tabs = [
     { id: 'account' as TabType, label: 'Account', icon: User },
+    { id: 'companion' as TabType, label: 'Companion', icon: Heart }, // Changed to Heart icon
     { id: 'subscription' as TabType, label: 'Subscription', icon: CreditCard },
     { id: 'preferences' as TabType, label: 'Preferences', icon: SettingsIcon },
     { id: 'usage' as TabType, label: 'Usage', icon: BarChart3 },
@@ -81,6 +83,7 @@ export default function SettingsPage() {
           {/* Content Area */}
           <div className="bg-white rounded-2xl shadow-lg shadow-gray-200/50 p-8">
             {activeTab === 'account' && <AccountSettings />}
+            {activeTab === 'companion' && <CompanionSettingsWrapper />}
             {activeTab === 'subscription' && <SubscriptionSettings />}
             {activeTab === 'preferences' && <PreferencesSettings />}
             {activeTab === 'usage' && <UsageSettings />}
