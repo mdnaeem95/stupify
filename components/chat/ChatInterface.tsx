@@ -23,6 +23,7 @@ import { useVoiceInput } from '@/hooks/useVoiceInput';
 import { useQuestionTracking } from '@/hooks/useGamification';
 import { useGamificationNotifications } from '@/hooks/useGamification';
 import { useCompanionXP } from '@/hooks/companion/useCompanionXP';
+import { useCompanionMessages } from '@/hooks/companion/useCompanionMessages';
 
 // Components
 import { ChatHeader } from './ChatHeader';
@@ -34,6 +35,7 @@ import { RecordingIndicator } from '../voice/RecordingIndicator';
 import { AchievementUnlockModal } from '@/components/gamification/AchievementUnlockModal';
 import { MilestoneCelebration } from '@/components/gamification/MilestoneCelebration';
 import { LevelUpModal } from '@/components/companion/LevelUpModal';
+import { ProactiveMessageManager } from '@/components/companion/ProactiveMessageManager';
 
 // Utils
 import { extractMessageText } from '@/lib/utils';
@@ -48,6 +50,7 @@ export function ChatInterface() {
   const [userTier, setUserTier] = useState<'free' | 'starter' | 'premium'>('free'); // NEW
   const [confusionRetry, setConfusionRetry] = useState(false);
   const [retryInstructions, setRetryInstructions] = useState<string | null>(null);
+  const [sessionId] = useState(() => `session-${Date.now()}`);
 
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -65,6 +68,7 @@ export function ChatInterface() {
   const { trackQuestion } = useQuestionTracking();
   const companion = useCompanion();
   const companionXP = useCompanionXP();
+  const companionMessages = useCompanionMessages();
 
   const voice = useVoiceInput({
     onTranscript: (text) => {
@@ -151,6 +155,18 @@ export function ChatInterface() {
         const userQuestion = lastUserQuestionRef.current;
         if (userQuestion && content) {
           await followUp.generate(userQuestion, content);
+        }
+
+        // ✨ NEW: Generate companion message (10% chance)
+        if (Math.random() < 0.1 && companion.companion) {
+          try {
+            await companionMessages.generateMessage('encouragement', {
+              topic: userQuestion,
+              simplicityLevel,
+            });
+          } catch (error) {
+            console.error('Failed to generate companion message:', error);
+          }
         }
       }
     },
@@ -426,20 +442,33 @@ export function ChatInterface() {
         />
       )}
 
-      {/* Companion Bubble */}
+      {/* ✨ NEW: Companion Messages */}
       {!companion.isLoading && companion.companion && (
-        <div style={{
-          position: 'fixed',
-          bottom: '120px',  // Well above input
-          right: '24px',
-          zIndex: 40,
-        }}>
+        <ProactiveMessageManager
+          companion={companion.companion}
+          sessionId={sessionId}
+          displayStyle="bubble"
+          autoFetch={true}
+          fetchInterval={30000}
+          maxMessagesPerSession={3}
+          quietMode={false}
+        />
+      )}
+
+      {/* Companion Bubble */}
+      <div style={{
+        position: 'fixed',
+        bottom: isMobile ? '70px' : '125px',
+        right: '24px',
+        zIndex: 40,
+      }}>
+        {!companion.isLoading && companion.companion && (
           <CompanionBubble
             companion={companion.companion}
             onClick={() => console.log('Companion clicked!')}
           />
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
