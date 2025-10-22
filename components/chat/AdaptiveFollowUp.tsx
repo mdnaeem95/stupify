@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sparkles, Loader2 } from 'lucide-react';
-import type { FollowUpQuestion } from '@/lib/question-predictor';
+import type { FollowUpQuestion } from '@/lib/chat/question-predictor';
 
 interface AdaptiveFollowUpProps {
   questions: FollowUpQuestion[];

@@ -1,7 +1,7 @@
 /* eslint-disable  @typescript-eslint/no-explicit-any */
 import { createClient } from '@/lib/supabase/client';
-import { SimplicityLevel } from './prompts';
-import { type SubscriptionTier } from './stripe';
+import { SimplicityLevel } from '../prompts/prompts';
+import { type SubscriptionTier } from '../stripe';
 
 export interface SavedMessage {
   id: string;

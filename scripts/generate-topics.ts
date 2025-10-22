@@ -7,7 +7,7 @@ config({ path: '.env.local' }); // Load .env.local
 
 import { openai } from '@ai-sdk/openai';
 import { streamText } from 'ai';
-import { getSystemPromptV2, SimplicityLevel } from '../lib/prompts-v2';
+import { getSystemPromptV2, SimplicityLevel } from '../lib/prompts/prompts-v2';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 

@@ -6,8 +6,8 @@ import { useState, useRef, useEffect } from 'react';
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
 import { Loader2 } from 'lucide-react';
-import { SimplicityLevel } from '@/lib/prompts';
-import { detectConfusion, getRetryInstructions } from '@/lib/confusion-detector';
+import { SimplicityLevel } from '@/lib/prompts/prompts';
+import { detectConfusion, getRetryInstructions } from '@/lib/chat/confusion-detector';
 import { Paywall } from '@/components/usage/Paywall';
 import { createClient } from '@/lib/supabase/client';
 
@@ -35,6 +35,10 @@ import { MilestoneCelebration } from '@/components/gamification/MilestoneCelebra
 
 // Utils
 import { extractMessageText } from '@/lib/utils';
+import { useCompanion, useCompanionMessages, useCompanionXP } from '@/hooks/companion';
+import { LevelUpModal } from '../companion/LevelUpModal';
+import { CompanionCard } from '../companion/CompanionCard';
+// import { CompanionBubble } from '../companion/CompanionBubble';
 
 export function ChatInterface() {
   // Local state
@@ -42,9 +46,9 @@ export function ChatInterface() {
   const [simplicityLevel, setSimplicityLevel] = useState<SimplicityLevel>('normal');
   const [, setIsRetrying] = useState(false);
   const [userTier, setUserTier] = useState<'free' | 'starter' | 'premium'>('free'); // NEW
-
   const [confusionRetry, setConfusionRetry] = useState(false);
   const [retryInstructions, setRetryInstructions] = useState<string | null>(null);
+  const [isCompanionCardOpen, setIsCompanionCardOpen] = useState(false);
 
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -60,6 +64,11 @@ export function ChatInterface() {
   const { triggerHaptic } = useHapticFeedback();
   const gamification = useGamificationNotifications();
   const { trackQuestion } = useQuestionTracking();
+
+  // Companion hooks
+  const { companion, progress, isLoading: companionLoading, updateCompanion, refetch: refetchCompanion } = useCompanion();
+  const { awardQuestionXP, lastLevelUp, clearLastLevelUp } = useCompanionXP();
+  const { messages: companionMessages, markAsRead, markAllAsRead } = useCompanionMessages();
 
   const voice = useVoiceInput({
     onTranscript: (text) => {
@@ -229,26 +238,22 @@ export function ChatInterface() {
 
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault?.(); // Only call preventDefault if it's a FormEvent
 
-    if (!input.trim() || isLoading) return;
+    const message = typeof e === 'string' ? e : input.trim();
+    if (!message || isLoading) return;
 
     if (isMobile) triggerHaptic('light');
 
-    const userMessage = input.trim();
-    lastUserQuestionRef.current = userMessage;
-    await profile.trackQuestion(userMessage, simplicityLevel);
+    lastUserQuestionRef.current = message;
+    await profile.trackQuestion(message, simplicityLevel);
 
-    // Check usage limit
     const canAsk = await usage.checkCanAsk();
     if (!canAsk) return;
 
-    // Detect confusion
-    const confusionSignal = detectConfusion(userMessage, lastUserQuestionRef.current);
+    const confusionSignal = detectConfusion(message, lastUserQuestionRef.current);
 
     if (confusionSignal.isConfused && confusionSignal.confidence > 0.7) {
-      console.log('😕 Confusion detected, auto-retrying with adjusted explanation');
-
       const { newLevel, instructions } = getRetryInstructions(confusionSignal, simplicityLevel);
 
       if (newLevel !== simplicityLevel) {
@@ -264,21 +269,16 @@ export function ChatInterface() {
       setIsRetrying(false);
     }
 
-    // Create conversation if needed
     let activeConvId = conversation.conversationId;
     if (!activeConvId) {
-      activeConvId = await conversation.createNew(userMessage);
+      activeConvId = await conversation.createNew(message);
       if (!activeConvId) return;
     }
 
-    // Save user message
-    await conversation.save('user', userMessage, simplicityLevel);
-
-    // Increment usage
+    await conversation.save('user', message, simplicityLevel);
     await usage.increment();
 
-    // Send message to AI
-    sendMessage({ text: userMessage });
+    sendMessage({ text: message });
     setInput('');
 
     setTimeout(() => {
@@ -286,6 +286,15 @@ export function ChatInterface() {
     }, 1000);
 
     await trackQuestion();
+
+    // 👉 Companion XP logic
+    if (companion && simplicityLevel) {
+      await awardQuestionXP(simplicityLevel, {
+        question: message,
+        timestamp: new Date().toISOString(),
+      });
+      await refetchCompanion();
+    }
   };
 
   return (
@@ -406,6 +415,43 @@ export function ChatInterface() {
         isOpen={gamification.showMilestoneModal}
         onClose={gamification.closeMilestoneModal}
       />
+
+        {/* Companion Bubble */}
+      {companion && progress && !companionLoading && (
+        <>
+          {/* <CompanionBubble
+            companion={companion}
+            unreadCount={unreadCount}
+            onClick={() => setIsCompanionCardOpen(true)}
+          /> */}
+
+          {/* Companion Card Modal */}
+          <CompanionCard
+            isOpen={isCompanionCardOpen}
+            onClose={() => {
+              setIsCompanionCardOpen(false);
+              markAllAsRead();
+            }}
+            companion={companion}
+            progress={progress}
+            messages={companionMessages}
+            onUpdateCompanion={updateCompanion}
+            onMarkMessageAsRead={markAsRead}
+          />
+
+          {/* Level Up Modal */}
+          {lastLevelUp && (
+            <LevelUpModal
+              isOpen={true}
+              onClose={clearLastLevelUp}
+              companion={lastLevelUp.companion}
+              oldLevel={lastLevelUp.oldLevel}
+              newLevel={lastLevelUp.newLevel}
+              xpGained={0} // Calculate if needed
+            />
+          )}
+        </>
+      )}
     </div>
   );
 }

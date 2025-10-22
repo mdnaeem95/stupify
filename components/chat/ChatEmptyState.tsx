@@ -1,7 +1,7 @@
 'use client';
 
 import { Sparkles } from 'lucide-react';
-import { SimplicityLevel } from '@/lib/prompts';
+import { SimplicityLevel } from '@/lib/prompts/prompts';
 
 interface ChatEmptyStateProps {
   simplicityLevel: SimplicityLevel;

@@ -1,7 +1,7 @@
 'use client';
 
 import { Sparkles } from 'lucide-react';
-import { SimplicityLevel } from '@/lib/prompts';
+import { SimplicityLevel } from '@/lib/prompts/prompts';
 import { CompactLevelSelector } from './CompactLevelSelector';
 import { StreakDisplay } from '@/components/gamification/StreakDisplay';
 

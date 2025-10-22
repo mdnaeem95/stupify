@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { MessageSquare, Trash2, AlertCircle, Plus, Sparkles, Crown, Zap, Clock } from 'lucide-react';
-import { getUserConversations, deleteConversation, type Conversation, canCreateConversation } from '@/lib/conversations';
+import { getUserConversations, deleteConversation, type Conversation, canCreateConversation } from '@/lib/chat/conversations';
 import { UserMenu } from '@/components/layout/UserMenu';
 import { UsageBadge } from '@/components/usage/UsageBadge';
 import { getUserUsage, type UsageData } from '@/lib/usage';

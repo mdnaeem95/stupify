@@ -1,12 +1,12 @@
 import { useState, useCallback, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { SimplicityLevel } from '@/lib/prompts';
+import { SimplicityLevel } from '@/lib/prompts/prompts';
 import {
   extractTopics,
   getPersonalizedGreeting,
   suggestLevelAdjustment,
   type UserProfile,
-} from '@/lib/user-profiler';
+} from '@/lib/personalization/user-profiler';
 
 export function useUserProfile(currentLevel: SimplicityLevel) {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);

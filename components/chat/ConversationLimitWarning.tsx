@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { AlertCircle, Crown, Zap, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
-import { canCreateConversation } from '@/lib/conversations';
+import { canCreateConversation } from '@/lib/chat/conversations';
 
 export function ConversationLimitWarning() {
   const router = useRouter();

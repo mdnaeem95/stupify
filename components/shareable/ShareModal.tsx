@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { ShareableCard } from './ShareableCard';
 import { downloadCardImage, shareCardImage } from '@/lib/card-generator';
 import { Download, Share2, Copy, Check, Loader2, X } from 'lucide-react';
-import { SimplicityLevel } from '@/lib/prompts-v2';
+import { SimplicityLevel } from '@/lib/prompts/prompts-v2';
 
 interface ShareModalProps {
   isOpen: boolean;

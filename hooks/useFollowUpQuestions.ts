@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
-import { SimplicityLevel } from '@/lib/prompts';
-import { FollowUpQuestion } from '@/lib/question-predictor';
+import { SimplicityLevel } from '@/lib/prompts/prompts';
+import { FollowUpQuestion } from '@/lib/chat/question-predictor';
 
 export function useFollowUpQuestions(simplicityLevel: SimplicityLevel) {
   const [followUpQuestions, setFollowUpQuestions] = useState<FollowUpQuestion[]>([]);

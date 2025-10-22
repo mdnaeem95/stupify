@@ -4,7 +4,7 @@ import { ShareableCard } from '@/components/shareable/ShareableCard';
 import { Button } from '@/components/ui/button';
 import { Sparkles } from 'lucide-react';
 import Link from 'next/link';
-import { SimplicityLevel } from '@/lib/prompts-v2';
+import { SimplicityLevel } from '@/lib/prompts/prompts-v2';
 
 interface SharePageProps {
   params: Promise<{

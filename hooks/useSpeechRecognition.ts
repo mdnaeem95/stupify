@@ -8,7 +8,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { isSpeechRecognitionSupported, createSpeechRecognition, getSpeechErrorMessage } from '@/lib/speech-recognition';
+import { isSpeechRecognitionSupported, createSpeechRecognition, getSpeechErrorMessage } from '@/lib/voice/speech-recognition';
 
 export interface UseSpeechRecognitionOptions {
   continuous?: boolean;

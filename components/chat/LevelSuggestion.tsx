@@ -1,4 +1,4 @@
-import { SimplicityLevel } from '@/lib/prompts';
+import { SimplicityLevel } from '@/lib/prompts/prompts';
 
 interface LevelSuggestionProps {
   suggestedLevel: SimplicityLevel;

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { ChevronDown, Check } from 'lucide-react';
-import { SimplicityLevel } from '@/lib/prompts';
+import { SimplicityLevel } from '@/lib/prompts/prompts';
 import { cn } from '@/lib/utils';
 
 interface CompactLevelSelectorProps {

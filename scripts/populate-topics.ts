@@ -6,7 +6,7 @@ config({ path: '.env.local' });
 
 import { openai } from '@ai-sdk/openai';
 import { streamText, embed } from 'ai';
-import { getSystemPromptV2, SimplicityLevel } from '../lib/prompts-v2';
+import { getSystemPromptV2, SimplicityLevel } from '../lib/prompts/prompts-v2';
 import { createClient } from '@supabase/supabase-js';
 
 // Initialize Supabase client with SERVICE_ROLE_KEY (bypasses RLS)

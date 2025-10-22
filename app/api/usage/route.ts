@@ -1,6 +1,6 @@
 /* eslint-disable  @typescript-eslint/no-explicit-any */
 import { convertToModelMessages } from 'ai';
-import { getSystemPromptV3, SimplicityLevel } from '@/lib/prompts-v3';
+import { getSystemPromptV3, SimplicityLevel } from '@/lib/prompts/prompts-v3';
 import { createClient } from '@/lib/supabase/server';
 import { createClientWithToken } from '@/lib/supabase/server-api';
 import { updateUserStreak } from '@/lib/gamification/streak-tracker';

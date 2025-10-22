@@ -7,8 +7,8 @@ import {
   generateConversationTitle, 
   updateConversationTitle,
   canCreateConversation // NEW: Import limit checker
-} from '@/lib/conversations';
-import { SimplicityLevel } from '@/lib/prompts';
+} from '@/lib/chat/conversations';
+import { SimplicityLevel } from '@/lib/prompts/prompts';
 import { convertToUIMessages, dispatchCustomEvent } from '@/lib/utils';
 
 export function useConversation() {

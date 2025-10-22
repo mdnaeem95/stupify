@@ -1,7 +1,7 @@
 'use client';
 
 import { Sparkles } from 'lucide-react';
-import { SimplicityLevel } from '@/lib/prompts-v2';
+import { SimplicityLevel } from '@/lib/prompts/prompts-v2';
 
 interface ShareableCardProps {
   question: string;

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { predictFollowUpQuestions, predictFollowUpQuestionsPattern } from '@/lib/question-predictor';
-import type { SimplicityLevel } from '@/lib/prompts-v2';
+import { predictFollowUpQuestions, predictFollowUpQuestionsPattern } from '@/lib/chat/question-predictor';
+import type { SimplicityLevel } from '@/lib/prompts/prompts-v2';
 
 /**
  * API ROUTE: /api/follow-up

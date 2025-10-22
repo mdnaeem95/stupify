@@ -2,9 +2,9 @@
 import { Loader2 } from 'lucide-react';
 import { MessageBubble } from './MessageBubble';
 import { AdaptiveFollowUp } from './AdaptiveFollowUp';
-import { FollowUpQuestion } from '@/lib/question-predictor';
+import { FollowUpQuestion } from '@/lib/chat/question-predictor';
 import { extractMessageText } from '@/lib/utils';
-import { SimplicityLevel } from '@/lib/prompts';
+import { SimplicityLevel } from '@/lib/prompts/prompts';
 
 interface ChatMessagesProps {
   messages: any[];

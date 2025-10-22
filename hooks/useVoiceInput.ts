@@ -10,8 +10,8 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSpeechRecognition } from './useSpeechRecognition';
-import { requestMicrophoneAccess, stopMediaStream, createAudioRecorder, convertToWhisperFormat, SilenceDetector } from '@/lib/audio-utils';
-import { checkBrowserCompatibility } from '@/lib/speech-recognition';
+import { requestMicrophoneAccess, stopMediaStream, createAudioRecorder, convertToWhisperFormat, SilenceDetector } from '@/lib/voice/audio-utils';
+import { checkBrowserCompatibility } from '@/lib/voice/speech-recognition';
 import { useHapticFeedback } from './useHapticFeedback';
 
 export interface UseVoiceInputOptions {

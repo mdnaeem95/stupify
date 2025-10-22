@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation';
 import { Mascot } from '../mascot/Mascot';
 import { Flame, Trophy, Brain, TrendingUp, Calendar, Target, ArrowLeft, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useCompanion, useCompanionMessages } from '@/hooks/companion';
+import { CompanionProfile } from '../companion/CompanionProfile';
 
 interface StatsData {
   streak: {
@@ -38,10 +40,12 @@ export function StatsOverview() {
   const router = useRouter();
   const [stats, setStats] = useState<StatsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { companion, progress } = useCompanion();
+  const { messages } = useCompanionMessages(50);
 
   useEffect(() => {
     fetchStats();
-  }, []);
+  }, [companion]);
 
   const fetchStats = async () => {
     try {
@@ -81,14 +85,6 @@ export function StatsOverview() {
 
   const achievementPercentage = Math.round((stats.achievements.unlocked / stats.achievements.total) * 100);
 
-  // Determine Blinky's expression based on progress
-  const getBlinkyExpression = () => {
-    if (stats.streak.current >= 30) return 'celebrating';
-    if (stats.achievements.unlocked >= 10) return 'proud';
-    if (stats.streak.current >= 7) return 'excited';
-    return 'happy';
-  };
-
   return (
     <div className="min-h-screen bg-white">
       {/* Header with back button */}
@@ -106,9 +102,6 @@ export function StatsOverview() {
       <div className="max-w-6xl mx-auto px-6 py-8">
         {/* Header with Blinky */}
         <div className="text-center mb-12">
-          <div className="flex justify-center mb-6">
-            <Mascot expression={getBlinkyExpression()} size={160} />
-          </div>
           <h1 className="text-5xl font-bold text-gray-900 mb-3">Your Learning Journey</h1>
           <p className="text-xl text-gray-600 leading-relaxed">
             {stats.allTime.totalDays > 0 
@@ -342,6 +335,24 @@ export function StatsOverview() {
             </div>
           </div>
         )}
+
+      {/* Companion Profile Section */}
+      {companion && progress && (
+        <section className="mt-8">
+          <h2 className="text-2xl font-bold mb-4">Your Learning Companion</h2>
+          <CompanionProfile
+            companion={companion}
+            progress={progress}
+            stats={{
+              total_messages: messages.length,
+              total_interactions: companion.total_interactions,
+              questions_asked: 0, // Calculate from your data
+              messages_sent: messages.length,
+              level_ups: companion.level - 1,
+            }}
+          />
+        </section>
+      )}
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
-import { SimplicityLevel } from '../prompts-v2';
+import { SimplicityLevel } from '../prompts/prompts-v2';
 
 // 📊 Learning Stats Tracker
 // Tracks daily user activity for stats dashboard

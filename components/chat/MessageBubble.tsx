@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { ShareModal } from '@/components/shareable/ShareModal';
 import { ShareUpgradeModal } from '@/components/shareable/ShareUpgradeModal';
 import { AnalogyRating } from './AnalogyRatings';
-import { SimplicityLevel } from '@/lib/prompts-v2';
+import { SimplicityLevel } from '@/lib/prompts/prompts-v2';
 
 interface MessageBubbleProps {
   role: 'user' | 'assistant';

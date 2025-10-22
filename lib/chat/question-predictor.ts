@@ -1,4 +1,4 @@
-import { SimplicityLevel } from './prompts-v2';
+import { SimplicityLevel } from '../prompts/prompts-v2';
 
 /**
  * QUESTION PREDICTOR
