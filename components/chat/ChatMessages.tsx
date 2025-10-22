@@ -56,7 +56,7 @@ export function ChatMessages({
 
           return (
             <MessageBubble
-              key={message.id}
+              key={`${message.id}-${index}`}
               role={message.role as 'user' | 'assistant'}
               content={content}
               messageId={message.id}

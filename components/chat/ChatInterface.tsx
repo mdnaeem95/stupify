@@ -22,6 +22,7 @@ import { useHapticFeedback } from '@/hooks/useHapticFeedback';
 import { useVoiceInput } from '@/hooks/useVoiceInput';
 import { useQuestionTracking } from '@/hooks/useGamification';
 import { useGamificationNotifications } from '@/hooks/useGamification';
+import { useCompanionXP } from '@/hooks/companion/useCompanionXP';
 
 // Components
 import { ChatHeader } from './ChatHeader';
@@ -32,12 +33,11 @@ import { LevelSuggestion } from './LevelSuggestion';
 import { RecordingIndicator } from '../voice/RecordingIndicator';
 import { AchievementUnlockModal } from '@/components/gamification/AchievementUnlockModal';
 import { MilestoneCelebration } from '@/components/gamification/MilestoneCelebration';
+import { LevelUpModal } from '@/components/companion/LevelUpModal';
 
 // Utils
 import { extractMessageText } from '@/lib/utils';
-import { useCompanion, useCompanionMessages, useCompanionXP } from '@/hooks/companion';
-import { LevelUpModal } from '../companion/LevelUpModal';
-import { CompanionCard } from '../companion/CompanionCard';
+import { useCompanion } from '@/hooks/companion';
 import { CompanionBubble } from '../companion/CompanionBubble';
 
 export function ChatInterface() {
@@ -48,7 +48,6 @@ export function ChatInterface() {
   const [userTier, setUserTier] = useState<'free' | 'starter' | 'premium'>('free'); // NEW
   const [confusionRetry, setConfusionRetry] = useState(false);
   const [retryInstructions, setRetryInstructions] = useState<string | null>(null);
-  const [isCompanionCardOpen, setIsCompanionCardOpen] = useState(false);
 
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -64,11 +63,8 @@ export function ChatInterface() {
   const { triggerHaptic } = useHapticFeedback();
   const gamification = useGamificationNotifications();
   const { trackQuestion } = useQuestionTracking();
-
-  // Companion hooks
-  const { companion, progress, isLoading: companionLoading, updateCompanion, refetch: refetchCompanion } = useCompanion();
-  const { awardQuestionXP, lastLevelUp, clearLastLevelUp } = useCompanionXP();
-  const { messages: companionMessages, unreadCount, markAsRead, markAllAsRead } = useCompanionMessages();
+  const companion = useCompanion();
+  const companionXP = useCompanionXP();
 
   const voice = useVoiceInput({
     onTranscript: (text) => {
@@ -278,6 +274,17 @@ export function ChatInterface() {
     await conversation.save('user', message, simplicityLevel);
     await usage.increment();
 
+    // ✨ NEW: Award XP for question
+    try {
+      const xpResult = await companionXP.awardQuestionXP(simplicityLevel);
+      if (xpResult && xpResult.leveled_up) {
+        await companion.refetch();
+        if (isMobile) triggerHaptic('heavy');
+      }
+    } catch (error) {
+      console.error('Failed to award XP:', error);
+    }
+
     sendMessage({ text: message });
     setInput('');
 
@@ -286,15 +293,6 @@ export function ChatInterface() {
     }, 1000);
 
     await trackQuestion();
-
-    // 👉 Companion XP logic
-    if (companion && simplicityLevel) {
-      await awardQuestionXP(simplicityLevel, {
-        question: message,
-        timestamp: new Date().toISOString(),
-      });
-      await refetchCompanion();
-    }
   };
 
   return (
@@ -416,41 +414,31 @@ export function ChatInterface() {
         onClose={gamification.closeMilestoneModal}
       />
 
-        {/* Companion Bubble */}
-      {companion && progress && !companionLoading && (
-        <>
+      {/* ✨ NEW: Level Up Modal */}
+      {companionXP.lastLevelUp && (
+        <LevelUpModal
+          isOpen={true}
+          onClose={() => companionXP.clearLastLevelUp()}
+          companion={companionXP.lastLevelUp.companion}
+          oldLevel={companionXP.lastLevelUp.oldLevel}
+          newLevel={companionXP.lastLevelUp.newLevel}
+          xpGained={10}
+        />
+      )}
+
+      {/* Companion Bubble */}
+      {!companion.isLoading && companion.companion && (
+        <div style={{
+          position: 'fixed',
+          bottom: '120px',  // Well above input
+          right: '24px',
+          zIndex: 40,
+        }}>
           <CompanionBubble
-            companion={companion}
-            unreadCount={unreadCount}
-            onClick={() => setIsCompanionCardOpen(true)}
+            companion={companion.companion}
+            onClick={() => console.log('Companion clicked!')}
           />
-
-          {/* Companion Card Modal */}
-          <CompanionCard
-            isOpen={isCompanionCardOpen}
-            onClose={() => {
-              setIsCompanionCardOpen(false);
-              markAllAsRead();
-            }}
-            companion={companion}
-            progress={progress}
-            messages={companionMessages}
-            onUpdateCompanion={updateCompanion}
-            onMarkMessageAsRead={markAsRead}
-          />
-
-          {/* Level Up Modal */}
-          {lastLevelUp && (
-            <LevelUpModal
-              isOpen={true}
-              onClose={clearLastLevelUp}
-              companion={lastLevelUp.companion}
-              oldLevel={lastLevelUp.oldLevel}
-              newLevel={lastLevelUp.newLevel}
-              xpGained={0} // Calculate if needed
-            />
-          )}
-        </>
+        </div>
       )}
     </div>
   );

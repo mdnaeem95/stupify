@@ -28,14 +28,7 @@ export async function GET(request: NextRequest) {
       .single();
     
     const isPremium = profile?.subscription_status === 'premium';
-    
-    // Get rate limit data from Redis
-    const chatKey = isPremium 
-      ? `stupify:premium:${user.id}`
-      : `stupify:free:${user.id}`;
-    
-    const voiceKey = `stupify:voice:${user.id}`;
-    
+        
     // Get current usage from Redis
     // Note: Upstash Ratelimit stores data in a specific format
     // We need to calculate remaining requests

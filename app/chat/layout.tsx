@@ -15,53 +15,36 @@ export default function ChatLayout({
   const [refreshSidebar, setRefreshSidebar] = useState(0);
 
   const handleSelectConversation = (conversationId: string) => {
-    console.log('📂 Layout: Selecting conversation', { conversationId })
     setCurrentConversationId(conversationId);
     setIsSidebarOpen(false);
     
     // Dispatch event to ChatInterface
-    console.log('📡 Layout: Dispatching loadConversation event')
     window.dispatchEvent(new CustomEvent('loadConversation', { 
       detail: { conversationId } 
     }));
   };
 
-  const handleNewChat = () => {
-    console.log('🆕 Layout: New chat clicked')
-    console.log('🆕 Layout: Current conversation ID:', currentConversationId)
-    
+  const handleNewChat = () => {    
     setCurrentConversationId(null);
     setIsSidebarOpen(false);
     
     // Dispatch event to ChatInterface
-    console.log('📡 Layout: Dispatching newChat event')
     const event = new Event('newChat')
     window.dispatchEvent(event);
-    console.log('✅ Layout: newChat event dispatched')
   };
 
   // Expose refresh function to chat interface
-  useEffect(() => {
-    console.log('🔧 Layout: Setting up refreshSidebar listener')
-    
+  useEffect(() => {  
     const handleRefreshSidebar = () => {
-      console.log('🔄 Layout: Refresh sidebar triggered')
       setRefreshSidebar(Date.now());
     };
 
     window.addEventListener('refreshSidebar', handleRefreshSidebar);
     
     return () => {
-      console.log('🧹 Layout: Cleaning up refreshSidebar listener')
       window.removeEventListener('refreshSidebar', handleRefreshSidebar);
     }
   }, []);
-
-  console.log('🎨 Layout: Rendering', { 
-    isSidebarOpen, 
-    currentConversationId,
-    refreshSidebar 
-  })
 
   return (
     <div className="flex h-screen overflow-hidden bg-white">

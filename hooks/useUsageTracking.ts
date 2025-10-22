@@ -7,9 +7,7 @@ export function useUsageTracking() {
 
   // Load usage data
   const loadUsage = useCallback(async () => {
-    console.log('📊 Loading usage data');
     const usageData = await getUserUsage();
-    console.log('📊 Usage loaded', usageData);
     setUsage(usageData);
   }, []);
 

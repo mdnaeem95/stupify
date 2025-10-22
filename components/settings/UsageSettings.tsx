@@ -48,7 +48,7 @@ export function UsageSettings() {
       const today = new Date().toISOString().split('T')[0];
       const { data: todayUsage } = await supabase
         .from('daily_usage')
-        .select('questions_asked')
+        .select('question_count')
         .eq('user_id', user.id)
         .eq('date', today)
         .single();
@@ -84,7 +84,7 @@ export function UsageSettings() {
         .eq('user_id', user.id);
 
       setStats({
-        questionsToday: todayUsage?.questions_asked || 0,
+        questionsToday: todayUsage?.question_count || 0,
         dailyLimit: isPremium ? -1 : 10, // -1 means unlimited
         totalQuestions: totalQuestions || 0,
         currentStreak: streakData?.current_streak || 0,

@@ -214,7 +214,7 @@ export async function POST(req: Request) {
           .from('profiles')
           .select('subscription_status, monthly_questions_used')
           .eq('id', user.id)
-          .single();
+          .maybeSingle();
         
         tier = (profile?.subscription_status || 'free') as SubscriptionTier;
         monthlyQuestionsUsed = profile?.monthly_questions_used || 0;
@@ -225,12 +225,12 @@ export async function POST(req: Request) {
         const today = new Date().toISOString().split('T')[0];
         const { data: usage } = await supabaseClient
           .from('daily_usage')
-          .select('questions_asked')
+          .select('question_count')
           .eq('user_id', user.id)
           .eq('date', today)
-          .single();
+          .maybeSingle();
         
-        const dailyCount = usage?.questions_asked || 0;
+        const dailyCount = usage?.question_count || 0;
         
         // Check if user can ask questions based on tier
         const limitCheck = checkQuestionLimit(tier, dailyCount, monthlyQuestionsUsed);
