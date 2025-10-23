@@ -24,6 +24,7 @@ import { useQuestionTracking } from '@/hooks/useGamification';
 import { useGamificationNotifications } from '@/hooks/useGamification';
 import { useCompanionXP } from '@/hooks/companion/useCompanionXP';
 import { useCompanionMessages } from '@/hooks/companion/useCompanionMessages';
+import { useEvolution } from '@/hooks/companion/useEvolution';
 
 // Components
 import { ChatHeader } from './ChatHeader';
@@ -36,6 +37,7 @@ import { AchievementUnlockModal } from '@/components/gamification/AchievementUnl
 import { MilestoneCelebration } from '@/components/gamification/MilestoneCelebration';
 import { LevelUpModal } from '@/components/companion/LevelUpModal';
 import { ProactiveMessageManager } from '@/components/companion/ProactiveMessageManager';
+import { EvolutionAnimation } from '@/components/companion/EvolutionAnimation';
 
 // Utils
 import { extractMessageText } from '@/lib/utils';
@@ -69,6 +71,18 @@ export function ChatInterface() {
   const companion = useCompanion();
   const companionXP = useCompanionXP();
   const companionMessages = useCompanionMessages();
+
+  const evolution = useEvolution({
+    currentLevel: companion.companion?.level || 1,
+    archetype: companion.companion?.archetype || 'mentor',
+    companionName: companion.companion?.name || 'Companion',
+    autoShowAnimation: true, // Automatically shows animation
+    onEvolution: (event: any) => {
+      console.log('✨ Companion evolved!', event);
+      // Optional: Add haptic feedback
+      if (isMobile) triggerHaptic('heavy');
+    },
+  });
 
   const voice = useVoiceInput({
     onTranscript: (text) => {
@@ -439,6 +453,18 @@ export function ChatInterface() {
           oldLevel={companionXP.lastLevelUp.oldLevel}
           newLevel={companionXP.lastLevelUp.newLevel}
           xpGained={10}
+        />
+      )}
+
+      {/* Evolution Animation - Automatically triggered by hook */}
+      {evolution.showEvolutionAnimation && evolution.lastEvolution && companion.companion && (
+        <EvolutionAnimation
+          archetype={companion.companion.archetype}     
+          fromStage={evolution.lastEvolution.fromStage} 
+          toStage={evolution.lastEvolution.toStage}    
+          companionName={companion.companion.name}
+          level={companion.companion.level}            
+          onComplete={evolution.dismissEvolution}
         />
       )}
 
