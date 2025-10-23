@@ -391,7 +391,7 @@ export async function PATCH(request: NextRequest) {
 
     // Mark messages as read
     if (body.mark_all) {
-      await CompanionDB.markAllMessagesAsRead(companion.id);
+      await CompanionDB.markMessagesAsRead(companion.id);
       return NextResponse.json({
         success: true,
         message: 'All messages marked as read',

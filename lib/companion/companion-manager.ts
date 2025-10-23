@@ -352,7 +352,7 @@ export class CompanionManager {
    * @param messageId - Message ID
    */
   static async markMessageAsRead(messageId: string): Promise<void> {
-    await db.markMessageAsRead(messageId);
+    await db.markMessagesAsRead(messageId);
   }
 
   /**
