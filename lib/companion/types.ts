@@ -78,6 +78,7 @@ export interface Companion {
   // Metadata
   created_at: string; // ISO timestamp
   updated_at: string; // ISO timestamp
+  quiet_mode?: boolean;
 }
 
 /**

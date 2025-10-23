@@ -1,15 +1,18 @@
 /**
- * ARCHETYPE SELECTOR COMPONENT - Phase 2
+ * ARCHETYPE SELECTOR COMPONENT - Redesigned v2.0
  * 
- * Main interface for selecting and changing companion archetype.
- * Shows all 3 archetypes and handles selection flow.
+ * Following STUPIFY Design Principles:
+ * - Clean, minimal interface
+ * - Better typography hierarchy
+ * - Premium confirmation dialog
+ * - Smooth transitions
+ * - Mobile-first responsive
  * 
  * Features:
  * - Displays all 3 archetype options
  * - Visual selection state
  * - Confirmation dialog for changes
  * - API integration to update companion
- * - Mobile-responsive (stacked on mobile, grid on desktop)
  * - Loading and error states
  * - Success feedback
  */
@@ -21,8 +24,8 @@ import { ArchetypeCard, ArchetypeCardCompact } from './ArchetypeCard';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, AlertCircle, CheckCircle2, Sparkles } from 'lucide-react';
-import { type CompanionArchetype, getAllArchetypes } from '@/lib/companion/archetypes';
+import { Loader2, AlertCircle, CheckCircle2, Sparkles, ArrowRight } from 'lucide-react';
+import { type CompanionArchetype, getAllArchetypes, getArchetypeDescription } from '@/lib/companion/archetypes';
 import { cn } from '@/lib/utils';
 
 // ============================================================================
@@ -120,26 +123,40 @@ export function ArchetypeSelector({
     setError(null);
   };
 
+  // Get archetype info for dialog
+  const fromArchetype = currentArchetype ? getArchetypeDescription(currentArchetype) : null;
+  const toArchetype = selectedArchetype ? getArchetypeDescription(selectedArchetype) : null;
+
   return (
-    <div className={cn('space-y-6', className)}>
-      {/* Header */}
-      <div className="text-center space-y-2">
-        <h2 className="text-2xl md:text-3xl font-bold text-gray-900">
-          {isOnboarding ? 'Choose Your Companion' : 'Your Companion Personality'}
-        </h2>
-        <p className="text-gray-600 text-sm md:text-base max-w-2xl mx-auto">
-          {isOnboarding 
-            ? 'Each personality brings a unique approach to your learning journey. Pick the one that resonates with you!'
-            : 'Your companion adapts their messages and style based on their personality.'
-          }
-        </p>
-      </div>
+    <div className={cn('space-y-8', className)}>
+      {/* Header - Better typography */}
+      {!isOnboarding && (
+        <div className="space-y-3">
+          <h3 className="text-2xl font-bold text-gray-900">
+            Personality Type
+          </h3>
+          <p className="text-base text-gray-600 leading-relaxed">
+            Choose the teaching style that works best for you
+          </p>
+        </div>
+      )}
+
+      {isOnboarding && (
+        <div className="text-center space-y-4">
+          <h2 className="text-4xl font-bold text-gray-900">
+            Choose Your Companion
+          </h2>
+          <p className="text-xl text-gray-600 leading-relaxed max-w-2xl mx-auto">
+            Each personality brings a unique approach to your learning journey
+          </p>
+        </div>
+      )}
 
       {/* Success Message */}
       {success && (
-        <Alert className="border-green-500 bg-green-50">
-          <CheckCircle2 className="h-4 w-4 text-green-600" />
-          <AlertDescription className="text-green-800">
+        <Alert className="bg-gradient-to-r from-green-50 to-emerald-50 border-0 shadow-lg shadow-green-500/10">
+          <CheckCircle2 className="h-5 w-5 text-green-600" />
+          <AlertDescription className="text-green-900 font-medium">
             Companion personality updated successfully!
           </AlertDescription>
         </Alert>
@@ -147,16 +164,16 @@ export function ArchetypeSelector({
 
       {/* Error Message */}
       {error && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
+        <Alert className="bg-gradient-to-r from-red-50 to-pink-50 border-0 shadow-lg shadow-red-500/10">
+          <AlertCircle className="h-5 w-5 text-red-600" />
+          <AlertDescription className="text-red-900 font-medium">{error}</AlertDescription>
         </Alert>
       )}
 
       {/* Archetype Cards */}
       {showCompact ? (
         // Compact vertical layout for mobile
-        <div className="space-y-3">
+        <div className="space-y-4">
           {archetypes.map((def) => (
             <ArchetypeCardCompact
               key={def.id}
@@ -168,7 +185,7 @@ export function ArchetypeSelector({
         </div>
       ) : (
         // Full card grid for desktop
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {archetypes.map((def) => (
             <ArchetypeCard
               key={def.id}
@@ -183,18 +200,19 @@ export function ArchetypeSelector({
 
       {/* Action Buttons (only show in non-onboarding mode with changes) */}
       {!isOnboarding && allowChange && hasChanged && (
-        <div className="flex justify-center gap-3 pt-4">
+        <div className="flex justify-end gap-3 pt-4">
           <Button
             variant="outline"
             onClick={handleCancel}
             disabled={isLoading}
+            className="font-semibold"
           >
             Cancel
           </Button>
           <Button
             onClick={() => setShowConfirmDialog(true)}
             disabled={isLoading}
-            className="gap-2"
+            className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30 transform hover:-translate-y-0.5 font-semibold gap-2"
           >
             {isLoading ? (
               <>
@@ -211,9 +229,9 @@ export function ArchetypeSelector({
         </div>
       )}
 
-      {/* Confirmation Dialog */}
+      {/* Confirmation Dialog - Redesigned */}
       <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Change Companion Personality?</DialogTitle>
             <DialogDescription>
@@ -222,20 +240,42 @@ export function ArchetypeSelector({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="py-4">
-            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-              <div>
-                <p className="text-sm text-gray-600">Changing from:</p>
-                <p className="font-semibold text-gray-900 capitalize">
-                  {currentArchetype}
-                </p>
-              </div>
-              <div className="text-2xl">→</div>
-              <div>
-                <p className="text-sm text-gray-600">Changing to:</p>
-                <p className="font-semibold text-gray-900 capitalize">
-                  {selectedArchetype}
-                </p>
+          {/* Visual comparison - Clean card design */}
+          <div className="py-1">
+            <div className="bg-gradient-to-br from-gray-50 to-indigo-50/30 rounded-2xl p-5">
+              <div className="flex items-center justify-between gap-6">
+                {/* From */}
+                <div className="flex-1 space-y-1.5">
+                  <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">From</p>
+                  <div className="space-y-1">
+                    <p className="text-base font-bold text-gray-900">
+                      {fromArchetype?.name}
+                    </p>
+                    <p className="text-sm text-gray-600 leading-relaxed">
+                      {fromArchetype?.tagline}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Arrow */}
+                <div className="flex-shrink-0">
+                  <div className="p-2 rounded-full bg-white shadow-sm">
+                    <ArrowRight className="w-4 h-4 text-gray-400" />
+                  </div>
+                </div>
+
+                {/* To */}
+                <div className="flex-1 space-y-1.5">
+                  <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">To</p>
+                  <div className="space-y-1">
+                    <p className="text-base font-bold text-gray-900">
+                      {toArchetype?.name}
+                    </p>
+                    <p className="text-sm text-gray-600 leading-relaxed">
+                      {toArchetype?.tagline}
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -245,12 +285,14 @@ export function ArchetypeSelector({
               variant="outline"
               onClick={handleCancel}
               disabled={isLoading}
+              className="font-semibold"
             >
               Cancel
             </Button>
             <Button
               onClick={handleConfirm}
               disabled={isLoading}
+              className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30 font-semibold"
             >
               {isLoading ? (
                 <>

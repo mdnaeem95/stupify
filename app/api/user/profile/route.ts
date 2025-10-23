@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server';
  * GET /api/user/profile
  * Returns user's profile, subscription status, and knowledge graph
  */
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     const supabase = await createClient();
     

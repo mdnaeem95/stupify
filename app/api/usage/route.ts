@@ -8,7 +8,7 @@ import { updateDailyStats } from '@/lib/gamification/learning-stats';
 import { checkAllAchievements } from '@/lib/gamification/achievement-checker';
 import { ClaudeModel, getABTestProvider, getModelForTier, OpenAIModel, streamAIResponse, type AIProvider } from '@/lib/ai-providers';
 import { extractTopics } from '@/lib/personalization/topic-extractor';
-import { getPersonalizationContext, isNewUser } from '@/lib/personalization/context-injector';
+import { getPersonalizationContext } from '@/lib/personalization/context-injector';
 import { createPersonalizedPrompt } from '@/lib/personalization/personalized-prompts';
 
 // Three-tier pricing
@@ -374,10 +374,7 @@ export async function POST(req: Request) {
           confidence: topicResult.confidence,
           fallback: topicResult.fallbackUsed
         });
-        
-        // 2. Check if new user
-        const userIsNew = await isNewUser(user.id);
-        
+                
         // 3. Get personalization context
         const context = await getPersonalizationContext(user.id, extractedTopics);
         
@@ -469,6 +466,7 @@ export async function POST(req: Request) {
                     fullResponse += content;
                   } catch (e) {
                     fullResponse += chunk;
+                    console.warn('[CHAT] ⚠️ Error parsing chunk for caching, using raw chunk', e);
                   }
                 }
               }

@@ -1,172 +1,130 @@
-/**
- * QUIET MODE TOGGLE - Phase 2, Day 13
- * 
- * Toggle component for enabling/disabling proactive messages.
- * Allows users to control message frequency.
- * 
- * Features:
- * - Simple on/off toggle
- * - Saves preference to localStorage
- * - Visual feedback
- * - Tooltip explanation
- */
-
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Bell, BellOff } from 'lucide-react';
+import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
-// ============================================================================
-// TYPES
-// ============================================================================
-
 export interface QuietModeToggleProps {
-  userId: string;
-  onChange?: (enabled: boolean) => void;
+  isQuiet: boolean;
+  onToggle: (enabled: boolean) => void;
+  companionName?: string;
   className?: string;
 }
 
-// ============================================================================
-// COMPONENT
-// ============================================================================
-
+/**
+ * QuietModeToggle - Redesigned v2.0
+ * 
+ * Following STUPIFY Design Principles:
+ * - Clean card design with proper shadows
+ * - Better typography hierarchy
+ * - Clear icon states with colors
+ * - Premium hover effects
+ * - Mobile-friendly sizing
+ */
 export function QuietModeToggle({
-  userId,
-  onChange,
+  isQuiet,
+  onToggle,
+  companionName = 'Your companion',
   className,
 }: QuietModeToggleProps) {
-  const [quietMode, setQuietMode] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-
-  // Load quiet mode preference on mount
-  useEffect(() => {
-    const loadPreference = () => {
-      try {
-        const stored = localStorage.getItem(`quietMode_${userId}`);
-        if (stored !== null) {
-          const enabled = stored === 'true';
-          setQuietMode(enabled);
-        }
-      } catch (error) {
-        console.error('[QUIET MODE] Error loading preference:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadPreference();
-  }, [userId]);
-
-  // Handle toggle
-  const handleToggle = (enabled: boolean) => {
-    setQuietMode(enabled);
-
-    // Save to localStorage
-    try {
-      localStorage.setItem(`quietMode_${userId}`, enabled.toString());
-    } catch (error) {
-      console.error('[QUIET MODE] Error saving preference:', error);
-    }
-
-    // Callback
-    if (onChange) {
-      onChange(enabled);
-    }
-
-    console.log('[QUIET MODE]', enabled ? 'Enabled' : 'Disabled');
-  };
-
-  if (isLoading) {
-    return null;
-  }
-
   return (
-    <div className={cn('flex items-center justify-between', className)}>
+    <Card className={cn(
+      'p-6 hover:shadow-lg transition-all duration-300',
+      className
+    )}>
+      <div className="flex items-start justify-between gap-6">
+        {/* Icon and Text */}
+        <div className="flex items-start gap-4 flex-1">
+          {/* Icon with gradient background */}
+          <div className={cn(
+            'flex-shrink-0 p-3 rounded-xl transition-all duration-300',
+            isQuiet 
+              ? 'bg-gray-100' 
+              : 'bg-gradient-to-br from-purple-50 to-indigo-50'
+          )}>
+            {isQuiet ? (
+              <BellOff className="w-6 h-6 text-gray-400" strokeWidth={2} />
+            ) : (
+              <Bell className="w-6 h-6 text-purple-600" strokeWidth={2} />
+            )}
+          </div>
+
+          {/* Text content */}
+          <div className="flex-1 min-w-0">
+            <Label 
+              htmlFor="quiet-mode" 
+              className="text-lg font-bold text-gray-900 cursor-pointer block mb-2"
+            >
+              Quiet Mode
+            </Label>
+            <p className="text-base text-gray-600 leading-relaxed">
+              {isQuiet 
+                ? `${companionName} won't send proactive messages` 
+                : `${companionName} will send encouraging messages`
+              }
+            </p>
+          </div>
+        </div>
+
+        {/* Switch */}
+        <div className="flex-shrink-0">
+          <Switch
+            id="quiet-mode"
+            checked={isQuiet}
+            onCheckedChange={onToggle}
+            className="data-[state=checked]:bg-gradient-to-r data-[state=checked]:from-indigo-600 data-[state=checked]:to-violet-600"
+          />
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+/**
+ * QuietModeToggleCompact - Compact inline version without card
+ */
+export function QuietModeToggleCompact({
+  isQuiet,
+  onToggle,
+  companionName = 'Your companion',
+  className,
+}: QuietModeToggleProps) {
+  return (
+    <div className={cn(
+      'flex items-center justify-between p-4 rounded-2xl bg-gray-50 hover:bg-gray-100 transition-colors',
+      className
+    )}>
       <div className="flex items-center gap-3">
-        {quietMode ? (
-          <BellOff className="w-5 h-5 text-gray-500" />
+        {isQuiet ? (
+          <BellOff className="w-5 h-5 text-gray-500" strokeWidth={2} />
         ) : (
-          <Bell className="w-5 h-5 text-purple-600" />
+          <Bell className="w-5 h-5 text-purple-600" strokeWidth={2} />
         )}
         <div>
           <Label 
-            htmlFor="quiet-mode" 
-            className="text-sm font-medium cursor-pointer"
+            htmlFor="quiet-mode-compact" 
+            className="text-sm font-semibold text-gray-900 cursor-pointer block"
           >
             Quiet Mode
           </Label>
-          <p className="text-xs text-gray-500 mt-0.5">
-            {quietMode 
-              ? 'Proactive messages are paused' 
-              : 'Receive companion messages while you learn'
+          <p className="text-xs text-gray-600 mt-1">
+            {isQuiet 
+              ? `${companionName} won't send messages` 
+              : `${companionName} sends messages`
             }
           </p>
         </div>
       </div>
 
       <Switch
-        id="quiet-mode"
-        checked={quietMode}
-        onCheckedChange={handleToggle}
+        id="quiet-mode-compact"
+        checked={isQuiet}
+        onCheckedChange={onToggle}
+        className="data-[state=checked]:bg-gradient-to-r data-[state=checked]:from-indigo-600 data-[state=checked]:to-violet-600"
       />
     </div>
-  );
-}
-
-// ============================================================================
-// COMPACT VARIANT
-// ============================================================================
-
-export interface QuietModeToggleCompactProps {
-  userId: string;
-  onChange?: (enabled: boolean) => void;
-  className?: string;
-}
-
-/**
- * Compact version for mobile or small spaces
- */
-export function QuietModeToggleCompact({
-  userId,
-  onChange,
-  className,
-}: QuietModeToggleCompactProps) {
-  const [quietMode, setQuietMode] = useState(false);
-
-  useEffect(() => {
-    const stored = localStorage.getItem(`quietMode_${userId}`);
-    if (stored !== null) {
-      setQuietMode(stored === 'true');
-    }
-  }, [userId]);
-
-  const handleToggle = (enabled: boolean) => {
-    setQuietMode(enabled);
-    localStorage.setItem(`quietMode_${userId}`, enabled.toString());
-    if (onChange) onChange(enabled);
-  };
-
-  return (
-    <button
-      onClick={() => handleToggle(!quietMode)}
-      className={cn(
-        'p-2 rounded-lg transition-colors',
-        quietMode 
-          ? 'bg-gray-100 text-gray-600' 
-          : 'bg-purple-50 text-purple-600',
-        'hover:bg-gray-200',
-        className
-      )}
-      title={quietMode ? 'Enable companion messages' : 'Pause companion messages'}
-    >
-      {quietMode ? (
-        <BellOff className="w-5 h-5" />
-      ) : (
-        <Bell className="w-5 h-5" />
-      )}
-    </button>
   );
 }

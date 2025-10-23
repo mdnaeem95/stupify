@@ -339,7 +339,7 @@ export function StatsOverview() {
       {/* Companion Profile Section */}
       {companion && progress && (
         <section className="mt-8">
-          <h2 className="text-2xl font-bold mb-4">Your Learning Companion</h2>
+          <h2 className="text-2xl font-bold mb-4 text-gray-900">Your Learning Companion</h2>
           <CompanionProfile
             companion={companion}
             progress={progress}

@@ -1,17 +1,23 @@
 /* eslint-disable  @typescript-eslint/no-explicit-any */
 /**
- * MESSAGE HISTORY PANEL - Phase 2, Day 14
+ * MESSAGE HISTORY PANEL - Redesigned v2.0
  * 
- * Panel for viewing past companion messages.
+ * Following STUPIFY Design Principles:
+ * - NO EMOJIS (using Lucide icons)
+ * - Clean card design with proper shadows
+ * - Premium gradient accents
+ * - Better typography hierarchy
+ * - Mobile-first responsive
+ * - Smooth transitions
  * 
  * Features:
  * - View all past messages
  * - Filter by trigger type
- * - Filter by date range
  * - Search messages
- * - Pagination
- * - Message stats
+ * - Pagination with smooth transitions
+ * - Message stats overview
  * - Export history
+ * - Empty states with proper UX
  */
 
 'use client';
@@ -22,7 +28,19 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { MessageCircle, Search, Download, Sparkles, Loader2 } from 'lucide-react';
+import { 
+  MessageCircle, 
+  Search, 
+  Download, 
+  Sparkles, 
+  Loader2,
+  Brain,
+  Heart,
+  Compass,
+  X,
+  TrendingUp,
+  Calendar
+} from 'lucide-react';
 import { type CompanionArchetype } from '@/lib/companion/archetypes';
 import { type MessageTrigger } from '@/lib/companion/personality-prompts';
 import { cn } from '@/lib/utils';
@@ -57,35 +75,53 @@ export interface MessageFilters {
 }
 
 // ============================================================================
-// ARCHETYPE COLORS
+// ARCHETYPE DESIGN SYSTEM (NO EMOJIS)
 // ============================================================================
 
-const ARCHETYPE_COLORS: Record<CompanionArchetype, string> = {
-  mentor: 'text-purple-600 bg-purple-50 border-purple-200',
-  friend: 'text-orange-600 bg-orange-50 border-orange-200',
-  explorer: 'text-teal-600 bg-teal-50 border-teal-200',
+const ARCHETYPE_CONFIG = {
+  mentor: {
+    icon: Brain,
+    gradient: 'from-purple-500 to-indigo-600',
+    lightBg: 'from-purple-50 to-indigo-50',
+    textColor: 'text-purple-600',
+    bgColor: 'bg-purple-50',
+    borderColor: 'border-purple-200',
+    iconColor: 'text-purple-600',
+  },
+  friend: {
+    icon: Heart,
+    gradient: 'from-orange-500 to-pink-500',
+    lightBg: 'from-orange-50 to-pink-50',
+    textColor: 'text-pink-600',
+    bgColor: 'bg-pink-50',
+    borderColor: 'border-pink-200',
+    iconColor: 'text-pink-600',
+  },
+  explorer: {
+    icon: Compass,
+    gradient: 'from-teal-500 to-emerald-600',
+    lightBg: 'from-teal-50 to-emerald-50',
+    textColor: 'text-teal-600',
+    bgColor: 'bg-teal-50',
+    borderColor: 'border-teal-200',
+    iconColor: 'text-teal-600',
+  },
 };
 
-const ARCHETYPE_ICONS: Record<CompanionArchetype, string> = {
-  mentor: '🦉',
-  friend: '🌟',
-  explorer: '🧭',
-};
-
 // ============================================================================
-// TRIGGER LABELS
+// TRIGGER LABELS & ICONS
 // ============================================================================
 
-const TRIGGER_LABELS: Record<MessageTrigger, string> = {
-  greeting: 'Greeting',
-  encouragement: 'Encouragement',
-  milestone: 'Milestone',
-  celebration: 'Celebration',
-  streak_reminder: 'Streak Reminder',
-  curiosity: 'Curiosity',
-  topic_suggestion: 'Topic Suggestion',
-  proactive: 'Check-in',
-  question_asked: 'After Question',
+const TRIGGER_CONFIG: Record<MessageTrigger, { label: string; icon: any }> = {
+  greeting: { label: 'Greeting', icon: MessageCircle },
+  encouragement: { label: 'Encouragement', icon: TrendingUp },
+  milestone: { label: 'Milestone', icon: Sparkles },
+  celebration: { label: 'Celebration', icon: Sparkles },
+  streak_reminder: { label: 'Streak Reminder', icon: Calendar },
+  curiosity: { label: 'Curiosity', icon: Brain },
+  topic_suggestion: { label: 'Topic Suggestion', icon: MessageCircle },
+  proactive: { label: 'Check-in', icon: Heart },
+  question_asked: { label: 'After Question', icon: MessageCircle },
 };
 
 // ============================================================================
@@ -108,7 +144,8 @@ export function MessageHistoryPanel({
   const [totalMessages, setTotalMessages] = useState(0);
 
   const messagesPerPage = 20;
-  const archetypeIcon = ARCHETYPE_ICONS[archetype];
+  const config = ARCHETYPE_CONFIG[archetype];
+  const CompanionIcon = config.icon;
 
   // Fetch messages
   useEffect(() => {
@@ -170,6 +207,12 @@ export function MessageHistoryPanel({
     handleFilterChange('search', searchQuery);
   };
 
+  // Clear all filters
+  const clearAllFilters = () => {
+    setFilters({ showDismissed: true });
+    setSearchQuery('');
+  };
+
   // Export history
   const handleExport = async () => {
     try {
@@ -189,91 +232,131 @@ export function MessageHistoryPanel({
   };
 
   const totalPages = Math.ceil(totalMessages / messagesPerPage);
+  const hasActiveFilters = !!(filters.trigger || filters.search);
 
   return (
     <div className={cn('space-y-6', className)}>
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="text-4xl">{archetypeIcon}</div>
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">
-              Message History
-            </h2>
-            <p className="text-gray-600 text-sm">
-              {totalMessages} messages from {companionName}
-            </p>
+      {/* Header with stats */}
+      <Card className={cn(
+        'relative overflow-hidden p-6 bg-gradient-to-br',
+        config.lightBg
+      )}>
+        <div className="relative flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            {/* Icon with gradient */}
+            <div className={cn(
+              'p-3 rounded-2xl bg-gradient-to-br shadow-lg',
+              config.gradient
+            )}>
+              <CompanionIcon className="w-7 h-7 text-white" strokeWidth={2.5} />
+            </div>
+            
+            <div>
+              <h3 className="text-xl font-bold text-gray-900">
+                Message History
+              </h3>
+              <p className="text-sm text-gray-600">
+                <span className="font-semibold">{totalMessages}</span> messages from {companionName}
+              </p>
+            </div>
           </div>
+
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleExport}
+            className="font-semibold"
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Export
+          </Button>
         </div>
+      </Card>
 
-        <Button variant="outline" size="sm" onClick={handleExport}>
-          <Download className="w-4 h-4 mr-2" />
-          Export
-        </Button>
-      </div>
-
-      {/* Filters */}
-      <Card className="p-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Search */}
-          <div className="md:col-span-2">
-            <div className="flex gap-2">
+      {/* Filters - Clean design */}
+      <Card className="p-6 space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+          {/* Search - takes more space */}
+          <div className="md:col-span-8">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <Input
                 placeholder="Search messages..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                className="text-gray-900 pl-10 py-6 rounded-xl border-gray-200 focus:border-indigo-300 focus:ring-indigo-500/20"
               />
-              <Button onClick={handleSearch}>
-                <Search className="w-4 h-4" />
-              </Button>
             </div>
           </div>
 
           {/* Trigger filter */}
-          <Select
-            value={filters.trigger || 'all'}
-            onValueChange={(value: any) =>
-              handleFilterChange('trigger', value === 'all' ? undefined : value)
-            }
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="All message types" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All message types</SelectItem>
-              <SelectItem value="greeting">Greeting</SelectItem>
-              <SelectItem value="encouragement">Encouragement</SelectItem>
-              <SelectItem value="milestone">Milestone</SelectItem>
-              <SelectItem value="celebration">Celebration</SelectItem>
-              <SelectItem value="topic_suggestion">Topic Suggestion</SelectItem>
-              <SelectItem value="curiosity">Curiosity</SelectItem>
-              <SelectItem value="proactive">Check-in</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="md:col-span-4">
+            <Select
+              value={filters.trigger || 'all'}
+              onValueChange={(value: any) =>
+                handleFilterChange('trigger', value === 'all' ? undefined : value)
+              }
+            >
+              <SelectTrigger className="h-12 rounded-xl border-gray-200 bg-white font-medium text-gray-900">
+                <SelectValue placeholder="All types" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All message types</SelectItem>
+                <SelectItem value="greeting">Greeting</SelectItem>
+                <SelectItem value="encouragement">Encouragement</SelectItem>
+                <SelectItem value="milestone">Milestone</SelectItem>
+                <SelectItem value="celebration">Celebration</SelectItem>
+                <SelectItem value="topic_suggestion">Topic Suggestion</SelectItem>
+                <SelectItem value="curiosity">Curiosity</SelectItem>
+                <SelectItem value="proactive">Check-in</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
-        {/* Active filters */}
-        {(filters.trigger || filters.search) && (
-          <div className="flex gap-2 mt-3">
-            <span className="text-sm text-gray-600">Active filters:</span>
-            {filters.trigger && (
-              <Badge variant="secondary">
-                {TRIGGER_LABELS[filters.trigger]}
-              </Badge>
-            )}
-            {filters.search && (
-              <Badge variant="secondary">
-                Search: {filters.search}
-              </Badge>
-            )}
+        {/* Active filters display */}
+        {hasActiveFilters && (
+          <div className="flex items-center gap-3 pt-3 border-t border-gray-100">
+            <span className="text-sm font-medium text-gray-600">Filters:</span>
+            <div className="flex-1 flex flex-wrap gap-2">
+              {filters.trigger && (
+                <Badge 
+                  variant="secondary" 
+                  className="px-3 py-1.5 rounded-lg font-medium"
+                >
+                  {TRIGGER_CONFIG[filters.trigger].label}
+                  <button
+                    onClick={() => handleFilterChange('trigger', undefined)}
+                    className="ml-2 hover:text-gray-900"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </Badge>
+              )}
+              {filters.search && (
+                <Badge 
+                  variant="secondary"
+                  className="px-3 py-1.5 rounded-lg font-medium"
+                >
+                  Search: &quot;{filters.search}&quot;
+                  <button
+                    onClick={() => {
+                      setSearchQuery('');
+                      handleFilterChange('search', undefined);
+                    }}
+                    className="ml-2 hover:text-gray-900"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </Badge>
+              )}
+            </div>
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => {
-                setFilters({ showDismissed: true });
-                setSearchQuery('');
-              }}
+              onClick={clearAllFilters}
+              className="font-semibold"
             >
               Clear all
             </Button>
@@ -284,14 +367,18 @@ export function MessageHistoryPanel({
       {/* Messages list */}
       <div className="space-y-3">
         {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+          <div className="flex items-center justify-center py-20">
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/20 to-violet-500/20 blur-2xl rounded-full" />
+              <Loader2 className="relative w-10 h-10 animate-spin text-indigo-600" />
+            </div>
           </div>
         ) : messages.length === 0 ? (
-          <Card className="p-12 text-center">
-            <MessageCircle className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-600">No messages found</p>
-          </Card>
+          <EmptyState 
+            hasFilters={hasActiveFilters} 
+            onClearFilters={clearAllFilters}
+            archetype={archetype}
+          />
         ) : (
           messages.map((message) => (
             <MessageHistoryItem
@@ -304,33 +391,36 @@ export function MessageHistoryPanel({
         )}
       </div>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-gray-600">
-            Showing {(page - 1) * messagesPerPage + 1} -{' '}
-            {Math.min(page * messagesPerPage, totalMessages)} of {totalMessages}
-          </p>
+      {/* Pagination - Clean design */}
+      {totalPages > 1 && !isLoading && (
+        <Card className="p-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-gray-600">
+              Showing <span className="font-semibold text-gray-900">{(page - 1) * messagesPerPage + 1}</span> - <span className="font-semibold text-gray-900">{Math.min(page * messagesPerPage, totalMessages)}</span> of <span className="font-semibold text-gray-900">{totalMessages}</span>
+            </p>
 
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage(p => Math.max(1, p - 1))}
-              disabled={page === 1}
-            >
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
-            >
-              Next
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="font-semibold"
+              >
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                className="font-semibold"
+              >
+                Next
+              </Button>
+            </div>
           </div>
-        </div>
+        </Card>
       )}
     </div>
   );
@@ -351,52 +441,157 @@ function MessageHistoryItem({
   companionName,
   archetype,
 }: MessageHistoryItemProps) {
-  const archetypeColor = ARCHETYPE_COLORS[archetype];
+  const config = ARCHETYPE_CONFIG[archetype];
+  const CompanionIcon = config.icon;
+  const triggerConfig = TRIGGER_CONFIG[message.trigger];
+  const TriggerIcon = triggerConfig.icon;
 
   return (
     <Card
       className={cn(
-        'p-4 transition-all hover:shadow-md',
-        message.dismissed && 'opacity-60'
+        'p-5 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5',
+        message.dismissed && 'opacity-50'
       )}
     >
-      <div className="flex items-start gap-3">
-        {/* Icon */}
-        <div className="text-2xl flex-shrink-0">
-          {ARCHETYPE_ICONS[archetype]}
+      <div className="flex items-start gap-4">
+        {/* Icon with gradient background */}
+        <div className="flex-shrink-0">
+          <div className={cn(
+            'p-2.5 rounded-xl bg-gradient-to-br shadow-md',
+            config.gradient
+          )}>
+            <CompanionIcon className="w-5 h-5 text-white" strokeWidth={2.5} />
+          </div>
         </div>
 
         {/* Content */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="font-semibold text-gray-900">
+        <div className="flex-1 min-w-0 space-y-3">
+          {/* Header with name and badges */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-base font-bold text-gray-900">
               {companionName}
             </span>
+            
+            {/* Trigger badge */}
             <Badge
               variant="secondary"
-              className={cn('text-xs', archetypeColor)}
+              className={cn(
+                'px-3 py-1 rounded-lg font-medium gap-1.5',
+                config.bgColor,
+                config.textColor
+              )}
             >
-              {TRIGGER_LABELS[message.trigger]}
+              <TriggerIcon className="w-3.5 h-3.5" />
+              {triggerConfig.label}
             </Badge>
+
+            {/* Proactive badge */}
             {message.wasProactive && (
-              <Badge variant="outline" className="text-xs">
-                <Sparkles className="w-3 h-3 mr-1" />
+              <Badge 
+                variant="outline" 
+                className="px-3 py-1 rounded-lg font-medium gap-1.5"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
                 Proactive
               </Badge>
             )}
+
+            {/* Dismissed badge */}
             {message.dismissed && (
-              <Badge variant="outline" className="text-xs text-gray-500">
+              <Badge 
+                variant="outline" 
+                className="px-3 py-1 rounded-lg font-medium text-gray-500"
+              >
                 Dismissed
               </Badge>
             )}
           </div>
 
-          <p className="text-sm text-gray-700 leading-relaxed">
+          {/* Message content */}
+          <p className="text-base text-gray-700 leading-relaxed">
             {message.content}
           </p>
 
-          <p className="text-xs text-gray-500 mt-2">
+          {/* Timestamp */}
+          <p className="text-sm text-gray-500 font-medium">
             {formatDate(message.createdAt)}
+          </p>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+// ============================================================================
+// EMPTY STATE SUB-COMPONENT
+// ============================================================================
+
+interface EmptyStateProps {
+  hasFilters: boolean;
+  onClearFilters: () => void;
+  archetype: CompanionArchetype;
+}
+
+function EmptyState({ hasFilters, onClearFilters, archetype }: EmptyStateProps) {
+  const config = ARCHETYPE_CONFIG[archetype];
+
+  if (hasFilters) {
+    return (
+      <Card className="p-12 text-center">
+        <div className="max-w-md mx-auto space-y-4">
+          <div className="relative inline-block">
+            <div className="absolute inset-0 bg-gradient-to-br from-gray-200 to-gray-300 blur-2xl rounded-full opacity-30" />
+            <div className="relative bg-gray-100 p-6 rounded-3xl">
+              <Search className="w-12 h-12 text-gray-400" strokeWidth={2} />
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <h3 className="text-xl font-bold text-gray-900">
+              No messages found
+            </h3>
+            <p className="text-gray-600 leading-relaxed">
+              Try adjusting your filters or search query
+            </p>
+          </div>
+
+          <Button
+            variant="outline"
+            onClick={onClearFilters}
+            className="font-semibold"
+          >
+            Clear all filters
+          </Button>
+        </div>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className={cn(
+      'relative overflow-hidden p-12 text-center bg-gradient-to-br',
+      config.lightBg
+    )}>
+      <div className="relative max-w-md mx-auto space-y-4">
+        <div className="relative inline-block">
+          <div className={cn(
+            'absolute inset-0 blur-3xl rounded-full opacity-30 bg-gradient-to-br',
+            config.gradient
+          )} />
+          <div className={cn(
+            'relative p-6 rounded-3xl bg-gradient-to-br',
+            config.gradient
+          )}>
+            <MessageCircle className="w-12 h-12 text-white" strokeWidth={2} />
+          </div>
+        </div>
+        
+        <div className="space-y-2">
+          <h3 className="text-xl font-bold text-gray-900">
+            No messages yet
+          </h3>
+          <p className="text-gray-600 leading-relaxed">
+            Your companion will send you messages as you learn together. Check back soon!
           </p>
         </div>
       </div>
