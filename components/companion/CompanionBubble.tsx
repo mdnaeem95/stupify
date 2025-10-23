@@ -2,7 +2,8 @@
 // ============================================================================
 // STUPIFY AI COMPANION FEATURE - COMPANION BUBBLE
 // Created: October 22, 2025
-// Version: 1.0
+// Updated: October 23, 2025 (Phase 3 - Stat warnings added)
+// Version: 1.1
 // Description: Floating companion bubble in bottom-right corner
 // ============================================================================
 
@@ -10,8 +11,8 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, X } from 'lucide-react';
-import { ARCHETYPE_EMOJIS } from '@/lib/companion/types';
+import { Sparkles, X, AlertCircle } from 'lucide-react';
+import { needsAttention as checkStatsNeedAttention } from '@/lib/companion/stats-manager';
 import type { Companion } from '@/lib/companion/types';
 
 interface CompanionBubbleProps {
@@ -22,15 +23,22 @@ interface CompanionBubbleProps {
   isExpanded?: boolean;
 }
 
+const ARCHETYPE_ICONS = {
+  mentor: '🧙‍♂️',
+  friend: '🤗',
+  explorer: '🚀',
+};
+
 /**
  * CompanionBubble - Floating companion UI element
  * 
  * Features:
- * - Shows companion avatar/emoji
+ * - Shows companion avatar
  * - Displays level badge
  * - Shows unread message count
+ * - Shows stat warning (Phase 3)
  * - Animated entrance
- * - Pulse animation for unread messages
+ * - Pulse animation for attention needed
  * - Click to expand
  * - Respects mobile safe areas
  */
@@ -43,11 +51,17 @@ export function CompanionBubble({
 }: CompanionBubbleProps) {
   const [isHovered, setIsHovered] = useState(false);
 
-  // Get emoji for companion archetype
-  const emoji = ARCHETYPE_EMOJIS[companion.archetype];
+  // Get icon for companion archetype
+  const icon = ARCHETYPE_ICONS[companion.archetype];
 
-  // Determine if companion needs attention (unread messages)
-  const needsAttention = unreadCount > 0;
+  // Check if companion needs attention (unread messages OR low stats)
+  const hasUnreadMessages = unreadCount > 0;
+  const hasLowStats = checkStatsNeedAttention({
+    happiness: companion.happiness,
+    energy: companion.energy,
+    knowledge: companion.knowledge,
+  });
+  const needsAttention = hasUnreadMessages || hasLowStats;
 
   return (
     <AnimatePresence>
@@ -62,7 +76,6 @@ export function CompanionBubble({
             damping: 20,
           }}
           style={{
-            // Respect safe areas on mobile
             paddingBottom: 'env(safe-area-inset-bottom)',
             paddingRight: 'env(safe-area-inset-right)',
           }}
@@ -76,16 +89,16 @@ export function CompanionBubble({
             whileTap={{ scale: 0.95 }}
             className={`
               relative flex h-16 w-16 items-center justify-center rounded-full
-              bg-gradient-to-br from-purple-500 to-blue-500
+              bg-gradient-to-br from-indigo-500 to-violet-500
               shadow-lg transition-all duration-300
-              hover:shadow-xl hover:shadow-purple-500/50
+              hover:shadow-xl hover:shadow-indigo-500/50
               ${needsAttention ? 'animate-pulse' : ''}
             `}
             aria-label={`Open companion - ${companion.name}`}
           >
-            {/* Companion emoji/avatar */}
+            {/* Companion icon/avatar */}
             <span className="text-3xl" role="img" aria-label={companion.archetype}>
-              {emoji}
+              {icon}
             </span>
 
             {/* Level badge */}
@@ -100,7 +113,7 @@ export function CompanionBubble({
             </div>
 
             {/* Unread count badge */}
-            {needsAttention && (
+            {hasUnreadMessages && (
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
@@ -114,6 +127,21 @@ export function CompanionBubble({
               </motion.div>
             )}
 
+            {/* Low stats warning (Phase 3) */}
+            {hasLowStats && !hasUnreadMessages && (
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="
+                  absolute -top-1 -left-1 flex h-6 w-6 items-center justify-center
+                  rounded-full bg-orange-500 text-white
+                  shadow-md ring-2 ring-white
+                "
+              >
+                <AlertCircle className="h-4 w-4" strokeWidth={2.5} />
+              </motion.div>
+            )}
+
             {/* Sparkle effect on hover */}
             <AnimatePresence>
               {isHovered && (
@@ -123,7 +151,7 @@ export function CompanionBubble({
                   exit={{ opacity: 0, scale: 0.8 }}
                   className="absolute -top-2 -right-2"
                 >
-                  <Sparkles className="h-5 w-5 text-yellow-300" />
+                  <Sparkles className="h-5 w-5 text-yellow-300" strokeWidth={2} />
                 </motion.div>
               )}
             </AnimatePresence>
@@ -147,9 +175,14 @@ export function CompanionBubble({
                 <div className="text-xs text-gray-300">
                   Level {companion.level} • {companion.archetype}
                 </div>
-                {needsAttention && (
+                {hasUnreadMessages && (
                   <div className="text-xs text-purple-300">
                     {unreadCount} new message{unreadCount !== 1 ? 's' : ''}
+                  </div>
+                )}
+                {hasLowStats && (
+                  <div className="text-xs text-orange-300">
+                    Your companion needs attention
                   </div>
                 )}
                 {/* Tooltip arrow */}
@@ -180,7 +213,7 @@ export function CompanionBubble({
               "
               aria-label="Dismiss companion"
             >
-              <X className="h-3 w-3" />
+              <X className="h-3 w-3" strokeWidth={2} />
             </motion.button>
           )}
         </motion.div>
@@ -234,7 +267,7 @@ export function CompanionBubbleError({ onRetry }: { onRetry?: () => void }) {
         "
         aria-label="Retry loading companion"
       >
-        <span className="text-2xl">⚠️</span>
+        <AlertCircle className="h-8 w-8 text-white" strokeWidth={2} />
       </button>
     </div>
   );

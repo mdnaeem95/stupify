@@ -2,7 +2,7 @@
 // ============================================================================
 // STUPIFY AI COMPANION FEATURE - SUPABASE OPERATIONS
 // Created: October 22, 2025
-// Version: 1.0
+// Version: 1.1 - Added Check-In Functions (Phase 3 Day 3)
 // Description: Database operations for companion system
 // ============================================================================
 
@@ -148,6 +148,285 @@ export async function updateCompanion(
 }
 
 /**
+ * Update companion stats
+ * Phase 3: Stats System
+ */
+export async function updateCompanionStats(
+  companionId: string,
+  stats: {
+    happiness?: number;
+    energy?: number;
+    knowledge?: number;
+  }
+): Promise<Companion> {
+  try {
+    const supabase = await getSupabaseClient();
+
+    const updateData = {
+      ...stats,
+      last_interaction_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    const { data, error } = await supabase
+      .from('companions')
+      .update(updateData)
+      .eq('id', companionId)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return data as Companion;
+  } catch (error) {
+    console.error('Error updating companion stats:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get companion stats (happiness, energy, knowledge)
+ * Phase 3: Stats System
+ */
+export async function getCompanionStatsOnly(companionId: string): Promise<{
+  happiness: number;
+  energy: number;
+  knowledge: number;
+} | null> {
+  try {
+    const supabase = await getSupabaseClient();
+
+    const { data, error } = await supabase
+      .from('companions')
+      .select('happiness, energy, knowledge')
+      .eq('id', companionId)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return null;
+      }
+      throw error;
+    }
+
+    return data as { happiness: number; energy: number; knowledge: number };
+  } catch (error) {
+    console.error('Error fetching companion stats:', error);
+    throw error;
+  }
+}
+
+// ============================================================================
+// PHASE 3 DAY 3: DAILY CHECK-IN FUNCTIONS (UTC + Option A aligned)
+// ============================================================================
+
+type Mood = 'great' | 'good' | 'okay' | 'bad';
+type RewardTypeIncoming = 'xp' | 'happiness' | 'energy' | 'knowledge' | 'coins';
+
+/* ---------------------------- UTC date utilities --------------------------- */
+
+function utcStartOfDay(d = new Date()): Date {
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 0, 0, 0, 0));
+}
+function utcEndOfDay(d = new Date()): Date {
+  const start = utcStartOfDay(d);
+  return new Date(start.getTime() + 86_400_000); // +1 day
+}
+/** "YYYY-MM-DD" (UTC) */
+function ymdUTC(ts: string): string {
+  return new Date(ts).toISOString().slice(0, 10);
+}
+
+/**
+ * Create a daily check-in record (user-level, UTC aligned).
+ * NOTE: We treat the first arg (companionId) as the *userId* to match the table schema.
+ * rewardType mapping:
+ *  - 'xp' -> reward_type='xp', reward_amount=N
+ *  - 'happiness'|'energy'|'knowledge' -> reward_type='stat_boost', stats_updated={ key: N }
+ *  - 'coins' -> not in schema; mapped to xp:0 (adjust if you later add a coins column)
+ */
+export async function createCheckIn(
+  companionId: string, // actually userId
+  mood: Mood, // not persisted unless you add a 'mood' column
+  rewardType: RewardTypeIncoming,
+  rewardAmount: number,
+  streakDay: number
+): Promise<any> {
+  const supabase = await getSupabaseClient();
+
+  let reward_type: 'xp' | 'stat_boost' = 'xp';
+  let stats_updated: Record<string, number> | null = null;
+  let amount: number | null = null;
+
+  if (rewardType === 'xp') {
+    reward_type = 'xp';
+    amount = rewardAmount ?? 0;
+  } else if (rewardType === 'happiness' || rewardType === 'energy' || rewardType === 'knowledge') {
+    reward_type = 'stat_boost';
+    stats_updated = { [rewardType]: rewardAmount ?? 0 };
+    amount = null;
+  } else {
+    // 'coins' not supported by current schema—map to neutral xp:0
+    reward_type = 'xp';
+    amount = 0;
+  }
+
+  const payload = {
+    user_id: companionId,                      // treat as userId
+    checked_in_at: new Date().toISOString(),   // timestamptz
+    day_in_cycle: streakDay,
+    reward_type,
+    reward_amount: amount,
+    stats_updated: stats_updated ?? null,
+    // mood not persisted; add a column if desired
+  };
+
+  const { data, error } = await supabase
+    .from('companion_check_ins')
+    .insert(payload)
+    .select()
+    .single();
+
+  if (error) {
+    // Unique violation -> already checked in today (per UTC)
+    if ((error as any).code === '23505') return null;
+    throw error;
+  }
+
+  return data;
+}
+
+/**
+ * Get today's check-in (UTC) for a user.
+ * NOTE: first arg (companionId) is treated as userId.
+ */
+export async function getTodayCheckIn(companionId: string): Promise<any | null> {
+  const supabase = await getSupabaseClient();
+
+  const start = utcStartOfDay();
+  const end = utcEndOfDay();
+
+  // If your client has .maybeSingle(), you can use it. Here we handle empty results manually.
+  const { data, error } = await supabase
+    .from('companion_check_ins')
+    .select('*')
+    .eq('user_id', companionId)
+    .gte('checked_in_at', start.toISOString())
+    .lt('checked_in_at', end.toISOString())
+    .order('checked_in_at', { ascending: false })
+    .limit(1);
+
+  if (error) throw error;
+
+  return (data && data.length > 0) ? data[0] : null;
+}
+
+/**
+ * Get check-in streak for a user (UTC day buckets).
+ * NOTE: first arg (companionId) is treated as userId.
+ */
+export async function getCheckInStreak(companionId: string): Promise<{
+  currentStreak: number;
+  longestStreak: number;
+  lastCheckIn: Date | null;
+}> {
+  const supabase = await getSupabaseClient();
+
+  const { data, error } = await supabase
+    .from('companion_check_ins')
+    .select('checked_in_at')
+    .eq('user_id', companionId)
+    .order('checked_in_at', { ascending: false });
+
+  if (error) {
+    console.error('Error loading check-ins for streak:', error);
+    return { currentStreak: 0, longestStreak: 0, lastCheckIn: null };
+  }
+  if (!data || data.length === 0) {
+    return { currentStreak: 0, longestStreak: 0, lastCheckIn: null };
+  }
+
+  // Collapse multiple same-UTC-day check-ins into a single day
+  const distinctDays: string[] = [];
+  for (const row of data as Array<{ checked_in_at: string }>) {
+    const day = ymdUTC(row.checked_in_at); // "YYYY-MM-DD" UTC
+    if (distinctDays[distinctDays.length - 1] !== day) {
+      distinctDays.push(day);
+    }
+  }
+
+  // Current streak: count consecutive days from *today (UTC)* backwards
+  const todayKey = ymdUTC(new Date().toISOString());
+  const daySet = new Set(distinctDays);
+
+  let currentStreak = 0;
+  let cursor = new Date(todayKey + 'T00:00:00.000Z');
+  while (true) {
+    const key = cursor.toISOString().slice(0, 10);
+    if (daySet.has(key)) {
+      currentStreak += 1;
+      cursor = new Date(cursor.getTime() - 86_400_000); // step back 1 UTC day
+    } else {
+      break;
+    }
+  }
+
+  // Longest streak: scan distinctDays (ascending) for 1-day gaps
+  const toDate = (ymd: string) => new Date(ymd + 'T00:00:00.000Z').getTime();
+  const asc = [...distinctDays].sort();
+  let longestStreak = 1;
+  let run = 1;
+  for (let i = 1; i < asc.length; i++) {
+    const prev = toDate(asc[i - 1]);
+    const curr = toDate(asc[i]);
+    if ((curr - prev) === 86_400_000) {
+      run += 1;
+    } else if (curr !== prev) {
+      longestStreak = Math.max(longestStreak, run);
+      run = 1;
+    }
+  }
+  longestStreak = Math.max(longestStreak, run, currentStreak);
+
+  return {
+    currentStreak,
+    longestStreak,
+    lastCheckIn: new Date((data as any[])[0].checked_in_at),
+  };
+}
+
+/**
+ * Get paginated check-in history (most recent first).
+ * NOTE: first arg (companionId) is treated as userId.
+ */
+export async function getCheckInHistory(
+  companionId: string,
+  limit: number = 30,
+  offset: number = 0
+): Promise<any[]> {
+  const supabase = await getSupabaseClient();
+
+  const { data, error } = await supabase
+    .from('companion_check_ins')
+    .select('*')
+    .eq('user_id', companionId)
+    .order('checked_in_at', { ascending: false })
+    .range(offset, offset + limit - 1);
+
+  if (error) {
+    console.error('Error fetching check-in history:', error);
+    throw error;
+  }
+
+  return data ?? [];
+}
+
+
+// ============================================================================
+// END CHECK-IN FUNCTIONS
+// ============================================================================
+
+/**
  * Get or create companion for a user
  * Convenience method that ensures a companion exists
  */
@@ -254,40 +533,30 @@ export async function getUnreadMessageCount(companionId: string): Promise<number
 }
 
 /**
- * Mark message as read
+ * Mark messages as read
  */
-export async function markMessageAsRead(messageId: string): Promise<void> {
+export async function markMessagesAsRead(
+  companionId: string,
+  messageIds?: string[]
+): Promise<void> {
   try {
     const supabase = await getSupabaseClient();
 
-    const { error } = await supabase
+    let query = supabase
       .from('companion_messages')
       .update({ was_read: true })
-      .eq('id', messageId);
+      .eq('companion_id', companionId);
+
+    // If specific message IDs provided, only mark those
+    if (messageIds && messageIds.length > 0) {
+      query = query.in('id', messageIds);
+    }
+
+    const { error } = await query;
 
     if (error) throw error;
   } catch (error) {
-    console.error('Error marking message as read:', error);
-    throw error;
-  }
-}
-
-/**
- * Mark all messages as read for a companion
- */
-export async function markAllMessagesAsRead(companionId: string): Promise<void> {
-  try {
-    const supabase = await getSupabaseClient();
-
-    const { error } = await supabase
-      .from('companion_messages')
-      .update({ was_read: true })
-      .eq('companion_id', companionId)
-      .eq('was_read', false);
-
-    if (error) throw error;
-  } catch (error) {
-    console.error('Error marking all messages as read:', error);
+    console.error('Error marking messages as read:', error);
     throw error;
   }
 }
@@ -297,7 +566,7 @@ export async function markAllMessagesAsRead(companionId: string): Promise<void> 
  */
 export async function logInteraction(
   companionId: string,
-  interactionType: CompanionInteraction['interaction_type'],
+  interactionType: string,
   xpGained: number = 0,
   metadata?: Record<string, any>
 ): Promise<CompanionInteraction> {

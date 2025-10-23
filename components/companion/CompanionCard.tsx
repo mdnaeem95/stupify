@@ -1,7 +1,8 @@
 // ============================================================================
 // STUPIFY AI COMPANION FEATURE - COMPANION CARD
 // Created: October 22, 2025
-// Version: 1.0
+// Updated: October 23, 2025 (Phase 3 - Stats added)
+// Version: 1.1
 // Description: Expanded view of companion (modal/dialog)
 // ============================================================================
 
@@ -9,17 +10,17 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Dialog, DialogContent, DialogHeader } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Sparkles, Edit2, Check, X, MessageCircle, TrendingUp, Award, Heart } from 'lucide-react';
-import { ARCHETYPE_EMOJIS, ARCHETYPE_DESCRIPTIONS, type Companion } from '@/lib/companion/types';
+import { ARCHETYPE_DESCRIPTIONS, type Companion } from '@/lib/companion/types';
 import { XPProgressBar } from './XPProgressBar';
 import { CompanionMessageList } from './CompanionMessage';
+import CompanionStats from './stats/CompanionStats';
 import type { CompanionArchetype, CompanionMessage, LevelProgress } from '@/lib/companion/types';
-import { DialogDescription, DialogTitle } from '@radix-ui/react-dialog';
 
 interface CompanionCardProps {
   isOpen: boolean;
@@ -36,6 +37,12 @@ interface CompanionCardProps {
   onMarkMessageAsRead?: (messageId: string) => void;
 }
 
+const ARCHETYPE_ICONS = {
+  mentor: '🧙‍♂️',
+  friend: '🤗',
+  explorer: '🚀',
+};
+
 /**
  * CompanionCard - Expanded view of companion
  * 
@@ -44,7 +51,8 @@ interface CompanionCardProps {
  * - Edit name and archetype
  * - View message history
  * - Level progress
- * - Interaction stats
+ * - Interaction stats (Phase 3)
+ * - Companion stats (happiness, energy, knowledge)
  * - Tabbed interface
  */
 export function CompanionCard({
@@ -62,7 +70,7 @@ export function CompanionCard({
   const [selectedArchetype, setSelectedArchetype] = useState(companion.archetype);
   const [isUpdating, setIsUpdating] = useState(false);
 
-  const emoji = ARCHETYPE_EMOJIS[companion.archetype];
+  const icon = ARCHETYPE_ICONS[companion.archetype];
 
   // Handle name save
   const handleSaveName = async () => {
@@ -101,12 +109,13 @@ export function CompanionCard({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden p-0">
-      <DialogHeader>
-        <DialogTitle></DialogTitle>
-        <DialogDescription></DialogDescription>
-      </DialogHeader>
+        <DialogHeader className="sr-only">
+          <DialogTitle>Companion Profile</DialogTitle>
+          <DialogDescription>View and manage your AI companion</DialogDescription>
+        </DialogHeader>
+        
         {/* Header with gradient background */}
-        <div className="relative overflow-hidden bg-gradient-to-br from-purple-500 via-blue-500 to-pink-500 p-6 text-white">
+        <div className="relative overflow-hidden bg-gradient-to-br from-indigo-600 via-violet-600 to-purple-600 p-8 text-white">
           {/* Background pattern */}
           <div className="absolute inset-0 opacity-10">
             <div className="absolute inset-0" style={{
@@ -125,7 +134,7 @@ export function CompanionCard({
                 transition={{ type: 'spring', stiffness: 200 }}
                 className="flex h-20 w-20 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm shadow-lg"
               >
-                <span className="text-5xl">{emoji}</span>
+                <span className="text-5xl">{icon}</span>
               </motion.div>
 
               {/* Name and level */}
@@ -182,15 +191,15 @@ export function CompanionCard({
                   <Badge variant="secondary" className="bg-white/20 backdrop-blur-sm text-white border-white/30">
                     Level {companion.level}
                   </Badge>
-                  <Badge variant="secondary" className="bg-white/20 backdrop-blur-sm text-white border-white/30">
-                    {companion.current_avatar} stage
+                  <Badge variant="secondary" className="bg-white/20 backdrop-blur-sm text-white border-white/30 capitalize">
+                    {companion.current_avatar}
                   </Badge>
                 </div>
               </div>
             </div>
 
             {/* Sparkle decoration */}
-            <Sparkles className="h-6 w-6" />
+            <Sparkles className="h-6 w-6" strokeWidth={2} />
           </div>
 
           {/* XP Progress */}
@@ -210,11 +219,11 @@ export function CompanionCard({
           <div className="border-b px-6">
             <TabsList className="grid w-full grid-cols-3 bg-transparent">
               <TabsTrigger value="overview" className="gap-2">
-                <Heart className="h-4 w-4" />
+                <Heart className="h-4 w-4" strokeWidth={2} />
                 Overview
               </TabsTrigger>
               <TabsTrigger value="messages" className="gap-2">
-                <MessageCircle className="h-4 w-4" />
+                <MessageCircle className="h-4 w-4" strokeWidth={2} />
                 Messages
                 {messages.filter(m => !m.was_read).length > 0 && (
                   <Badge variant="destructive" className="ml-1 h-5 min-w-5 p-0 text-xs">
@@ -223,7 +232,7 @@ export function CompanionCard({
                 )}
               </TabsTrigger>
               <TabsTrigger value="stats" className="gap-2">
-                <TrendingUp className="h-4 w-4" />
+                <TrendingUp className="h-4 w-4" strokeWidth={2} />
                 Stats
               </TabsTrigger>
             </TabsList>
@@ -232,15 +241,27 @@ export function CompanionCard({
           <div className="overflow-y-auto p-6" style={{ maxHeight: 'calc(90vh - 300px)' }}>
             {/* Overview Tab */}
             <TabsContent value="overview" className="mt-0 space-y-6">
+              {/* Companion Stats (Phase 3) */}
+              <div>
+                <h3 className="mb-4 text-base font-bold text-gray-900">
+                  Companion Stats
+                </h3>
+                <CompanionStats
+                  happiness={companion.happiness}
+                  energy={companion.energy}
+                  knowledge={companion.knowledge}
+                />
+              </div>
+
               {/* Personality */}
               <div>
-                <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-gray-900">
-                  <Award className="h-4 w-4" />
+                <h3 className="mb-4 flex items-center gap-2 text-base font-bold text-gray-900">
+                  <Award className="h-5 w-5" strokeWidth={2} />
                   Personality
                 </h3>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-3 gap-3">
                   {Object.entries(ARCHETYPE_DESCRIPTIONS).map(([archetype, description]) => {
-                    const archetypeEmoji = ARCHETYPE_EMOJIS[archetype as keyof typeof ARCHETYPE_EMOJIS];
+                    const archetypeIcon = ARCHETYPE_ICONS[archetype as keyof typeof ARCHETYPE_ICONS];
                     const isSelected = selectedArchetype === archetype;
                     
                     return (
@@ -249,24 +270,24 @@ export function CompanionCard({
                         onClick={() => handleArchetypeChange(archetype)}
                         disabled={isUpdating}
                         className={`
-                          relative overflow-hidden rounded-lg border-2 p-4 text-left
-                          transition-all hover:shadow-md
+                          relative overflow-hidden rounded-2xl p-4 text-left
+                          transition-all duration-300
                           ${isSelected
-                            ? 'border-purple-500 bg-purple-50 shadow-md'
-                            : 'border-gray-200 hover:border-gray-300'
+                            ? 'bg-gradient-to-br from-indigo-50 to-violet-50 shadow-lg hover:shadow-xl'
+                            : 'bg-white hover:shadow-lg hover:shadow-gray-100/50 hover:-translate-y-0.5'
                           }
                         `}
                       >
-                        <div className="text-3xl mb-2">{archetypeEmoji}</div>
-                        <div className="font-semibold text-gray-900 capitalize mb-1">
+                        <div className="text-3xl mb-2">{archetypeIcon}</div>
+                        <div className="font-bold text-gray-900 capitalize mb-1 text-sm">
                           {archetype}
                         </div>
-                        <div className="text-xs text-gray-600 line-clamp-2">
+                        <div className="text-xs text-gray-600 leading-relaxed line-clamp-2">
                           {description}
                         </div>
                         {isSelected && (
-                          <div className="absolute top-2 right-2">
-                            <Check className="h-5 w-5 text-purple-600" />
+                          <div className="absolute top-2 right-2 bg-indigo-600 rounded-full p-0.5">
+                            <Check className="h-4 w-4 text-white" strokeWidth={2.5} />
                           </div>
                         )}
                       </button>
@@ -278,12 +299,12 @@ export function CompanionCard({
               {/* Favorite Topics */}
               {companion.favorite_topics && companion.favorite_topics.length > 0 && (
                 <div>
-                  <h3 className="mb-3 text-sm font-semibold text-gray-900">
+                  <h3 className="mb-3 text-base font-bold text-gray-900">
                     Favorite Topics
                   </h3>
                   <div className="flex flex-wrap gap-2">
                     {companion.favorite_topics.slice(0, 10).map((topic, index) => (
-                      <Badge key={index} variant="secondary">
+                      <Badge key={index} variant="secondary" className="font-medium">
                         {topic}
                       </Badge>
                     ))}
@@ -293,21 +314,21 @@ export function CompanionCard({
 
               {/* Journey Stats */}
               <div>
-                <h3 className="mb-3 text-sm font-semibold text-gray-900">
+                <h3 className="mb-4 text-base font-bold text-gray-900">
                   Learning Journey
                 </h3>
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="rounded-lg bg-gradient-to-br from-purple-50 to-blue-50 p-4">
-                    <div className="text-3xl font-bold text-purple-600">
-                      {companion.total_xp}
+                  <div className="rounded-2xl bg-gradient-to-br from-indigo-50 to-violet-50 p-5">
+                    <div className="text-3xl font-bold text-indigo-600">
+                      {companion.total_xp.toLocaleString()}
                     </div>
-                    <div className="text-sm text-gray-600">Total XP Earned</div>
+                    <div className="text-sm font-medium text-gray-600 mt-1">Total XP Earned</div>
                   </div>
-                  <div className="rounded-lg bg-gradient-to-br from-green-50 to-emerald-50 p-4">
+                  <div className="rounded-2xl bg-gradient-to-br from-green-50 to-emerald-50 p-5">
                     <div className="text-3xl font-bold text-green-600">
                       {companion.total_interactions}
                     </div>
-                    <div className="text-sm text-gray-600">Interactions</div>
+                    <div className="text-sm font-medium text-gray-600 mt-1">Interactions</div>
                   </div>
                 </div>
               </div>
@@ -327,29 +348,29 @@ export function CompanionCard({
             <TabsContent value="stats" className="mt-0 space-y-4">
               {stats && (
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="rounded-lg border p-4">
+                  <div className="rounded-2xl bg-white shadow-sm hover:shadow-lg hover:shadow-gray-100/50 transition-all duration-300 p-5">
                     <div className="text-2xl font-bold text-gray-900">
                       {stats.questions_asked}
                     </div>
-                    <div className="text-sm text-gray-600">Questions Asked</div>
+                    <div className="text-sm font-medium text-gray-600 mt-1">Questions Asked</div>
                   </div>
-                  <div className="rounded-lg border p-4">
+                  <div className="rounded-2xl bg-white shadow-sm hover:shadow-lg hover:shadow-gray-100/50 transition-all duration-300 p-5">
                     <div className="text-2xl font-bold text-gray-900">
                       {stats.total_messages}
                     </div>
-                    <div className="text-sm text-gray-600">Messages Sent</div>
+                    <div className="text-sm font-medium text-gray-600 mt-1">Messages Sent</div>
                   </div>
-                  <div className="rounded-lg border p-4">
+                  <div className="rounded-2xl bg-white shadow-sm hover:shadow-lg hover:shadow-gray-100/50 transition-all duration-300 p-5">
                     <div className="text-2xl font-bold text-gray-900">
                       {stats.total_interactions}
                     </div>
-                    <div className="text-sm text-gray-600">Total Interactions</div>
+                    <div className="text-sm font-medium text-gray-600 mt-1">Total Interactions</div>
                   </div>
-                  <div className="rounded-lg border p-4">
+                  <div className="rounded-2xl bg-white shadow-sm hover:shadow-lg hover:shadow-gray-100/50 transition-all duration-300 p-5">
                     <div className="text-2xl font-bold text-gray-900">
                       {companion.level}
                     </div>
-                    <div className="text-sm text-gray-600">Current Level</div>
+                    <div className="text-sm font-medium text-gray-600 mt-1">Current Level</div>
                   </div>
                 </div>
               )}

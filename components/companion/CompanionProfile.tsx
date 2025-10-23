@@ -1,15 +1,9 @@
 // ============================================================================
-// STUPIFY AI COMPANION FEATURE - COMPANION PROFILE - Redesigned v2.0
+// STUPIFY AI COMPANION FEATURE - COMPANION PROFILE - Phase 3
 // Created: October 22, 2025
-// Version: 2.0
+// Updated: October 23, 2025 (Phase 3 - Stats added)
+// Version: 2.1
 // Description: Full companion profile for stats dashboard
-// 
-// Following STUPIFY Design Principles:
-// - NO EMOJIS (using Lucide icons)
-// - Clean gradients and shadows
-// - Better typography hierarchy
-// - Premium card design
-// - Mobile-first responsive
 // ============================================================================
 
 'use client';
@@ -33,6 +27,7 @@ import {
 } from 'lucide-react';
 import { getArchetypeDescription } from '@/lib/companion/archetypes';
 import { CircularXPIndicator } from './XPProgressBar';
+import CompanionStatsDetail from './stats/CompanionStatsDetail';
 import type { Companion, LevelProgress } from '@/lib/companion/types';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -50,10 +45,6 @@ interface CompanionProfileProps {
   onOpenMessages?: () => void;
   className?: string;
 }
-
-// ============================================================================
-// ARCHETYPE CONFIGURATION (NO EMOJIS)
-// ============================================================================
 
 const ARCHETYPE_CONFIG = {
   mentor: {
@@ -82,7 +73,7 @@ const ARCHETYPE_CONFIG = {
  * Features:
  * - Companion details with icon
  * - Level and XP progress
- * - Stats overview
+ * - Stats overview (Phase 3: happiness, energy, knowledge)
  * - Visual level progression
  * - Activity summary
  */
@@ -180,6 +171,15 @@ export function CompanionProfile({
         </div>
       </Card>
 
+      {/* Companion Stats (Phase 3) */}
+      <Card className="p-8">
+        <CompanionStatsDetail
+          happiness={companion.happiness}
+          energy={companion.energy}
+          knowledge={companion.knowledge}
+        />
+      </Card>
+
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Questions */}
@@ -200,7 +200,7 @@ export function CompanionProfile({
           </div>
           <div className="text-sm font-semibold text-gray-600 mb-2">Questions Asked</div>
           <div className="text-sm text-gray-500 leading-relaxed">
-            Keep asking to level up faster!
+            Keep asking to level up faster
           </div>
         </Card>
 

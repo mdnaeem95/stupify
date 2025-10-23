@@ -2,7 +2,7 @@
 // ============================================================================
 // STUPIFY AI COMPANION FEATURE - TYPE DEFINITIONS
 // Created: October 22, 2025
-// Version: 1.0
+// Version: 1.1 (Phase 3 - Stats added)
 // Description: TypeScript types for companion feature
 // ============================================================================
 
@@ -63,6 +63,11 @@ export interface Companion {
   level: number;
   xp: number;
   total_xp: number;
+  
+  // Stats (Phase 3)
+  happiness: number; // 0-100
+  energy: number; // 0-100
+  knowledge: number; // 0-100
   
   // Personality
   personality_traits: PersonalityTraits;
@@ -231,16 +236,6 @@ export interface CompanionError {
 
 /**
  * Level requirements (XP needed for each level)
- * Level 1: 0 XP
- * Level 2: 100 XP
- * Level 3: 250 XP
- * Level 4: 450 XP
- * Level 5: 700 XP
- * Level 6: 1000 XP
- * Level 7: 1350 XP
- * Level 8: 1750 XP
- * Level 9: 2200 XP
- * Level 10: 2700 XP
  */
 export const LEVEL_XP_REQUIREMENTS: Record<number, number> = {
   1: 0,
@@ -255,14 +250,8 @@ export const LEVEL_XP_REQUIREMENTS: Record<number, number> = {
   10: 2700,
 };
 
-/**
- * Max level for Phase 1
- */
 export const MAX_LEVEL = 10;
 
-/**
- * Default personality traits
- */
 export const DEFAULT_PERSONALITY: PersonalityTraits = {
   enthusiasm: 5,
   curiosity: 5,
@@ -270,27 +259,18 @@ export const DEFAULT_PERSONALITY: PersonalityTraits = {
   humor: 5,
 };
 
-/**
- * Archetype descriptions
- */
 export const ARCHETYPE_DESCRIPTIONS: Record<CompanionArchetype, string> = {
   mentor: 'Wise and supportive, focused on guiding your learning journey',
   friend: 'Casual and encouraging, celebrates your wins and keeps you motivated',
   explorer: 'Curious and adventurous, loves discovering new topics with you',
 };
 
-/**
- * Archetype emojis
- */
 export const ARCHETYPE_EMOJIS: Record<CompanionArchetype, string> = {
   mentor: '🧙‍♂️',
   friend: '🤗',
   explorer: '🚀',
 };
 
-/**
- * Message type descriptions
- */
 export const MESSAGE_TYPE_DESCRIPTIONS: Record<CompanionMessageType, string> = {
   greeting: 'Welcome and hello messages',
   encouragement: 'Positive reinforcement after actions',
